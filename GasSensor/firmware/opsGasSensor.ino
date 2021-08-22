@@ -7,7 +7,6 @@
 
 #include <SdFat.h>
 #include <MinimumSerial.h>
-//#include <FreeStack.h>
 #include <SdFatConfig.h>
 #include <Wire.h>
 #include <RTClib.h>
@@ -167,6 +166,7 @@ static void DL_openLogFile() {
             logfile.flush();
             logfile.close();
             logfileOpened = false;
+            LogCounter = 1;
         }
         char filename[] = "xxxx-xx-xx-xx.xx.xx.csv";
         if (false) {
@@ -315,6 +315,7 @@ static int CONF_getConfValueInt(char *filename, char *key, int defaultValue = 0)
             continue;
         }
     }
+    myFile.close();
     return ret;
 }
 
@@ -360,6 +361,7 @@ static float DL_analogReadAndFilter(uint8_t sensorpin) {
  *
  */
 static void DL_initConf() {
+
     if (sdPresent) {
         if (!SD.exists(CONF_FILE)) {
             Serial.print(CONF_FILE);
@@ -441,7 +443,6 @@ void setup() {
             Serial.println(F("Clock not running"));
             RTC.adjust(DateTime(F(__DATE__), F(__TIME__)));
         }
-
         Serial.print(F("Device clock:"));
         Serial.println(DL_strNow());
         Serial.println(F("Type any character to set time:"));
@@ -576,6 +577,7 @@ void SetInterval() {
     if (log_interval_ms > 0)
     {
         DL_closeLogFile();
+        SD.remove(CONF_FILE);
         settingFile = SD.open(CONF_FILE, FILE_WRITE);
         if (settingFile) {
             //create new file config.ini------>
@@ -590,6 +592,7 @@ void SetInterval() {
             Serial.print(F("error to update "));
             Serial.println(F(CONF_FILE));
         }
+        DL_openLogFile();
     }
     else
     {
