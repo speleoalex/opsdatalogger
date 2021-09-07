@@ -1,0 +1,29 @@
+components required for assembly:
+
+
+ArduinoUNO
+https://www.amazon.it/gp/product/B074SB6PBW/ref=ppx_yo_dt_b_asin_title_o03_s00?ie=UTF8&psc=1
+Data Logger Shield with RTC
+https://www.amazon.it/gp/product/B07TZJYV1R/ref=ppx_yo_dt_b_asin_title_o04_s00?ie=UTF8&psc=1
+MQ-2 sensor (GPL, butane, hydrogen, gas, Smoke)
+https://www.amazon.it/gp/product/B07V9XNCGJ/ref=ppx_yo_dt_b_asin_title_o09_s00?ie=UTF8&th=1
+Connecting wires:
+https://www.amazon.it/Aukru-maschio-femmina-Arduino-Raspberry/dp/B00MWMEIF2/
+
+5 Box:
+https://www.amazon.it/Gewiss-Plastica-cassetta-derivazione-elettrica/dp/B006ZP1LRA/
+
+4 SDCard:
+https://www.amazon.it/Kingston-SDCS2-32GB-microSD-Adattatore/dp/B07YGZ7FY7/
+
+5 PowerBank:
+https://www.amazon.it/EnergyCell-5000mAh-Mini-Caricatore-Portatile-Samsung-Nero/dp/B09B3XSFLC/
+
+
+OPTIONAL:
+
+6 Temperature, pressure, humidity.
+https://www.amazon.it/gp/product/B094N13TZS/ref=ox_sc_act_title_1?smid=A3GH118BETE0I0&psc=1
+
+7 Wind sensor:
+https://moderndevice.com/product/wind-sensor/
