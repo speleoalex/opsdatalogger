@@ -44,19 +44,24 @@ Led verde:9
 #define NUM_READS 100
 #define siza_buffer 60
 
-
+#define RXLED 17
+#define TXLED 30
 //--------------macro---------------------->
-#define LOGSTRING(str) if (logfileOpened){logfile.print(str);dataToWrite++;}if(echoToSerial){Serial.print(str);}//if(lcdPresent){lcd.print(str);}
-#define LOGSTRINGLN(str) if (logfileOpened){logfile.println(str);dataToWrite++;}if(echoToSerial){Serial.println(str);}//if(lcdPresent){lcd.println(str);}
+//#define LOGSTRING(str) if (logfileOpened){logfile.print(str);dataToWrite++;}if(echoToSerial){Serial.print(str);}//if(lcdPresent){lcd.print(str);}
+//#define LOGSTRINGLN(str) if (logfileOpened){logfile.println(str);dataToWrite++;}if(echoToSerial){Serial.println(str);}//if(lcdPresent){lcd.println(str);}
+
 //--------------macro----------------------<
 
 //-------------globals--------------------->
+
+
 static File logfile;
 static File settingFile;
 static bool sdPresent = false;
 static bool rtcPresent = false;
 static bool logfileOpened = false;
 static bool echoToSerial = true;
+static bool failed = false;
 static unsigned int log_interval_ms = LOG_INTERVAL_ms; //log interval
 
 static unsigned long TimeCurrent = 0;
@@ -71,7 +76,35 @@ char strDate[] = "0000-00-00 00:00:00";
 char strFileDate[] = "YYYY-MM-DD_HH.mm.ss.csv";
 SdFat SD;
 //-------------globals---------------------<
+void LOGSTRING(String str) {
+    if (logfileOpened) {
+        logfile.print(str);
+        dataToWrite++;
+    }
+    if (echoToSerial) {
+        Serial.print(str);
+    }
+}
 
+void LOGSTRING(long str) {
+    if (logfileOpened) {
+        logfile.print(str);
+        dataToWrite++;
+    }
+    if (echoToSerial) {
+        Serial.print(str);
+    }
+}
+void LOGSTRINGLN(String str) {
+    if (logfileOpened) {
+        logfile.print(str);
+        dataToWrite++;
+    }
+    if (echoToSerial) {
+        Serial.println(str);
+    }
+
+}
 
 
 /**
@@ -415,6 +448,10 @@ void setup() {
     // initialize the SD card ------------------->
     //Serial.println("Initializing SD");
     pinMode(CHIP_SD, OUTPUT);
+    //pinMode(RXLED, OUTPUT);
+    //pinMode(TXLED, OUTPUT);
+    //pinMode(LED_BUILTIN, OUTPUT);
+    
 
     Serial.println(F("Openspeleo Datalogger"));
     Serial.print(F("Build time:"));
@@ -426,6 +463,7 @@ void setup() {
     if (!SD.begin(CHIP_SD)) {
         sdPresent = false;
         Serial.println(F("failed"));
+        failed = true;
     } else {
         Serial.println(F("successful"));
         sdPresent = true;
@@ -463,6 +501,8 @@ void setup() {
     } else {
         rtcPresent = false;
         Serial.println(F("RTC Failed"));
+        failed = true;
+
     }
     // connect to RTC ---------------------------<
     delay(10);
@@ -477,6 +517,7 @@ void setup() {
     //---faccio una lettura a vuoto per scaricare il condensatore --------<
     //-----------init analog input-----------------------------------------<
     TimeTarget = millis();
+
 }
 /**
  *
@@ -652,6 +693,7 @@ int InputIntFromSerial()
  */
 void loop() {
     
+
     parse_serial_command();
     float S0Sensor = 0.0;
     long vcc = 0;
@@ -683,4 +725,10 @@ void loop() {
         dataToWrite = 0;
         TimeTargetFileWrite = TimeCurrent + SYNC_INTERVAL_ms;
     }
+    if (failed)
+    {
+        Serial.print ("\b"); //this make rx led on but not print anything in serial monitor
+        delay(500);
+    }
+
 }
