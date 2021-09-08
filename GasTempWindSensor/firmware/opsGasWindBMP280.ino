@@ -30,7 +30,6 @@ const float zeroWindAdjustment =  .2; // negative numbers yield smaller wind spe
 int TMP_Therm_ADunits;  //temp termistor value from wind sensor
 float RV_Wind_ADunits;    //RV output from wind sensor
 float RV_Wind_Volts;
-unsigned long lastMillis;
 int TempCtimes100;
 float zeroWind_ADunits;
 float zeroWind_volts;
@@ -744,7 +743,6 @@ void loop() {
     int TMP_Therm_ADunits;  //temp termistor value from wind sensor
     float RV_Wind_ADunits;    //RV output from wind sensor
     float RV_Wind_Volts;
-    unsigned long lastMillis;
     int TempCtimes100;
     float zeroWind_ADunits;
     float zeroWind_volts;

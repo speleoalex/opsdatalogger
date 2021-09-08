@@ -4,12 +4,17 @@ Device for tracing air in caves.
 It detects very well the butane present in normal air freshener cans.
 
 components required for assembly:
-1 ArduinoUNO
-1 PowerBank
-1 Data Logger Shield with RTC
-1 MQ-2 sensor (GPL, butane, hydrogen, gas, Smoke)
-1 Box
-connecting wires
+-1 ArduinoUNO
+-1 PowerBank
+-1 Data Logger Shield with RTC
+-1 MQ-2 sensor (GPL, butane, hydrogen, gas, Smoke)
+-1 Box
+-connecting wires
+
+
+optionally it is possible to add sensor for temperature, humidity, pressure and wind speed:
+-1 GY-BMP280-3.3
+-1 Wind sensor 
 
 
 -----
