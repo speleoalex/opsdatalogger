@@ -99,7 +99,7 @@ bool bmp280::begin(byte osrs_t, byte osrs_p, byte mode, byte t_sb, byte filter, 
             Serial.print(F("unknown, ID="));
             Serial.print(ID);
         }
-        return false;
+
     }
     getBmpCalibratonData(); // includes conversion to integers and debug printing
     updateF4Control(osrs_t, osrs_p, mode);  // oversampling and mode
@@ -113,11 +113,15 @@ bool bme280::begin(byte osrs_t, byte osrs_p, byte mode, byte t_sb, byte filter, 
     // see update F2, F4 and F5 for details of parameters
     // return is true for bme280 and bmp280 devices
     // return is false for other devices
-
+    static int AddrTest = 0;
+    address+=AddrTest;
+    if (AddrTest > 2) {
+        return false;
+    }
     Wire.begin(); // start I2C interface
     if (bmp280Debug) {
         Serial.print(F("Initialising BME280 object "));
-        Serial.print(address - bmp280Addr);
+        Serial.print(address - bmp280Addr + AddrTest);
         Serial.print(F(" at I2C address 0x"));
         Serial.println(address, HEX);
     }
@@ -135,6 +139,8 @@ bool bme280::begin(byte osrs_t, byte osrs_p, byte mode, byte t_sb, byte filter, 
             Serial.print(F("unknown, ID="));
             Serial.print(ID);
         }
+        AddrTest++;
+        return begin(osrs_t + AddrTest, osrs_p, mode, t_sb,  filter,  spi3W_en, osrs_h);
         return false;
     }
     getBmpCalibratonData(); // includes conversion to integers and debug printing
@@ -156,13 +162,14 @@ double bmp280::readTemperature() {
     byte errorCode = readByteArray(0xFA, 3, data); // get 3 bytes from 0xFA (temperature)
                                                    // Convert temperature data bytes to 20-bits within 32 bit integer
     long adc_t = (((long)(data[0] & 0xFF) * 65536) + ((long)(data[1] & 0xFF) * 256) + (long)(data[2] & 0xF0)) / 16;
-
+#if DEBUGSENSOR
     if (bmp280Debug) {
         Serial.print(F("BMP280-"));
         Serial.print(address - bmp280Addr); // index
         Serial.print(F(" raw temperature="));
         Serial.println(adc_t);
     }
+#endif
     // Temperature offset calculation
     return calcTemperature(adc_t);
 } // end of double readTemperature ()
@@ -281,12 +288,14 @@ long bme280::readRawHumidity(long &rawTemperature, long &rawPressure) { // reads
     rawPressure = (((long)(data[0] & 0xFF) * 65536) + ((long)(data[1] & 0xFF) * 256) + (long)(data[2] & 0xF0)) / 16;
     rawTemperature = (((long)(data[3] & 0xFF) * 65536) + ((long)(data[4] & 0xFF) * 256) + (long)(data[5] & 0xF0)) / 16;
     long rawHumidity = (((long)(data[6] & 0xFF) * 256) + (long)(data[7] & 0xFF));
+#if DEBUGSENSOR
     if (bmp280Debug) {
         Serial.print(F("BME280-"));
         Serial.print(address - bmp280Addr); // index
         Serial.print(F(" raw humidity="));
         Serial.println(rawHumidity);
     }
+#endif
     return rawHumidity;
 } // end of bme280::readRawHumidity
 
@@ -443,7 +452,7 @@ void bmp280::getBmpCalibratonData() { // function
     if (b1[21] >> 7) dig_P8 = dig_P8 + 0xFFFF0000;
     dig_P9 = b1[22] + (b1[23] * 256);
     if (b1[23] >> 7) dig_P9 = dig_P9 + 0xFFFF0000;
-
+#if DEBUGSENSOR
     if (bmp280Debug) {
         Serial.println(F("(debug) Calibration parameters"));
         Serial.print(F("Temperature dig_T1=")); Serial.print(dig_T1);
@@ -461,7 +470,7 @@ void bmp280::getBmpCalibratonData() { // function
         Serial.print(F("End of calibration parameters for BMP280-"));
         Serial.println(address - bmp280Addr);
     } // end of if (bmp280Debug)
-
+#endif
 } // end of void bmp280::getBmpCalibratonData()
 
 void bme280::getBmeCalibratonData() { // function
@@ -503,7 +512,7 @@ void bme280::getBmeCalibratonData() { // function
 // general tools
 byte bmp280::readRegister(byte reg) {
     // general function to read control register
-   // noInterrupts(); // disable interrupts
+    // noInterrupts(); // disable interrupts
     Wire.beginTransmission(address);
     Wire.write(reg); // address of register to control oversampling and power mode
     byte error = Wire.endTransmission();
@@ -535,14 +544,14 @@ byte bmp280::readRegister(byte reg) {
 }  // end of void readRegister(byte reg)
 
 byte bmp280::updateRegister(byte reg, byte value) {   // function
-    //noInterrupts(); // disable interrupts
+                                                      //noInterrupts(); // disable interrupts
     Wire.beginTransmission(address);
     // Select register
     Wire.write(reg); // address of register
     Wire.write(value); //
                        // Stop I2C Transmission
     byte error = Wire.endTransmission(); // end of write
-    //interrupts(); // enable interrupts
+                                         //interrupts(); // enable interrupts
     if (error && bmp280Debug) {
         Serial.print(F("I2C error with address "));
         Serial.print(address, HEX);
@@ -570,7 +579,7 @@ byte bmp280::readByteArray(byte reg, byte length, byte data[]) { // function
                                                                  // returns an error code (0 for no error)
                                                                  // byte b1[24]; // array of 24 bytes used to store calibration bytes.
                                                                  // Start I2C Transmission
-    //noInterrupts(); // disable interrupts
+                                                                 //noInterrupts(); // disable interrupts
     Wire.beginTransmission(address);
     byte error = Wire.endTransmission();
     if (error && bmp280Debug) {
@@ -607,7 +616,7 @@ byte bmp280::readByteArray(byte reg, byte length, byte data[]) { // function
     for (int i = 0; i < length; i++)  { // reads "length" bytes
         data[i] = Wire.read();
     } // end of for (int i = 0; i < length; i++)
-    //interrupts(); // enable interrupts
+      //interrupts(); // enable interrupts
     return error;
 } // end of bmp280::readByteArray
 

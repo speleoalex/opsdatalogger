@@ -5,7 +5,8 @@
  * @license http://opensource.org/licenses/gpl-license.php GNU General Public License
  */
 #define BMP280_PRESENT 1
-#define WINDSENSOR_PRESENT 0
+#define WINDSENSOR_PRESENT 1
+#define DEBUGSENSOR 0
 
 
 #include <SdFat.h>
@@ -17,7 +18,7 @@
 
 #ifdef BMP280_PRESENT
 #include "farmerkeith_BMP280.h"
-bme280 bme0(0, 0);
+bme280 bme0(0, DEBUGSENSOR);
 #endif
 
 
@@ -55,7 +56,8 @@ Led verde:9
  */
 
 #define S0 A0					  //AIR
-
+#define S0_S 2					//alimentazione S0
+#define S1_S 3					//alimentazione S1
 
 #define EXTERNAL_VOLTAGE_REF 0  		  //mettere a 1 se 3.2 e' collegato ad aref
 #define INTERNAL_VOLTAGE_REF 0			  //set 1 for internal voltage
@@ -64,12 +66,14 @@ Led verde:9
 #define MAX_ROWS_PER_FILE 10000			  //max rows per file
 #define CONF_FILE "CONFIG.INI"  		  //configuration file
 #define LOG_INTERVAL_ms 15000     		  //log interval in mmilliseconds
+#define SENSORPOWERANTICIPATION_ms 0         //sensor power anticipation in ms 0= always ON
+
 
 #define CHIP_SD 10				  //pin sd
 #define SYNC_INTERVAL_ms 20000			  //mills between calls to flush() - to write data to the card
 
 
-#define NUM_READS 100
+#define NUM_READS 50
 #define siza_buffer 60
 
 #define RXLED 17
@@ -83,26 +87,26 @@ Led verde:9
 
 
 
-static File logfile;
-static File settingFile;
-static bool sdPresent = false;
-static bool rtcPresent = false;
-static bool logfileOpened = false;
-static bool echoToSerial = true;
-static bool failed = false;
-static bool BMP280Present = false;
+File logfile;
+File settingFile;
+bool sdPresent = false;
+bool rtcPresent = false;
+bool logfileOpened = false;
+bool echoToSerial = true;
+bool failed = false;
+bool BMP280Present = false;
+bool PowerSensorIsHIGHT = false;
+unsigned int SensorPowerAnticipation_ms = SENSORPOWERANTICIPATION_ms;
+unsigned int log_interval_ms = LOG_INTERVAL_ms; //log interval
 
+unsigned long TimeCurrent = 0;
+unsigned long TimeTarget = 0;
+unsigned long TimeTargetFileWrite = 0;
+unsigned long TimeTargetPower = 0;
 
-
-static unsigned int log_interval_ms = LOG_INTERVAL_ms; //log interval
-
-static unsigned long TimeCurrent = 0;
-static unsigned long TimeTarget = 0;
-static unsigned long TimeTargetFileWrite = 0;
-
-static unsigned long LogCounter = 0; //counter
-static unsigned long dataToWrite = 0;
-static RTC_DS1307 RTC; // define the Real Time Clock object
+unsigned long LogCounter = 0; //counter
+unsigned long dataToWrite = 0;
+RTC_DS1307 RTC; // define the Real Time Clock object
 
 char strDate[] = "0000-00-00 00:00:00";
 char strFileDate[] = "YYYY-MM-DD_HH.mm.ss.csv";
@@ -120,12 +124,16 @@ void LOGSTRING(String str) {
 }
 
 void LOGSTRING(double str) {
+    if(isnan(str)) 
+    {
+        str=0;
+    }
     if (logfileOpened) {
         logfile.print(str);
         dataToWrite++;
     }
     if (echoToSerial) {
-        Serial.print(str);
+            Serial.print(str);
     }
 }
 
@@ -142,6 +150,7 @@ void LOGSTRINGLN(String str) {
 /**
  *
  */
+
 long DL_readVcc() {
     // Read 1.1V reference against AVcc
     // set the reference to Vcc and the measurement to the internal 1.1V reference
@@ -240,7 +249,6 @@ static void DL_openLogFile() {
             LogCounter = 1;
         }
         char filename[] = "xxxx-xx-xx-xx.xx.xx.csv";
-
         sprintf(filename, DL_strDateToFilename());
         for (uint8_t i = 0; i < 9; i++) {
             if (!SD.exists(filename)) {
@@ -302,14 +310,12 @@ static int CONF_getConfValueInt(char *filename, char *key, int defaultValue = 0)
     boolean valid = true;
     int ret = defaultValue;
     if (!SD.exists(filename)) {
-        //Serial.println("file not exists");
         return defaultValue;
     }
     myFile = SD.open(filename);
     while (myFile.available()) {
         description = "";
         character = myFile.read();
-
         //cerca una linea valida----->
         if (!CONF_is_valid_char(character)) {
             // Comment - ignore this line
@@ -394,7 +400,8 @@ static float DL_analogReadAndFilter(uint8_t sensorpin) {
     int sortedValues[NUM_READS];
     int value;
     int j;
-    for (int i = 0; i < NUM_READS; i++) {
+    int i;
+    for (i = 0; i < NUM_READS; i++) {
         value = analogRead(sensorpin);
         if (value < sortedValues[0] || i == 0) {
             j = 0; //insert at first position
@@ -415,7 +422,7 @@ static float DL_analogReadAndFilter(uint8_t sensorpin) {
     }
     //return scaled mode of 10 values
     float returnval = 0;
-    for (int i = NUM_READS / 2 - 5; i < (NUM_READS / 2 + 5); i++) {
+    for (i = NUM_READS / 2 - 5; i < (NUM_READS / 2 + 5); i++) {
         returnval += sortedValues[i];
     }
     returnval = returnval / 10;
@@ -426,7 +433,6 @@ static float DL_analogReadAndFilter(uint8_t sensorpin) {
  *
  */
 static void DL_initConf() {
-
     if (sdPresent) {
         if (!SD.exists(CONF_FILE)) {
             Serial.print(CONF_FILE);
@@ -449,7 +455,6 @@ static void DL_initConf() {
             Serial.print(CONF_FILE);
             Serial.println(F(" already exist"));
         }
-
         //read from CONFIG.INI------->
         log_interval_ms = CONF_getConfValueInt(CONF_FILE, "log_interval_ms", LOG_INTERVAL_ms);
         //read from CONFIG.INI-------<
@@ -470,7 +475,6 @@ static void DL_initConf() {
 void setup() {
     int n = 0;
     int timeout = 5;
-
     //--init serial------------------------------>
     Serial.begin(9600);
     //--init serial------------------------------<
@@ -485,6 +489,11 @@ void setup() {
     // initialize the SD card ------------------->
     //Serial.println("Initializing SD");
     pinMode(CHIP_SD, OUTPUT);
+    pinMode(S0_S, OUTPUT);
+    pinMode(S1_S, OUTPUT);
+    digitalWrite(S0_S, HIGH);
+    digitalWrite(S1_S, HIGH);
+    PowerSensorIsHIGHT = true;
     Serial.print(F("SD initialization "));
     if (!SD.begin(CHIP_SD)) {
         sdPresent = false;
@@ -535,22 +544,21 @@ void setup() {
 
 #if BMP280_PRESENT
     if (!bme0.begin()) {
-        Serial.println(F("BMP280 sensor not present"));
+        Serial.println(F("\nBMP280 sensor not present"));
         BMP280Present = false;
     } else {
-        Serial.println(F("BMP280 sensor present"));
+        Serial.println(F("\nBMP280 sensor present"));
         BMP280Present = true;
     }
 #endif
-
-
-
-
-
     delay(10);
     TimeCurrent = millis();
     TimeTarget = TimeCurrent + log_interval_ms;
     TimeTargetFileWrite = TimeCurrent + SYNC_INTERVAL_ms;
+    TimeTargetPower = TimeTarget - SensorPowerAnticipation_ms;
+    if (SensorPowerAnticipation_ms == 0) {
+        TimeTargetPower = TimeCurrent;
+    }
     //---faccio una lettura a vuoto per scaricare il condensatore -------->
     for (int i = 0; i < 10; i++) {
         DL_analogReadAndFilter(S0);
@@ -559,12 +567,12 @@ void setup() {
     //---faccio una lettura a vuoto per scaricare il condensatore --------<
     //-----------init analog input-----------------------------------------<
     TimeTarget = millis();
-
+    TimeTargetPower = TimeTarget - SensorPowerAnticipation_ms;
 }
 /**
  *
  */
-int parse_serial_command() {
+static int parse_serial_command() {
     char buffer[siza_buffer];
     static bool ready = false;
     static int cnt = 0;
@@ -596,22 +604,19 @@ int parse_serial_command() {
 /**
  *
  */
-bool isValidNumber(char *str) {
-    boolean isNum = false;
+static bool isValidNumber(char *str) {
     for (byte i = 0; i < strlen(str); i++) {
         if (str[i] == '\0') {
             break;
         }
-        isNum = isDigit(str[i]) || str[i] == '.';
-        if (!isNum) return false;
+        if (!(isDigit(str[i]) || str[i] == '.')) return false;
     }
-    return isNum;
+    return true;
 }
 /**
  *
  */
-void execute_command(char *command) {
-    unsigned long cmd;
+static void execute_command(char *command) {
     long year;
     long month;
     long day;
@@ -620,10 +625,10 @@ void execute_command(char *command) {
     long s = 0;
     if (strcmp(command, "help") == 0) {
         Serial.println();
-        Serial.println("commands:");
-        Serial.println("reset: reset device");
-        Serial.println("settime: set device clock");
-        Serial.println("setinterval: set log interval");
+        Serial.println(F("commands:"));
+        Serial.println(F("reset: reset device"));
+        Serial.println(F("settime: set device clock"));
+        Serial.println(F("setinterval: set log interval"));
         Serial.println();
         return;
     }
@@ -644,7 +649,6 @@ void execute_command(char *command) {
  *
  */
 void SetInterval() {
-
     unsigned int interval;
     interval = (unsigned int)(log_interval_ms / 1000);
     Serial.print(F("\ncurrent interval in seconds:"));
@@ -703,7 +707,7 @@ void SetDateTime() {
  *  
  *  
  */
-void SerialFlush() {
+static void SerialFlush() {
     Serial.flush();
     while (Serial.available() > 0) {
         Serial.read();
@@ -712,14 +716,14 @@ void SerialFlush() {
 /**
  *
  */
-int InputIntFromSerial() {
-    String value;
+static int InputIntFromSerial() {
+    String strvalue;
     SerialFlush();
     while (1) {
         if (Serial.available()) {
-            value = Serial.readStringUntil('\n');
+            strvalue = Serial.readStringUntil('\n');
             SerialFlush();
-            return value.toInt();
+            return strvalue.toInt();
         }
     }
 }
@@ -736,10 +740,9 @@ void loop() {
     double humidity = 0;
     double pressure = 0;
     double temperature = 0;
-    double temperatureWindSensor;
     long vcc = 0;
 #if WINDSENSOR_PRESENT
-    const float zeroWindAdjustment =  .2; // negative numbers yield smaller wind speeds and vice versa.
+    #define zeroWindAdjustment 0.2; // negative numbers yield smaller wind speeds and vice versa.
     int TMP_Therm_ADunits;  //temp termistor value from wind sensor
     float RV_Wind_ADunits;    //RV output from wind sensor
     float RV_Wind_Volts;
@@ -748,17 +751,27 @@ void loop() {
     float zeroWind_volts;
     float WindSpeed_MPH;
 #endif
+    // turn ON the sensor before the measure -------------------------------------->
+    if (PowerSensorIsHIGHT == false && TimeCurrent >= TimeTargetPower) {
+        digitalWrite(S0_S, HIGH); //led
+        PowerSensorIsHIGHT = true;
+    }
+    // turn ON the sensor before the measure --------------------------------------<
 
     TimeCurrent = millis();
     if (TimeCurrent >= TimeTarget) {
         TimeTarget = TimeCurrent + log_interval_ms;
+        TimeTargetPower = TimeTarget - SensorPowerAnticipation_ms;
+        if (SensorPowerAnticipation_ms == 0) {
+            TimeTargetPower = TimeCurrent;
+        }
         if (LogCounter == 0 || (LogCounter >= MAX_ROWS_PER_FILE
                                 && (LogCounter % MAX_ROWS_PER_FILE == 0))) {
             DL_openLogFile();
         }
         //-----------sensors------------------------------------------------------->
         S0Sensor = DL_analogReadAndFilter(S0);
-        vcc = DL_readVcc();
+      vcc = DL_readVcc();
         //-----------sensors-------------------------------------------------------<
         LogCounter++;
         LOGSTRING(String(LogCounter));
@@ -770,13 +783,9 @@ void loop() {
         LOGSTRING(S0Sensor);
 #if BMP280_PRESENT
         if (BMP280Present) {
-
             temperature = bme0.readTemperature();
             humidity = bme0.readHumidity();
             pressure = bme0.readPressure();
-
-
-
             LOGSTRING(F("\t"));
             LOGSTRING(temperature);
             LOGSTRING(F("\t"));
@@ -798,27 +807,33 @@ void loop() {
         // Vraw = V0 + b * WindSpeed ^ c
         // V0 is zero wind at a particular temperature
         // The constants b and c were determined by some Excel wrangling with the solver.
-        WindSpeed_MPH =  pow(((RV_Wind_Volts - zeroWind_volts) / .2300), 2.7265);
+        WindSpeed_MPH =  pow(((RV_Wind_Volts - zeroWind_volts) / 0.2300), 2.7265);
         /*
-         Serial.print("  TMP volts ");
+         Serial.print(F("  TMP volts "));
          Serial.print(TMP_Therm_ADunits * 0.0048828125);
-         Serial.print(" RV volts ");
+         Serial.print(F(" RV volts "));
          Serial.print((float)RV_Wind_Volts);
-         Serial.print("\t  TempC*100 ");
+         Serial.print(F("\t  TempC*100 "));
          Serial.print(TempCtimes100 );
-         Serial.print("   ZeroWind volts ");
+         Serial.print(F("   ZeroWind volts "));
          Serial.print(zeroWind_volts);
-         Serial.print("   WindSpeed MPH ");
+         Serial.print(F("   WindSpeed MPH "));
          Serial.println((float)WindSpeed_MPH);
          */
         LOGSTRING(F("\t"));
         LOGSTRING(WindSpeed_MPH * 0.44704); // m/s
         LOGSTRING(F("\t"));
-        LOGSTRING((temperatureWindSensor / 100)); // m/s
+        LOGSTRING((TempCtimes100 / 100)); // m/s
 #endif
         LOGSTRING(F("\t"));
         LOGSTRING(String(vcc));
         LOGSTRING(F("\n"));
+        if (PowerSensorIsHIGHT == true && TimeCurrent < TimeTargetPower) {
+            // Serial.println("OFF");
+            //digitalWrite(S0_S, LOW);
+            //digitalWrite(S1_S, LOW);
+            PowerSensorIsHIGHT = false;
+        }
     }
     if (dataToWrite != 0 && TimeCurrent >= TimeTargetFileWrite) {
         if (logfileOpened) {
