@@ -82,12 +82,14 @@ bool bmp280::begin(byte osrs_t, byte osrs_p, byte mode, byte t_sb, byte filter, 
     // return is false for other devices
 
     // Wire.begin(); // start I2C interface
+#if DEBUGSENSOR
     if (bmp280Debug) {
         Serial.print(F("(debug) Initialising BMP280 object "));
         Serial.print(address - bmp280Addr);
         Serial.print(F(" at I2C address 0x"));
         Serial.println(address, HEX);
     }
+#endif
     byte ID = readRegister(0xD0); // chip-ID is in register 0xD0
     if (bmp280Debug) Serial.print(F("Hardware device is "));
     if (ID == 0x58 || ID == 0x56 || ID == 0x57) {
@@ -114,31 +116,42 @@ bool bme280::begin(byte osrs_t, byte osrs_p, byte mode, byte t_sb, byte filter, 
     // return is true for bme280 and bmp280 devices
     // return is false for other devices
     static int AddrTest = 0;
-    address+=AddrTest;
+    address += AddrTest;
     if (AddrTest > 2) {
         return false;
     }
     Wire.begin(); // start I2C interface
+#if DEBUGSENSOR
     if (bmp280Debug) {
         Serial.print(F("Initialising BME280 object "));
         Serial.print(address - bmp280Addr + AddrTest);
         Serial.print(F(" at I2C address 0x"));
         Serial.println(address, HEX);
     }
-
+#endif
     byte ID = readRegister(0xD0); // chip-ID is in register 0xD0
 
-
+#if DEBUGSENSOR
     if (bmp280Debug) Serial.print(F("Hardware device is "));
+#endif
     if (ID == 0x58 || ID == 0x56 || ID == 0x57) {
-        if (bmp280Debug) Serial.print(F("BMP280, humidity readings will be 0 (invalid)"));
+
+#if DEBUGSENSOR
+        if (bmp280Debug) Serial.print(F("BMP280,humidity readings will be 0 (invalid)"));
+#endif
     } else if (ID == 0x60) {
+#if DEBUGSENSOR
+
         if (bmp280Debug) Serial.print(F("BME280"));
+#endif
     } else {
+#if DEBUGSENSOR
+
         if (bmp280Debug) {
-            Serial.print(F("unknown, ID="));
+            Serial.print(F("unknown,ID="));
             Serial.print(ID);
         }
+#endif
         AddrTest++;
         return begin(osrs_t + AddrTest, osrs_p, mode, t_sb,  filter,  spi3W_en, osrs_h);
         return false;
@@ -495,6 +508,8 @@ void bme280::getBmeCalibratonData() { // function
                                                 // bits [3:0] coming from bits [7:4] of 0xE5
     dig_H6 = b1[6];   // dig_H5 is int8_t
                       // coming from 0xE7
+#if DEBUGSENSOR
+
     if (bmp280Debug) {
         Serial.println(F("Humidity Calibration parameters"));
         Serial.print(F("Pressure    dig_H1=")); Serial.print(dig_H1);
@@ -506,6 +521,7 @@ void bme280::getBmeCalibratonData() { // function
         Serial.print(F("End of humidity calibration parameters for BME280-"));
         Serial.println(address - bmp280Addr);
     } // end of if (bmp280Debug)
+#endif
 } // end of void bme280::getBmeCalibratonData()
 
 // *****************************************************
@@ -516,6 +532,8 @@ byte bmp280::readRegister(byte reg) {
     Wire.beginTransmission(address);
     Wire.write(reg); // address of register to control oversampling and power mode
     byte error = Wire.endTransmission();
+#if DEBUGSENSOR
+
     if (error && bmp280Debug) {
         Serial.print(F("I2C error with address "));
         Serial.print(address, HEX);
@@ -524,7 +542,7 @@ byte bmp280::readRegister(byte reg) {
         Serial.print(F(" millis= "));
         Serial.println(millis());
     } // end of if (error)
-
+#endif
 
     //noInterrupts();
     // Request 1 byte of data
@@ -552,6 +570,8 @@ byte bmp280::updateRegister(byte reg, byte value) {   // function
                        // Stop I2C Transmission
     byte error = Wire.endTransmission(); // end of write
                                          //interrupts(); // enable interrupts
+#if DEBUGSENSOR
+
     if (error && bmp280Debug) {
         Serial.print(F("I2C error with address "));
         Serial.print(address, HEX);
@@ -570,6 +590,7 @@ byte bmp280::updateRegister(byte reg, byte value) {   // function
         Serial.print(F(" = HEX "));
         Serial.println(value, BIN);
     } // end of if (bmp280Debug)
+#endif
     return error;
 } // end of void bmp280::updateRegister(byte reg, byte value)
 
@@ -582,6 +603,8 @@ byte bmp280::readByteArray(byte reg, byte length, byte data[]) { // function
                                                                  //noInterrupts(); // disable interrupts
     Wire.beginTransmission(address);
     byte error = Wire.endTransmission();
+#if DEBUGSENSOR
+
     if (error && bmp280Debug) {
         Serial.print(F("I2C error with address "));
         Serial.print(address, HEX);
@@ -591,7 +614,7 @@ byte bmp280::readByteArray(byte reg, byte length, byte data[]) { // function
         Serial.println(millis());
         return error;
     } // end of if (error)
-
+#endif
     Wire.beginTransmission(address);
     Wire.write(reg); // reg is start address of the data
     Wire.endTransmission();
@@ -601,14 +624,20 @@ byte bmp280::readByteArray(byte reg, byte length, byte data[]) { // function
     byte byteCount = Wire.available();
     if (byteCount == length)   { // correct answer
         if (bmp280Debug) {
+#if DEBUGSENSOR
+
             Serial.print(F("\n(debug) getting "));
             Serial.print(byteCount);
             Serial.println(F(" bytes"));
+#endif
         } // end of if (bmp280Debug)
     } else {                    // byteCount does not match length
         if (bmp280Debug) {
+#if DEBUGSENSOR
+
             Serial.print(F("byteCount not correct, but is "));
             Serial.println(byteCount);
+#endif
         } // end of if (bmp280Debug)
         return 100 + byteCount; // 100 offset to avoid confusion with error code
     } // end of if bytecount == length)

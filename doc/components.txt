@@ -12,6 +12,7 @@ https://www.amazon.it/Aukru-maschio-femmina-Arduino-Raspberry/dp/B00MWMEIF2/
 
 5 Box:
 https://www.amazon.it/Gewiss-Plastica-cassetta-derivazione-elettrica/dp/B006ZP1LRA/
+https://www.leroymerlin.it/prodotti/elettricita-automazioni-e-smart-home/installazione-elettrica/scatole-di-derivazione-e-pozzetti/scatola-di-derivazione-stagna-35875721.html
 
 4 SDCard:
 https://www.amazon.it/Kingston-SDCS2-32GB-microSD-Adattatore/dp/B07YGZ7FY7/
@@ -27,3 +28,6 @@ https://www.amazon.it/gp/product/B07NYXVVXQ/ref=ppx_yo_dt_b_asin_title_o00_s00
 
 7 Wind sensor:
 https://moderndevice.com/product/wind-sensor/
+
+
+

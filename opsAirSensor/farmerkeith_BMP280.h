@@ -65,7 +65,7 @@ class bmp280 { // for use with BMP280 sensors
     int16_t dig_P6, dig_P7, dig_P8, dig_P9; // pressure calibration
 
 }; // end of class bmp280
-
+  
 class BMP280 : public bmp280 { // compatability version
   public:
     BMP280 ();
