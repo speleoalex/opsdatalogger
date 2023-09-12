@@ -24,3 +24,5 @@ It detects very well the butane present in normal air freshener cans.
 
 Logs are saved on csv files
 the interval of each measurement can be set via the CONFIG.INI file that is created at the first start, or by connecting the device via USB
+
+![Naso](Naso.jpg)
