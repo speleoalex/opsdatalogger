@@ -238,13 +238,14 @@ long bmp280::readRawPressure(long &adc_t) {
     // Convert pressure and temperature data to 19-bits
     long adc_p = (((long)(data[0] & 0xFF) * 65536) + ((long)(data[1] & 0xFF) * 256) + (long)(data[2] & 0xF0)) / 16;
     adc_t = (((long)(data[3] & 0xFF) * 65536) + ((long)(data[4] & 0xFF) * 256) + (long)(data[5] & 0xF0)) / 16;
-
+#if DEBUGSENSOR
     if (bmp280Debug) {
         Serial.print(F("BMP280-"));
         Serial.print(address - bmp280Addr); // index
         Serial.print(F(" raw pressure="));
         Serial.println(adc_p);
     }
+    #endif
     return adc_p;
 } // end of long readRawPressure (long &adc_t)
 

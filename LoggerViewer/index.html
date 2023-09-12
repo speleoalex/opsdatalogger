@@ -33,8 +33,49 @@
 
 <input type="file" id="csvFileInput" accept=".csv" onchange="handleFiles(this.files)">
 <canvas id="myChart"></canvas>
+<script>
+var LPGCurve = [2.3, 0.21, -0.47];
+
+// Convert a raw Arduino reading to a voltage value
+function rawToVoltage(raw) {
+    return (raw / 1023.0) * 5.0;  // Assuming a 5V Arduino
+}
+
+// Convert a voltage value to a sensor resistance
+// Assuming you're using a load resistance (RL) configuration
+function voltageToResistance(voltage) {
+    const RL = 5.0; // RL_VALOR
+    return RL * (5.0 - voltage) / voltage;
+}
+
+// Convert resistance to ppm using the LPG curve
+function resistanceToPPM(rs, Ro) {
+    const ratio = rs / Ro;
+    //return Math.exp((Math.log(ratio / LPGCurve[0]) / LPGCurve[1]));
+    return (Math.exp((((Math.log(ratio) - LPGCurve[1]) / LPGCurve[2])+ pcurve[0])));
+
+    //  return (pow(10, (((log(rs_ro_ratio) - pcurve[1]) / pcurve[2]) + pcurve[0])));
+}
+
+function rawToButanePPM(raw, rawZeroGas) {
+    const voltage = rawToVoltage(raw);
+    const rs = voltageToResistance(voltage);
+    const voltageZeroGas = rawToVoltage(rawZeroGas);
+    const Ro = voltageToResistance(voltageZeroGas);
+    return resistanceToPPM(rs, Ro);
+}
+/*
+// Example usage:
+const rawValue = 512; // Example value
+const rawZeroGasValue = 400; // Example value in clean air
+const ppm = rawToButanePPM(rawValue, rawZeroGasValue);
+console.log(ppm);
+*/
+
+</script>
 
 <script>
+    var myChart;
     function handleFiles(files) {
         if (window.FileReader) {
             let reader = new FileReader();
@@ -91,7 +132,7 @@
             window.myChart.destroy();
         }
         let ctx = document.getElementById('myChart').getContext('2d');
-        let myChart = new Chart(ctx, {
+        myChart = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: labels,
