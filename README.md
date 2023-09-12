@@ -1,9 +1,9 @@
-# opsdatalogger
+# AeroLogger
 
 Device for tracing air in caves.
 It detects very well the butane present in normal air freshener cans.
 
-### components required for assembly:
+### components required for assembly (AeroLogger NASO):
 * 1 ArduinoUNO
 * 1 PowerBank
 * 1 Data Logger Shield with RTC
@@ -15,6 +15,9 @@ It detects very well the butane present in normal air freshener cans.
 ### optionally it is possible to add sensor for temperature, humidity, pressure and wind speed:
 * 1 GY-BMP280-3.3
 * 1 Wind sensor 
+
+### optionally VOC Sensor SGP40:
+* 1 Digital SGP40 VOC (Volatile Organic Compounds) Gas Sensor 
 
 
 -----
