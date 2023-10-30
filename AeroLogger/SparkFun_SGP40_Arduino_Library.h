@@ -108,7 +108,7 @@ class SGP40
     //Returns -100 if an error occurs
     //The user can provide Relative Humidity and Temperature parameters if desired
     int32_t getVOCindex(float RH = 50, float T = 25);
-    int32_t getRaw();
+    uint32_t getRaw();
 
 
   private:

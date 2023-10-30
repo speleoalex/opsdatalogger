@@ -13,6 +13,9 @@
 #define MQ2SENSOR_PRESENT 1 //VOC MQ2 analogic
 #define GAS_PPM 1
 #define SGP40_PRESENT 0     //VOC SGP40 i2c
+#define SGP30_PRESENT 0     //VOC SGP30 i2c
+#define OLED_PRESENT  0     //OLED
+
 
 #define LOGVCC 0
 
@@ -21,6 +24,18 @@
 #include <SdFatConfig.h>
 #include <Wire.h>
 #include <RTClib.h>
+
+#if SGP30_PRESENT
+#include "SparkFun_SGP30_Arduino_Library.h" // Click here to get the library: http://librarymanager/All#SparkFun_SGP30
+#endif
+
+#if OLED_PRESENT
+#include <Tiny4kOLED.h>
+uint8_t width = 128;
+uint8_t height = 64;
+#endif
+
+
 
 #if SGP40_PRESENT
 #include "SparkFun_SGP40_Arduino_Library.h"
@@ -32,8 +47,8 @@ SGP40 sgp40Sensor; //create an object of the SGP40 class
 bme280 bme0(0, DEBUGSENSOR);
 #endif
 
-#if MQ2SENSOR_PRESENT
 #define ZEROGAS_default 115
+#if MQ2SENSOR_PRESENT
 int  zerogasValue = ZEROGAS_default;
 #if GAS_PPM
 #define RL_VALOR 5.0
@@ -78,7 +93,11 @@ double MQ2_calc_res(int raw_adc) {
 
 #define S0 A0            //AIR
 #define S0_S 2          //alimentazione S0
-#define S1_S 3          //alimentazione S1
+//#define S1_S 3          //alimentazione S1 Lid 1
+
+#define LED_1 3          //Led 1 datalogger
+#define LED_2 4          //Led 2 datalogger
+
 
 #define MAX_ROWS_PER_FILE 10000       //max rows per file
 #define LOG_INTERVAL_s 15           //log interval in seconds
@@ -89,6 +108,8 @@ double MQ2_calc_res(int raw_adc) {
 
 
 #define NUM_READS 25
+#define READS_DELAY 20
+
 #define siza_buffer 60
 
 #define RXLED 17
@@ -125,6 +146,33 @@ char strFileDate[] = "YYYY-MM-DD_HH.mm.ss.csv";
 SdFat SD;
 
 //-------------globals---------------------<
+#define NUM_READS 16
+
+float DL_analogReadAndFilter(int analogPin) {
+  int readings[NUM_READS];  
+  int sum = 0;              
+  int minValue = 1024;      
+  int maxValue = 0;         
+  // Leggi il pin NUM_READS volte
+  for (int i = 0; i < NUM_READS; i++) {
+    delay(READS_DELAY); 
+    readings[i] = analogRead(analogPin);
+    // find min value
+    if (readings[i] < minValue) {
+      minValue = readings[i];
+    }
+    if (readings[i] > maxValue) {
+      maxValue = readings[i];
+    }
+
+    sum += readings[i];
+  }
+  // remove min e max value
+  sum = sum - minValue - maxValue;
+  return (float) sum / (NUM_READS - 2);
+}
+
+
 
 void LOGSTRING(String str) {
   if (logfileOpened) {
@@ -339,6 +387,7 @@ static void DL_openLogFile() {
   LOGSTRING(F("\t\"gas adc\""));
 #if GAS_PPM
   LOGSTRING(F("\t\"LPG PPM\""));
+  
 #endif
 #endif
 
@@ -473,7 +522,9 @@ static int CONF_getConfValueInt(char *filename, char *key, int defaultValue = 0)
 /**
    Fa N letture, prende i 10 centrali e fa la media di quelli
 */
-float DL_analogReadAndFilter(uint8_t sensorpin) {
+float _DL_analogReadAndFilter(uint8_t sensorpin) {
+
+  
   // read multiple values and sort them to take the mode
   analogRead(sensorpin);
   delay(10);
@@ -592,9 +643,16 @@ void setup() {
   // initialize the SD card ------------------->
   pinMode(CHIP_SD, OUTPUT);
   pinMode(S0_S, OUTPUT);
-  pinMode(S1_S, OUTPUT);
+
+  pinMode(LED_1, OUTPUT);
+  pinMode(LED_2, OUTPUT);
+  
   digitalWrite(S0_S, HIGH);
-  digitalWrite(S1_S, HIGH);
+
+
+
+
+  
   Serial.print(F("SD initialization "));
   if (!SD.begin(CHIP_SD)) {
     sdPresent = false;
@@ -604,6 +662,7 @@ void setup() {
     Serial.println(F("ok"));
     sdPresent = true;
   }
+  
   DL_initConf();
   // initialize the SD card -------------------<
   SerialFlush();
@@ -645,6 +704,7 @@ void setup() {
 
 
 
+
 #if SGP40_PRESENT
   if (sgp40Sensor.begin() == true)
   {
@@ -673,6 +733,18 @@ void setup() {
   //-----------init analog input-----------------------------------------<
   TimeTarget = millis();
   pinMode(LED_BUILTIN, OUTPUT);
+
+
+#if OLED_PRESENT
+
+  oled.begin(width, height, sizeof(tiny4koled_init_128x64br), tiny4koled_init_128x64br);
+  oled.clear();
+  oled.setFont(FONT8X16);
+  oled.on();
+  //oled.setCursor(0, 0);
+  //oled.println(F("Start log"));
+#endif
+
 }
 /**
 
@@ -768,6 +840,8 @@ void SetConfig() {
   Serial.print(zerogasValue);
   Serial.print(')');
   zerogas = InputIntFromSerial(zerogasValue);
+#else
+  zerogas = ZEROGAS_default;
 #endif
   if (interval > 0) {
     if (CreateINIConf(interval, zerogas)) {
@@ -825,6 +899,12 @@ static void SerialFlush() {
    Loop.
 */
 void loop() {
+  /*
+  float val;
+  val = readAverage(A0);
+  Serial.println(val);  
+  return;
+  */
   parse_serial_command();
   double S0Sensor = 0.0;
 #if HUMIDITY_PRESENT
@@ -869,6 +949,11 @@ void loop() {
     }
     //-----------sensors------------------------------------------------------->
     S0Sensor = DL_analogReadAndFilter(S0);
+
+#if OLED_PRESENT
+  oled.clear();
+#endif  
+
 #if LOGVCC
     vcc = DL_readVcc();
 #endif
@@ -882,11 +967,29 @@ void loop() {
 #if MQ2SENSOR_PRESENT
     LOGSTRING(F("\t"));
     LOGSTRING(S0Sensor);
+
+#if OLED_PRESENT  
+  oled.setCursor(0, 0);
+  oled.print(S0Sensor);
+#endif  
+
+
+
 #if GAS_PPM
-    LOGSTRING(F("\t"));
-    LOGSTRING(MQ2_RawToPPM(S0Sensor), 0);
+  LOGSTRING(F("\t"));
+  LOGSTRING(MQ2_RawToPPM(S0Sensor), 0);
+#if OLED_PRESENT  
+  oled.setCursor(0, 10);
+  oled.print(MQ2_RawToPPM(S0Sensor), 0);
+#endif  
+#if OLED_PRESENT
+
+#endif  
+
 #endif
 #endif
+
+
 
 
 #if BMP280_PRESENT

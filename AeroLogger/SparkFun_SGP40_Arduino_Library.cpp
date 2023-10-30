@@ -313,7 +313,7 @@ int32_t SGP40::getVOCindex(float RH, float T)
   
 }
 
-int32_t SGP40::getRaw()
+uint32_t SGP40::getRaw()
 {
   int32_t vocIndex;
   uint16_t SRAW_ticks;
