@@ -148,6 +148,71 @@ SdFat SD;
 //-------------globals---------------------<
 #define NUM_READS 16
 
+
+  File root;
+
+
+void listFiles() {
+  root = SD.open("/");
+  Serial.println("Files su SD:");
+  File entry = root.openNextFile();
+  while (entry) {
+    char name[32];
+    entry.getName(name, sizeof(name));
+    
+    if (entry.isDirectory()) {
+    } else {
+      if (entry.size() > 0)
+      {
+        Serial.print(name);
+        Serial.print('\t');
+        Serial.println(entry.size());
+      }
+    }
+    entry = root.openNextFile();
+  }
+}
+
+
+void downloadFile() {
+  Serial.println(F("Type Filename or e to exit"));
+  while(1)
+  {
+  while (Serial.available() == 0) {
+    // Aspetta l'input dall'utente
+  }
+  String fileName = Serial.readStringUntil('\n');
+  fileName.trim();
+  if (fileName == "e")
+  {
+    return;
+  }
+  if (SD.exists(fileName)) {
+    File file = SD.open(fileName);
+    if (file) {
+      Serial.print(F("Start trasmission:"));
+      Serial.println(fileName);
+      while (file.available()) {
+        Serial.write(file.read());
+      }
+      Serial.print(F("End trasmission:"));
+      Serial.println(fileName);
+      file.close();
+      return;
+    } else {
+      Serial.println(F("error opening file."));
+    }
+  } else {
+    if (fileName !="")
+    {
+      Serial.println(F("File not exists."));
+    }
+  }
+  }
+}
+
+
+
 float DL_analogReadAndFilter(int analogPin) {
   int readings[NUM_READS];  
   int sum = 0;              
@@ -566,7 +631,7 @@ bool CreateINIConf(int NewInterval_s, int NewzerogasValue = 0) {
   settingFile = SD.open(CONF_FILE, FILE_WRITE);
   if (settingFile) {
     //create new file config.ini------>
-    Serial.print(F("new file"));
+    Serial.print(F("new file "));
     Serial.println(CONF_FILE);
     settingFile.print(F("log_interval_s="));
     settingFile.println(NewInterval_s);
@@ -796,10 +861,19 @@ static void execute_command(char *command) {
   if (strcmp(command, "help") == 0) {
     Serial.println();
     Serial.println(F("commands:"));
+    Serial.println(F("logs:read data"));
     Serial.println(F("reset:reset device"));
     Serial.println(F("settime:set device clock"));
     Serial.println(F("setconfig:set onfig"));
     Serial.println();
+    return;
+  }
+
+  if (strcmp(command, "logs") == 0) {
+  File root = SD.open("/");
+    Serial.flush();
+    listFiles();
+    downloadFile();
     return;
   }
 
