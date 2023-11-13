@@ -97,7 +97,7 @@ double MQ2_calc_res(double raw_adc)
 */
 
 #define S0 A0  // AIR
-//#define S0_S 2 // alimentazione S0
+// #define S0_S 2 // alimentazione S0
 // #define S1_S 3          //alimentazione S1 Lid 1
 
 #define LED_1 3 // Led 1 datalogger
@@ -323,7 +323,7 @@ void LOGSTRING(double val, unsigned precision = 2)
     }
   }
 }
-void LOGSTRING(int str)
+void LOGSTRING(unsigned long str)
 {
   if (logfileOpened)
   {
@@ -952,7 +952,7 @@ static void execute_command(char *command)
   if (strcmp(command, "help") == 0)
   {
     Serial.println();
-    /*
+    
     Serial.println(F("commands:"));
     Serial.println(F("logs:read data"));
     Serial.println(F("reset:reset device"));
@@ -962,7 +962,7 @@ static void execute_command(char *command)
     Serial.println(F("autocalib:auto calibration MQ2 sensor"));
 #endif
     Serial.println();
-    */
+    
     return;
   }
 #if MQ2SENSOR_PRESENT
@@ -1172,7 +1172,7 @@ void manageBlinkingByPPM(int inputValue)
   }
   unsigned long time = map(inputValue, 1, MaxValue, 2000, 100);
   // Calcola timeOn e timeOff come metà del tempo totale del ciclo
-  unsigned long timeOn = time / 4;
+  unsigned long timeOn = time / 2;
   unsigned long timeOff = time / 2;
   manageBlinking(timeOn, timeOff);
 }
@@ -1303,7 +1303,7 @@ void loop()
 
       LOGSTRING(F("\t"));
       PPMGas = MQ2_RawToPPM(S0Sensor);
-      LOGSTRING(PPMGas, 0);
+      LOGSTRING(PPMGas);
       if (PPMGas > MINPPMPOSITIVE)
       {
         if (Detected < MINCONSECUTIVE_POSITIVE)
