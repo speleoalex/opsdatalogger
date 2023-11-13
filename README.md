@@ -3,7 +3,7 @@
 Device for tracing air in caves.
 It detects very well the butane present in normal air freshener cans.
 
-Assembled version or in kit available here: [https://techmakers.eu/]([https://techmakers.eu/)
+Assembled version or in kit available here: https://techmakers.eu/
 
 ### components required for assembly (AeroLogger NASO):
 * 1 ArduinoUNO

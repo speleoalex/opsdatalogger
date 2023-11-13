@@ -1,6 +1,6 @@
 # Assembled version:
 
-Assembled version or in kit available here: [https://techmakers.eu/]([https://techmakers.eu/)
+Assembled version or in kit available here: https://techmakers.eu/
 
 # Components required for assembly:
 
