@@ -1,9 +1,9 @@
 # Assembled version:
 
-Assembled version or in kit available here: https://techmakers.eu/
+Assembled version available here: https://techmakers.eu/collections/data-loggers
+
 
 # Components required for assembly:
-
 
 - ArduinoUNO
 https://www.amazon.it/gp/product/B074SB6PBW/ref=ppx_yo_dt_b_asin_title_o03_s00?ie=UTF8&psc=1
@@ -13,19 +13,18 @@ https://www.amazon.it/gp/product/B07TZJYV1R/ref=ppx_yo_dt_b_asin_title_o04_s00?i
 https://www.amazon.it/gp/product/B07V9XNCGJ/ref=ppx_yo_dt_b_asin_title_o09_s00?ie=UTF8&th=1
 - Connecting wires:
 https://www.amazon.it/Aukru-maschio-femmina-Arduino-Raspberry/dp/B00MWMEIF2/
-
-- Box:
-https://www.amazon.it/Gewiss-Plastica-cassetta-derivazione-elettrica/dp/B006ZP1LRA/
-https://www.leroymerlin.it/prodotti/elettricita-automazioni-e-smart-home/installazione-elettrica/scatole-di-derivazione-e-pozzetti/scatola-di-derivazione-stagna-35875721.html
-
 - SDCard:
 https://www.amazon.it/Kingston-SDCS2-32GB-microSD-Adattatore/dp/B07YGZ7FY7/
-
 - PowerBank:
 https://www.amazon.it/EnergyCell-5000mAh-Mini-Caricatore-Portatile-Samsung-Nero/dp/B09B3XSFLC/
 
 
-# OPTIONAL:
+# Kit version:
+
+Kit available here: https://techmakers.eu/collections/data-loggers
+
+
+# Optional:
 
 
 - Temperature, pressure, humidity.

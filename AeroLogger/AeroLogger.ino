@@ -771,6 +771,7 @@ void setup()
 //  digitalWrite(S0_S, HIGH);
 
   Serial.print(F("SD initialization "));
+
   if (!SD.begin(CHIP_SD))
   {
     sdPresent = false;
