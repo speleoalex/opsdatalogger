@@ -14,11 +14,11 @@
 #define MQ2_PREHEAT_TIME_S 30
 #define MINPPMPOSITIVE 10
 #define WINDSENSOR_PRESENT 0
-#define MQ2SENSOR_PRESENT 1 // VOC MQ2 analogic
+#define MQ2SENSOR_PRESENT 1  // VOC MQ2 analogic
 #define GAS_PPM 1
-#define SGP40_PRESENT 0 // VOC SGP40 i2c
-#define SGP30_PRESENT 0 // VOC SGP30 i2c
-#define OLED_PRESENT 0  // OLED
+#define SGP40_PRESENT 0  // VOC SGP40 i2c
+#define SGP30_PRESENT 0  // VOC SGP30 i2c
+#define OLED_PRESENT 0   // OLED
 
 #define LOGVCC 0
 
@@ -28,7 +28,7 @@
 #include <RTClib.h>
 
 #if SGP30_PRESENT
-#include "SparkFun_SGP30_Arduino_Library.h" // Click here to get the library: http://librarymanager/All#SparkFun_SGP30
+#include "SparkFun_SGP30_Arduino_Library.h"  // Click here to get the library: http://librarymanager/All#SparkFun_SGP30
 #endif
 
 #if OLED_PRESENT
@@ -41,7 +41,7 @@ int Detected = false;
 
 #if SGP40_PRESENT
 #include "SparkFun_SGP40_Arduino_Library.h"
-SGP40 sgp40Sensor; // create an object of the SGP40 class
+SGP40 sgp40Sensor;  // create an object of the SGP40 class
 #endif
 
 #if BMP280_PRESENT
@@ -53,38 +53,33 @@ bme280 bme0(0, DEBUGSENSOR);
 #if MQ2SENSOR_PRESENT
 int zerogasValue = ZEROGAS_default;
 #define RL_VALOR 5.0
-double MQ2_RawToPPM(int RawValue)
-{
-  if (zerogasValue >= RawValue)
-  {
+double MQ2_RawToPPM(int RawValue) {
+  if (zerogasValue >= RawValue) {
     return 0;
   }
-  if (zerogasValue <= 0)
-  {
+  if (zerogasValue <= 0) {
     zerogasValue = 1;
   }
   double RAL(9.83);
-  double LPGCurve[3] = {2.3, 0.21, -0.47};
+  double LPGCurve[3] = { 2.3, 0.21, -0.47 };
   double ResZero = MQ2_calc_res(zerogasValue) / RAL;
   double ResCurrent = MQ2_calc_res(RawValue);
   double Perc = MQ2_Perc_gas(ResCurrent, ResZero, LPGCurve);
   return 1000 * Perc;
 }
 
-double MQ2_Perc_gas(double ResCurrent, double ResZero, double *pcurve)
-{
+double MQ2_Perc_gas(double ResCurrent, double ResZero, double *pcurve) {
   double rs_ro_ratio = ResCurrent / ResZero;
   return (pow(10, (((log(rs_ro_ratio) - pcurve[1]) / pcurve[2]) + pcurve[0])));
 }
-double MQ2_calc_res(double raw_adc)
-{
+double MQ2_calc_res(double raw_adc) {
   return (((double)RL_VALOR * (1023.0 - raw_adc) / raw_adc));
 }
 #endif
 
 
 #if WINDSENSOR_PRESENT
-#define analogPinForRV A1 // change to pins you the analog pins are using
+#define analogPinForRV A1  // change to pins you the analog pins are using
 #define analogPinForTMP A2
 
 #endif
@@ -100,14 +95,14 @@ double MQ2_calc_res(double raw_adc)
 // #define S0_S 2 // alimentazione S0
 // #define S1_S 3          //alimentazione S1 Lid 1
 
-#define LED_1 3 // Led 1 datalogger
-#define LED_2 4 // Led 2 datalogger
+#define LED_1 3  // Led 1 datalogger
+#define LED_2 4  // Led 2 datalogger
 
-#define MAX_ROWS_PER_FILE 10000 // max rows per file
-#define LOG_INTERVAL_s 15       // log interval in seconds
+#define MAX_ROWS_PER_FILE 10000  // max rows per file
+#define LOG_INTERVAL_s 15        // log interval in seconds
 
-#define CHIP_SD 10             // pin sd
-#define SYNC_INTERVAL_ms 20000 // mills between calls to flush() - to write data to the card
+#define CHIP_SD 10              // pin sd
+#define SYNC_INTERVAL_ms 20000  // mills between calls to flush() - to write data to the card
 
 #define NUM_READS 25
 #define READS_DELAY 20
@@ -119,7 +114,7 @@ double MQ2_calc_res(double raw_adc)
 
 //-------------globals--------------------->
 
-const char *CONF_FILE = "CONFIG.INI"; // configuration file
+const char *CONF_FILE = "CONFIG.INI";  // configuration file
 File logfile;
 File settingFile;
 // bool ledInternal = false;
@@ -129,7 +124,7 @@ bool logfileOpened = false;
 bool echoToSerial = true;
 bool failed = false;
 bool BMP280Present = false;
-unsigned int log_interval_s = LOG_INTERVAL_s; // log interval
+unsigned int log_interval_s = LOG_INTERVAL_s;  // log interval
 
 unsigned long TimeStartLog = 0;
 unsigned long TimeCurrent = 0;
@@ -139,9 +134,9 @@ unsigned long TimeTargetFileWrite = 0;
 int Led2TimeOn = 0;
 int Led2TimeOff = 0;
 
-unsigned long LogCounter = 0; // counter
+unsigned long LogCounter = 0;  // counter
 unsigned long dataToWrite = 0;
-RTC_DS1307 RTC; // define the Real Time Clock object
+RTC_DS1307 RTC;  // define the Real Time Clock object
 DateTime now;
 
 char strDate[] = "0000-00-00 00:00:00";
@@ -155,23 +150,17 @@ unsigned long PPMGas;
 
 File root;
 
-void listFiles()
-{
+void listFiles() {
   root = SD.open("/");
   Serial.println("Files:");
   File entry = root.openNextFile();
-  while (entry)
-  {
+  while (entry) {
     char name[32];
     entry.getName(name, sizeof(name));
 
-    if (entry.isDirectory())
-    {
-    }
-    else
-    {
-      if (entry.size() > 0)
-      {
+    if (entry.isDirectory()) {
+    } else {
+      if (entry.size() > 0) {
         Serial.print(name);
         Serial.print('\t');
         Serial.println(entry.size());
@@ -181,70 +170,54 @@ void listFiles()
   }
 }
 
-void downloadFile()
-{
+void downloadFile() {
   Serial.println(F("Type Filename or e to exit"));
-  while (1)
-  {
-    while (Serial.available() == 0)
-    {
+  while (1) {
+    while (Serial.available() == 0) {
       // Aspetta l'input dall'utente
     }
     String fileName = Serial.readStringUntil('\n');
     fileName.trim();
-    if (fileName == "e")
-    {
+    if (fileName == "e") {
       return;
     }
-    if (SD.exists(fileName))
-    {
+    if (SD.exists(fileName)) {
       File file = SD.open(fileName);
-      if (file)
-      {
+      if (file) {
         Serial.print(F("Start trasmission:"));
         Serial.println(fileName);
-        while (file.available())
-        {
+        while (file.available()) {
           Serial.write(file.read());
         }
         Serial.print(F("End trasmission:"));
         Serial.println(fileName);
         file.close();
         return;
-      }
-      else
-      {
+      } else {
         Serial.println(F("error opening file."));
       }
-    }
-    else
-    {
-      if (fileName != "")
-      {
+    } else {
+      if (fileName != "") {
         Serial.println(F("File not exists."));
       }
     }
   }
 }
 
-float DL_analogReadAndFilter(int analogPin)
-{
+float DL_analogReadAndFilter(int analogPin) {
   int readings[NUM_READS];
   int sum = 0;
   int minValue = 1024;
   int maxValue = 0;
   // Leggi il pin NUM_READS volte
-  for (int i = 0; i < NUM_READS; i++)
-  {
+  for (int i = 0; i < NUM_READS; i++) {
     delay(READS_DELAY);
     readings[i] = analogRead(analogPin);
     // find min value
-    if (readings[i] < minValue)
-    {
+    if (readings[i] < minValue) {
       minValue = readings[i];
     }
-    if (readings[i] > maxValue)
-    {
+    if (readings[i] > maxValue) {
       maxValue = readings[i];
     }
 
@@ -255,28 +228,22 @@ float DL_analogReadAndFilter(int analogPin)
   return (float)sum / (NUM_READS - 2);
 }
 
-void LOGSTRING(String str)
-{
-  if (logfileOpened)
-  {
+void LOGSTRING(String str) {
+  if (logfileOpened) {
     logfile.print(str);
     dataToWrite++;
   }
-  if (echoToSerial)
-  {
+  if (echoToSerial) {
     Serial.print(str);
   }
 }
 
-void LOGSTRING(double val, unsigned precision = 2)
-{
+void LOGSTRING(double val, unsigned precision = 2) {
 
-  if (isnan(val))
-  {
+  if (isnan(val)) {
     val = 0;
   }
-  if (val < 0.0)
-  {
+  if (val < 0.0) {
     if (logfileOpened)
       logfile.print('-');
     if (echoToSerial)
@@ -285,11 +252,10 @@ void LOGSTRING(double val, unsigned precision = 2)
   }
   val = round(val * pow(10, precision));
   val = val / pow(10, precision);
-  Serial.print(int(val)); // prints the int part
+  Serial.print(int(val));  // prints the int part
   if (logfileOpened)
     logfile.print(int(val), DEC);
-  if (precision > 0)
-  {
+  if (precision > 0) {
     unsigned long frac;
     unsigned long mult = 1;
     byte padding = precision - 1;
@@ -300,8 +266,7 @@ void LOGSTRING(double val, unsigned precision = 2)
     else
       frac = (int(val) - val) * mult;
 
-    if (frac > 0)
-    {
+    if (frac > 0) {
       if (logfileOpened)
         logfile.print('.');
       if (echoToSerial)
@@ -309,8 +274,7 @@ void LOGSTRING(double val, unsigned precision = 2)
       unsigned long frac1 = frac;
       while (frac1 /= 10)
         padding--;
-      while (padding--)
-      {
+      while (padding--) {
         if (logfileOpened)
           logfile.print('0');
         if (echoToSerial)
@@ -323,28 +287,22 @@ void LOGSTRING(double val, unsigned precision = 2)
     }
   }
 }
-void LOGSTRING(unsigned long str)
-{
-  if (logfileOpened)
-  {
+void LOGSTRING(unsigned long str) {
+  if (logfileOpened) {
     logfile.print(str);
     dataToWrite++;
   }
-  if (echoToSerial)
-  {
+  if (echoToSerial) {
     Serial.print(str);
   }
 }
 
-void LOGSTRINGLN(String str)
-{
-  if (logfileOpened)
-  {
+void LOGSTRINGLN(String str) {
+  if (logfileOpened) {
     logfile.println(str);
     dataToWrite++;
   }
-  if (echoToSerial)
-  {
+  if (echoToSerial) {
     Serial.println(str);
   }
 }
@@ -352,22 +310,16 @@ void LOGSTRINGLN(String str)
 /**
 
 */
-int InputIntFromSerial(int defaultValue = 0)
-{
+int InputIntFromSerial(int defaultValue = 0) {
   String str;
   int x;
   str = "";
-  while (1)
-  {
-    if (Serial.available())
-    {
+  while (1) {
+    if (Serial.available()) {
       str = Serial.readStringUntil('\n');
-      if (str.length() > 0)
-      {
+      if (str.length() > 0) {
         x = str.toInt();
-      }
-      else
-      {
+      } else {
         x = defaultValue;
       }
       return x;
@@ -380,8 +332,7 @@ int InputIntFromSerial(int defaultValue = 0)
 */
 #if LOGVCC
 
-long DL_readVcc()
-{
+long DL_readVcc() {
   // Read 1.1V reference against AVcc
   // set the reference to Vcc and the measurement to the internal 1.1V reference
 #if defined(__AVR_ATmega32U4__) || defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
@@ -393,38 +344,31 @@ long DL_readVcc()
 #else
   ADMUX = _BV(REFS0) | _BV(MUX3) | _BV(MUX2) | _BV(MUX1);
 #endif
-  delay(2);            // Wait for Vref to settle
-  ADCSRA |= _BV(ADSC); // Start conversion
+  delay(2);             // Wait for Vref to settle
+  ADCSRA |= _BV(ADSC);  // Start conversion
   while (bit_is_set(ADCSRA, ADSC))
-    ;                  // measuring
-  uint8_t low = ADCL;  // must read ADCL first - it then locks ADCH
-  uint8_t high = ADCH; // unlocks both
+    ;                   // measuring
+  uint8_t low = ADCL;   // must read ADCL first - it then locks ADCH
+  uint8_t high = ADCH;  // unlocks both
   long result = (high << 8) | low;
-  result = 1125300L / result; // Calculate Vcc (in mV); 1125300 = 1.1*1023*1000
-  return result;              // Vcc in millivolts
+  result = 1125300L / result;  // Calculate Vcc (in mV); 1125300 = 1.1*1023*1000
+  return result;               // Vcc in millivolts
 }
 #endif
 
 /**
 
 */
-static char *DL_strNow(void)
-{
-  if (rtcPresent)
-  {
+static char *DL_strNow(void) {
+  if (rtcPresent) {
     now = RTC.now();
     sprintf(strDate, "%4d-%2d-%2d_%2d:%2d:%2d", now.year(), now.month(),
             now.day(), now.hour(), now.minute(), now.second());
-    for (unsigned int i = 0; i < strlen(strDate) && i < 18; i++)
-    {
-      if (strDate[i] == ' ')
-      {
+    for (unsigned int i = 0; i < strlen(strDate) && i < 18; i++) {
+      if (strDate[i] == ' ') {
         strDate[i] = '0';
-      }
-      else
-      {
-        if (strDate[i] == '_')
-        {
+      } else {
+        if (strDate[i] == '_') {
           strDate[i] = ' ';
         }
       }
@@ -436,16 +380,13 @@ static char *DL_strNow(void)
 /**
 
 */
-static char *DL_strDateToFilename(void)
-{
+static char *DL_strDateToFilename(void) {
   DateTime now;
   now = RTC.now();
   sprintf(strFileDate, "%4d-%2d-%2d_%2d.%2d.%2d.txt", now.year(), now.month(),
           now.day(), now.hour(), now.minute(), now.second());
-  for (unsigned int i = 0; i < strlen(strFileDate) && i < 18; i++)
-  {
-    if (strFileDate[i] == ' ')
-    {
+  for (unsigned int i = 0; i < strlen(strFileDate) && i < 18; i++) {
+    if (strFileDate[i] == ' ') {
       strFileDate[i] = '0';
     }
   }
@@ -455,10 +396,8 @@ static char *DL_strDateToFilename(void)
 
 
 */
-static void DL_closeLogFile()
-{
-  if (logfileOpened)
-  {
+static void DL_closeLogFile() {
+  if (logfileOpened) {
     logfile.flush();
     logfile.close();
     logfileOpened = false;
@@ -468,12 +407,9 @@ static void DL_closeLogFile()
 /**
 
 */
-static void DL_openLogFile()
-{
-  if (sdPresent == true)
-  {
-    if (logfileOpened)
-    {
+static void DL_openLogFile() {
+  if (sdPresent == true) {
+    if (logfileOpened) {
       logfile.flush();
       logfile.close();
       logfileOpened = false;
@@ -481,45 +417,33 @@ static void DL_openLogFile()
     }
     char filename[] = "xxxx-xx-xx-xx.xx.xx.txt";
     sprintf(filename, DL_strDateToFilename());
-    for (uint8_t i = 0; i < 9; i++)
-    {
-      if (!SD.exists(filename))
-      {
+    for (uint8_t i = 0; i < 9; i++) {
+      if (!SD.exists(filename)) {
         // only open a new file if it doesn't exist
         logfile = SD.open(filename, FILE_WRITE);
-        if (logfile)
-        {
+        if (logfile) {
           logfileOpened = true;
-        }
-        else
-        {
+        } else {
           logfileOpened = false;
         }
         break;
-      }
-      else
-      {
+      } else {
         delay(1000);
         sprintf(filename, DL_strDateToFilename());
       }
     }
 
-    if (!logfileOpened)
-    {
+    if (!logfileOpened) {
       Serial.print(F("Couldnt create:"));
       Serial.println(filename);
-    }
-    else
-    {
+    } else {
       Serial.print(F("to:"));
       Serial.println(filename);
     }
-  }
-  else
-  {
+  } else {
     Serial.println(F("Log:serial"));
   }
-//  LOGSTRING(F("\"count\"\t\"date Y-m-d m:s\""));
+  //  LOGSTRING(F("\"count\"\t\"date Y-m-d m:s\""));
   LOGSTRING(F("\"date Y-m-d m:s\""));
 
 #if MQ2SENSOR_PRESENT
@@ -528,8 +452,7 @@ static void DL_openLogFile()
 #endif
 
 #if BMP280_PRESENT
-  if (BMP280Present)
-  {
+  if (BMP280Present) {
 #if HUMIDITY_PRESENT
     LOGSTRING(F("\t\"temp\"\t\"pressure\"\t\"humidity\""));
 #else
@@ -555,10 +478,8 @@ static void DL_openLogFile()
 /**
 
 */
-static bool CONF_is_valid_char(char character)
-{
-  if (isalnum(character) || character == '_')
-  {
+static bool CONF_is_valid_char(char character) {
+  if (isalnum(character) || character == '_') {
     return true;
   }
   return false;
@@ -567,70 +488,56 @@ static bool CONF_is_valid_char(char character)
 /**
 
 */
-static int CONF_getConfValueInt(char *filename, char *key, int defaultValue = 0)
-{
+static int CONF_getConfValueInt(char *filename, char *key, int defaultValue = 0) {
   File myFile;
   char character;
   String description = "";
   String value = "";
   boolean valid = true;
   int ret = defaultValue;
-  if (!SD.exists(filename))
-  {
+  if (!SD.exists(filename)) {
     return defaultValue;
   }
   myFile = SD.open(filename);
-  while (myFile.available())
-  {
+  while (myFile.available()) {
     description = "";
     character = myFile.read();
     // cerca una linea valida----->
-    if (!CONF_is_valid_char(character))
-    {
+    if (!CONF_is_valid_char(character)) {
       // Comment - ignore this line
-      while (character != '\n' && myFile.available())
-      {
+      while (character != '\n' && myFile.available()) {
         character = myFile.read();
       };
       continue;
     }
     // cerca una linea valida-----<
     //----riempo la descrizione---->
-    do
-    {
+    do {
       description.concat(character);
       character = myFile.read();
-      if (!myFile.available())
-      {
+      if (!myFile.available()) {
         myFile.close();
         return defaultValue;
       }
     } while (CONF_is_valid_char(character));
     //----riempo la descrizione----<
     //-------elimino gli spazi------->
-    if (character == ' ')
-    {
-      do
-      {
+    if (character == ' ') {
+      do {
         character = myFile.read();
-        if (!myFile.available())
-        {
+        if (!myFile.available()) {
           myFile.close();
           return defaultValue;
         }
       } while (character == ' ');
     }
     //-------elimino gli spazi-------<
-    if (character == '=')
-    {
-      if (description == key)
-      {
+    if (character == '=') {
+      if (description == key) {
         //-------elimino gli spazi------->
-        do
-        {
+        do {
           character = myFile.read();
-          if (!myFile.available())
-          {
+          if (!myFile.available()) {
             myFile.close();
             return defaultValue;
           }
@@ -638,22 +545,17 @@ static int CONF_getConfValueInt(char *filename, char *key, int defaultValue = 0)
         //-------elimino gli spazi-------<
         value = "";
         valid = true;
-        while (character != '\n' && character != '\r')
-        {
+        while (character != '\n' && character != '\r') {
           // Serial.println(character);
-          if (isdigit(character))
-          {
+          if (isdigit(character)) {
             value.concat(character);
-          }
-          else if (character != '\n' && character != '\r')
-          {
+          } else if (character != '\n' && character != '\r') {
             // Use of invalid values
             valid = false;
           }
           character = myFile.read();
         };
-        if (valid)
-        {
+        if (valid) {
           // Convert string to array of chars
           char charBuf[value.length() + 1];
           value.toCharArray(charBuf, value.length() + 1);
@@ -663,11 +565,8 @@ static int CONF_getConfValueInt(char *filename, char *key, int defaultValue = 0)
           return ret;
         }
       }
-    }
-    else
-    {
-      while (character != '\n' && myFile.available())
-      {
+    } else {
+      while (character != '\n' && myFile.available()) {
         character = myFile.read();
       };
       continue;
@@ -678,12 +577,10 @@ static int CONF_getConfValueInt(char *filename, char *key, int defaultValue = 0)
 }
 
 
-bool CreateINIConf(int NewInterval_s, int NewzerogasValue = 0)
-{
+bool CreateINIConf(int NewInterval_s, int NewzerogasValue = 0) {
   SD.remove(CONF_FILE);
   settingFile = SD.open(CONF_FILE, FILE_WRITE);
-  if (settingFile)
-  {
+  if (settingFile) {
     // create new file config.ini------>
     Serial.print(F("new file "));
     Serial.println(CONF_FILE);
@@ -696,9 +593,7 @@ bool CreateINIConf(int NewInterval_s, int NewzerogasValue = 0)
     settingFile.flush();
     settingFile.close();
     // create new file config.ini------<
-  }
-  else
-  {
+  } else {
     Serial.print(F("error create "));
     Serial.println(CONF_FILE);
     return false;
@@ -709,13 +604,10 @@ bool CreateINIConf(int NewInterval_s, int NewzerogasValue = 0)
 /**
 
 */
-static void DL_initConf()
-{
+static void DL_initConf() {
 
-  if (sdPresent)
-  {
-    if (!SD.exists(CONF_FILE))
-    {
+  if (sdPresent) {
+    if (!SD.exists(CONF_FILE)) {
       Serial.print(CONF_FILE);
       Serial.println(F(" not exist"));
 #if MQ2SENSOR_PRESENT
@@ -723,9 +615,7 @@ static void DL_initConf()
 #else
       CreateINIConf(LOG_INTERVAL_s);
 #endif
-    }
-    else
-    {
+    } else {
       Serial.print(CONF_FILE);
       Serial.println(F(" exist"));
     }
@@ -740,20 +630,18 @@ static void DL_initConf()
     Serial.print(F("Interval(s)="));
     Serial.println(log_interval_s);
   }
-  if (log_interval_s == 0)
-  {
+  if (log_interval_s == 0) {
     log_interval_s = LOG_INTERVAL_s;
     Serial.print(F("Force to "));
     Serial.println(LOG_INTERVAL_s);
   }
 }
-void setup()
-{
+void setup() {
   PPMGas = 0;
   int n = 0;
   int timeout = 5;
   //--init serial------------------------------>
-  Serial.begin(9600);
+  Serial.begin(19200);
   //--init serial------------------------------<
   sdPresent = false;
   rtcPresent = false;
@@ -768,20 +656,21 @@ void setup()
   //pinMode(S0_S, OUTPUT);
   pinMode(LED_1, OUTPUT);
   pinMode(LED_2, OUTPUT);
-//  digitalWrite(S0_S, HIGH);
+  //  digitalWrite(S0_S, HIGH);
 
   Serial.print(F("SD initialization "));
 
-  if (!SD.begin(CHIP_SD))
-  {
+  if (!SD.begin(CHIP_SD)) {
     sdPresent = false;
     Serial.println(F("failed"));
     failed = true;
-  }
-  else
-  {
+  } else {
     Serial.println(F("ok"));
     sdPresent = true;
+  }
+  if (failed) {
+    digitalWrite(LED_1, HIGH);
+    digitalWrite(LED_2, HIGH);
   }
 
   DL_initConf();
@@ -791,51 +680,40 @@ void setup()
   Wire.begin();
   unsigned long unixtime;
   unixtime = DateTime(__DATE__, __TIME__).unixtime();
-  if (RTC.begin())
-  {
+  if (RTC.begin()) {
     Serial.println(F("RTC present"));
     rtcPresent = true;
-    if (!RTC.isrunning())
-    {
+    if (!RTC.isrunning()) {
       Serial.println(F("Clock not running"));
       RTC.adjust(DateTime(F(__DATE__), F(__TIME__)));
     }
     Serial.print(F("Device clock:"));
     Serial.println(DL_strNow());
     Serial.println(F("Type any character to set time:"));
-    while (!Serial.available())
-    {
-      if (!failed)
-      {
+    while (!Serial.available()) {
+      if (!failed) {
         digitalWrite(LED_1, HIGH);
         digitalWrite(LED_2, LOW);
       }
       Serial.print(timeout - n);
       Serial.print(' ');
-      if (n >= timeout)
-      {
+      if (n >= timeout) {
         break;
       }
       delay(500);
-      if (!failed)
-      {
+      if (!failed) {
         digitalWrite(LED_2, HIGH);
         digitalWrite(LED_1, LOW);
       }
       delay(500);
       n++;
     }
-    if (n < timeout)
-    {
+    if (n < timeout) {
       SetDateTime();
-    }
-    else
-    {
+    } else {
       Serial.println();
     }
-  }
-  else
-  {
+  } else {
     rtcPresent = false;
     Serial.println(F("RTC Failed"));
     failed = true;
@@ -846,19 +724,15 @@ void setup()
   // connect to RTC ---------------------------<
 
 #if SGP40_PRESENT
-  if (sgp40Sensor.begin() == true)
-  {
+  if (sgp40Sensor.begin() == true) {
     Serial.println(F("SGP40 detected"));
   }
 #endif
 #if BMP280_PRESENT
-  if (!bme0.begin())
-  {
+  if (!bme0.begin()) {
     Serial.println(F("\nBMP280 sensor not present"));
     BMP280Present = false;
-  }
-  else
-  {
+  } else {
     Serial.println(F("\nBMP280 sensor present"));
     BMP280Present = true;
   }
@@ -868,8 +742,7 @@ void setup()
   TimeTarget = TimeCurrent + (log_interval_s * 1000);
   TimeTargetFileWrite = TimeCurrent + SYNC_INTERVAL_ms;
   //---faccio una lettura a vuoto per scaricare il condensatore -------->
-  for (int i = 0; i < 10; i++)
-  {
+  for (int i = 0; i < 10; i++) {
     DL_analogReadAndFilter(S0);
     delay(20);
   }
@@ -886,42 +759,32 @@ void setup()
   // oled.setCursor(0, 0);
   // oled.println(F("Start log"));
 #endif
-  TimeStartLog = millis() + (1000*MQ2_PREHEAT_TIME_S);
+  TimeStartLog = millis() + (1000 * MQ2_PREHEAT_TIME_S);
 }
 /**
 
 */
-static int parse_serial_command()
-{
+static int parse_serial_command() {
   char buffer[siza_buffer];
   static bool ready = false;
   static int cnt = 0;
-  while (Serial.available() > 0)
-  {
-    if (ready)
-    {
+  while (Serial.available() > 0) {
+    if (ready) {
       ready = false;
       execute_command(buffer);
       return 1;
     }
     char c = Serial.read();
-    if (c == '\n' || c == '\r' || (c >= 20 && c <= 126))
-    {
-      if (cnt == 0 && (c == '\n' || c == '\r'))
-      {
+    if (c == '\n' || c == '\r' || (c >= 20 && c <= 126)) {
+      if (cnt == 0 && (c == '\n' || c == '\r')) {
         continue;
-      }
-      else
-      {
+      } else {
         buffer[cnt] = c;
-        if (c == '\n' || c == '\r' || cnt == (siza_buffer - 1))
-        {
+        if (c == '\n' || c == '\r' || cnt == (siza_buffer - 1)) {
           buffer[cnt] = '\0';
           cnt = 0;
           ready = true;
-        }
-        else
-        {
+        } else {
           cnt++;
         }
       }
@@ -932,12 +795,9 @@ static int parse_serial_command()
 /**
 
 */
-static bool isValidNumber(char *str)
-{
-  for (byte i = 0; i < strlen(str); i++)
-  {
-    if (str[i] == '\0')
-    {
+static bool isValidNumber(char *str) {
+  for (byte i = 0; i < strlen(str); i++) {
+    if (str[i] == '\0') {
       break;
     }
     if (!(isDigit(str[i]) || str[i] == '.'))
@@ -948,12 +808,10 @@ static bool isValidNumber(char *str)
 /**
 
 */
-static void execute_command(char *command)
-{
-  if (strcmp(command, "help") == 0)
-  {
+static void execute_command(char *command) {
+  if (strcmp(command, "help") == 0) {
     Serial.println();
-    
+
     Serial.println(F("commands:"));
     Serial.println(F("logs:read data"));
     Serial.println(F("reset:reset device"));
@@ -963,17 +821,15 @@ static void execute_command(char *command)
     Serial.println(F("autocalib:auto calibration MQ2 sensor"));
 #endif
     Serial.println();
-    
+
     return;
   }
 #if MQ2SENSOR_PRESENT
-  if (strcmp(command, "autocalib") == 0)
-  {
+  if (strcmp(command, "autocalib") == 0) {
     Mq2Calibration();
   }
 #endif
-  if (strcmp(command, "logs") == 0)
-  {
+  if (strcmp(command, "logs") == 0) {
     File root = SD.open("/");
     Serial.flush();
     listFiles();
@@ -981,52 +837,43 @@ static void execute_command(char *command)
     return;
   }
 
-  if (strcmp(command, "reset") == 0)
-  {
+  if (strcmp(command, "reset") == 0) {
     DL_closeLogFile();
-    reset(); // reset arduino
+    reset();  // reset arduino
     return;
   }
-  if (strcmp(command, "settime") == 0)
-  {
+  if (strcmp(command, "settime") == 0) {
     SetDateTime();
     return;
   }
-  if (strcmp(command, "setconfig") == 0)
-  {
+  if (strcmp(command, "setconfig") == 0) {
     SetConfig();
     return;
   }
 }
 
 #if MQ2SENSOR_PRESENT
-void Mq2Calibration()
-{
+void Mq2Calibration() {
   int S0Sensor = 0;
   int S0Sensor_old = 0;
   int NumConsecutive = 0;
   Serial.print(F("Sensor zero gas calibration"));
-  while (1)
-  {
+  while (1) {
     digitalWrite(LED_1, HIGH);
     digitalWrite(LED_2, HIGH);
     delay(9500);
     digitalWrite(LED_1, LOW);
     digitalWrite(LED_2, LOW);
     S0Sensor = (int)DL_analogReadAndFilter(S0);
-    if (S0Sensor == S0Sensor_old)
-    {
+    if (S0Sensor == S0Sensor_old) {
       NumConsecutive++;
-    }
-    else
-    {
+    } else {
       S0Sensor_old = S0Sensor;
       NumConsecutive = 0;
     }
     Serial.print(F("zero gas sensor value:"));
     Serial.println(S0Sensor);
-    if (NumConsecutive > 10)
-    {
+    if (NumConsecutive > 10) {
       zerogasValue = S0Sensor + 1;
       Serial.println(F("calibration end"));
       CreateINIConf(log_interval_s, zerogasValue);
@@ -1041,8 +888,7 @@ void Mq2Calibration()
 /**
 
 */
-void SetConfig()
-{
+void SetConfig() {
   DL_closeLogFile();
   delay(500);
   SerialFlush();
@@ -1062,24 +908,19 @@ void SetConfig()
 #else
   zerogas = ZEROGAS_default;
 #endif
-  if (interval > 0)
-  {
-    if (CreateINIConf(interval, zerogas))
-    {
+  if (interval > 0) {
+    if (CreateINIConf(interval, zerogas)) {
       delay(500);
-      reset(); // reset arduino
+      reset();  // reset arduino
     }
-  }
-  else
-  {
+  } else {
     Serial.println(F("\nInvalid values"));
   }
 }
 /**
 
 */
-void SetDateTime()
-{
+void SetDateTime() {
   DL_closeLogFile();
   delay(500);
   SerialFlush();
@@ -1105,29 +946,30 @@ void SetDateTime()
   delay(500);
   reset();
 }
-void reset()
-{
+void reset() {
   asm volatile("  jmp 0");
 }
 /**
 
 
 */
-static void SerialFlush()
-{
+static void SerialFlush() {
   Serial.flush();
-  while (Serial.available() > 0)
-  {
+  while (Serial.available() > 0) {
     Serial.read();
   }
 }
 
-void manageBlinking(unsigned long timeOn, unsigned long timeOff)
-{
+void manageBlinking(unsigned long timeOn, unsigned long timeOff) {
+  if (failed) {
+    digitalWrite(LED_1, HIGH);
+    digitalWrite(LED_2, HIGH);
+    return;
+  }
+
   static bool ledState = false;
   static unsigned long previousMillis = 0;
-  if (timeOn <= 0 && timeOff <= 0)
-  {
+  if (timeOn <= 0 && timeOff <= 0) {
     // Se entrambi i tempi sono 0, spegni il LED e esci dalla funzione
     digitalWrite(LED_2, LOW);
     return;
@@ -1135,21 +977,16 @@ void manageBlinking(unsigned long timeOn, unsigned long timeOff)
   // Ottieni il tempo attuale
   unsigned long currentMillis = millis();
 
-  if (ledState)
-  {
+  if (ledState) {
     // Se il LED è acceso, controlla se è ora di spegnerlo
-    if (currentMillis - previousMillis >= timeOn)
-    {
+    if (currentMillis - previousMillis >= timeOn) {
       ledState = false;
       previousMillis = currentMillis;
       digitalWrite(LED_2, LOW);
     }
-  }
-  else
-  {
+  } else {
     // Se il LED è spento, controlla se è ora di accenderlo
-    if (currentMillis - previousMillis >= timeOff)
-    {
+    if (currentMillis - previousMillis >= timeOff) {
       ledState = true;
       previousMillis = currentMillis;
       digitalWrite(LED_2, HIGH);
@@ -1157,17 +994,14 @@ void manageBlinking(unsigned long timeOn, unsigned long timeOff)
   }
 }
 
-void manageBlinkingByPPM(int inputValue)
-{
+void manageBlinkingByPPM(int inputValue) {
   unsigned int MaxValue = 500;
   // Assicurati che il valore di input sia entro i limiti previsti
-  if (inputValue > MaxValue || inputValue < 0)
-  {
+  if (inputValue > MaxValue || inputValue < 0) {
     inputValue = MaxValue;
   }
   inputValue = constrain(inputValue, 0, MaxValue);
-  if (inputValue == 0)
-  {
+  if (inputValue == 0) {
     manageBlinking(0, 0);
     return;
   }
@@ -1181,8 +1015,7 @@ void manageBlinkingByPPM(int inputValue)
 /**
    Loop.
 */
-void loop()
-{
+void loop() {
   static unsigned long LedTimer = 0;
   static bool WriteLog = false;
   static unsigned long TimeTargetRead = 0;
@@ -1202,9 +1035,9 @@ void loop()
   long vcc = 0;
 #endif
 #if WINDSENSOR_PRESENT
-#define zeroWindAdjustment 0.2; // negative numbers yield smaller wind speeds and vice versa.
-  int TMP_Therm_ADunits;        // temp termistor value from wind sensor
-  double RV_Wind_ADunits;       // RV output from wind sensor
+#define zeroWindAdjustment 0.2;  // negative numbers yield smaller wind speeds and vice versa.
+  int TMP_Therm_ADunits;         // temp termistor value from wind sensor
+  double RV_Wind_ADunits;        // RV output from wind sensor
   double RV_Wind_Volts;
   int TempCtimes100;
   double zeroWind_ADunits;
@@ -1212,68 +1045,60 @@ void loop()
   double WindSpeed_MPH;
 #endif
 
-  if (Detected >= MINCONSECUTIVE_POSITIVE)
-  {
+  if (Detected >= MINCONSECUTIVE_POSITIVE) {
     digitalWrite(LED_1, HIGH);
-  }
-  else
-  {
+  } else {
     digitalWrite(LED_1, LOW);
   }
-  if (TimeCurrent > TimeStartLog)
-  {
+  if (TimeCurrent > TimeStartLog) {
     WriteLog = true;
 
-  }
-  else
-  {
-    analogRead(S0);
-    delay(100);
-    digitalWrite(LED_1, HIGH);
-    delay(100);
-    digitalWrite(LED_1, LOW);
-    delay(100);
-    digitalWrite(LED_1, HIGH);
-    delay(100);
-    digitalWrite(LED_1, LOW);
-    delay(100);
-    digitalWrite(LED_2, HIGH);
-    delay(100);
-    digitalWrite(LED_2, LOW);
-    delay(100);
-    digitalWrite(LED_2, HIGH);
-    delay(100);
-    digitalWrite(LED_2, LOW);
-    Serial.println(F("prehead sensor"));
+  } else {
+    if (failed) {
+      digitalWrite(LED_1, HIGH);
+      digitalWrite(LED_2, HIGH);
+    } else {
+      analogRead(S0);
+      delay(100);
+      digitalWrite(LED_1, HIGH);
+      delay(100);
+      digitalWrite(LED_1, LOW);
+      delay(100);
+      digitalWrite(LED_1, HIGH);
+      delay(100);
+      digitalWrite(LED_1, LOW);
+      delay(100);
+      digitalWrite(LED_2, HIGH);
+      delay(100);
+      digitalWrite(LED_2, LOW);
+      delay(100);
+      digitalWrite(LED_2, HIGH);
+      delay(100);
+      digitalWrite(LED_2, LOW);
+      Serial.println(F("prehead sensor"));
+    }
   }
 
-  if (!logfileOpened)
-  {
-    if (TimeCurrent > LedTimer + 1000)
-    {
+  if (!logfileOpened) {
+    if (TimeCurrent > LedTimer + 1000) {
       digitalWrite(LED_BUILTIN, HIGH);
       digitalWrite(LED_BUILTIN, HIGH);
       LedTimer = TimeCurrent;
     }
-    if (TimeCurrent > LedTimer + 500)
-    {
+    if (TimeCurrent > LedTimer + 500) {
       digitalWrite(LED_BUILTIN, LOW);
     }
   }
 
-  if (WriteLog)
-  {
-    if (TimeCurrent > TimeTargetRead + 1000)
-    {
+  if (WriteLog) {
+    if (TimeCurrent > TimeTargetRead + 1000) {
       manageBlinkingByPPM(MQ2_RawToPPM(analogRead(S0)));
       TimeTargetRead = TimeCurrent;
     }
 
-    if (TimeCurrent >= TimeTarget)
-    {
+    if (TimeCurrent >= TimeTarget) {
       TimeTarget = TimeCurrent + (log_interval_s * 1000);
-      if (LogCounter == 0 || (LogCounter >= MAX_ROWS_PER_FILE && (LogCounter % MAX_ROWS_PER_FILE == 0)))
-      {
+      if (LogCounter == 0 || (LogCounter >= MAX_ROWS_PER_FILE && (LogCounter % MAX_ROWS_PER_FILE == 0))) {
         DL_openLogFile();
       }
       //-----------sensors------------------------------------------------------->
@@ -1305,17 +1130,12 @@ void loop()
       LOGSTRING(F("\t"));
       PPMGas = MQ2_RawToPPM(S0Sensor);
       LOGSTRING(PPMGas);
-      if (PPMGas > MINPPMPOSITIVE)
-      {
-        if (Detected < MINCONSECUTIVE_POSITIVE)
-        {
+      if (PPMGas > MINPPMPOSITIVE) {
+        if (Detected < MINCONSECUTIVE_POSITIVE) {
           Detected++;
         }
-      }
-      else
-      {
-        if (Detected < MINCONSECUTIVE_POSITIVE)
-        {
+      } else {
+        if (Detected < MINCONSECUTIVE_POSITIVE) {
           Detected = 0;
         }
       }
@@ -1331,8 +1151,7 @@ void loop()
 #endif
 
 #if BMP280_PRESENT
-      if (BMP280Present)
-      {
+      if (BMP280Present) {
         temperature = bme0.readTemperature();
         pressure = bme0.readPressure();
         LOGSTRING(F("\t"));
@@ -1353,7 +1172,7 @@ void loop()
       // these are all derived from regressions from raw data as such they depend on a lot of experimental factors
       // such as accuracy of temp sensors, and voltage at the actual wind sensor, (wire losses) which were unaccouted for.
       TempCtimes100 = (0.005 * ((float)TMP_Therm_ADunits * (float)TMP_Therm_ADunits)) - (16.862 * (float)TMP_Therm_ADunits) + 9075.4;
-      zeroWind_ADunits = -0.0006 * ((float)TMP_Therm_ADunits * (float)TMP_Therm_ADunits) + 1.0727 * (float)TMP_Therm_ADunits + 47.172; //  13.0C  553  482.39
+      zeroWind_ADunits = -0.0006 * ((float)TMP_Therm_ADunits * (float)TMP_Therm_ADunits) + 1.0727 * (float)TMP_Therm_ADunits + 47.172;  //  13.0C  553  482.39
       zeroWind_volts = (zeroWind_ADunits * 0.0048828125) - zeroWindAdjustment;
       // This from a regression from data in the form of
       // Vraw = V0 + b * WindSpeed ^ c
@@ -1374,9 +1193,9 @@ void loop()
       */
       LOGSTRING(F("\t"));
       double Wind_mts = WindSpeed_MPH * 0.44704;
-      LOGSTRING(Wind_mts, 5); // m/s
+      LOGSTRING(Wind_mts, 5);  // m/s
       LOGSTRING(F("\t"));
-      LOGSTRING((TempCtimes100 / 100)); // m/s
+      LOGSTRING((TempCtimes100 / 100));  // m/s
 #endif
 
 #if SGP40_PRESENT
@@ -1394,10 +1213,8 @@ void loop()
 #endif
       LOGSTRING(F("\n"));
     }
-    if (dataToWrite != 0 && TimeCurrent >= TimeTargetFileWrite)
-    {
-      if (logfileOpened)
-      {
+    if (dataToWrite != 0 && TimeCurrent >= TimeTargetFileWrite) {
+      if (logfileOpened) {
         logfile.flush();
       }
       dataToWrite = 0;
