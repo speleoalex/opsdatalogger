@@ -27,4 +27,4 @@ An assembled and ready-to-use version, or in an assembly kit, can be purchased h
 Logs are saved on csv files
 the interval of each measurement can be set via the CONFIG.INI file that is created at the first start, or by connecting the device via USB
 
-![Naso](Naso.jpg)
+![Naso](Naso.png)
