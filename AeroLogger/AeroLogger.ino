@@ -850,6 +850,11 @@ static void execute_command(char *command) {
     SetConfig();
     return;
   }
+  if (strcmp(command, "!!") == 0) {
+  
+    Serial.println('!');
+    return;
+  }
 }
 
 #if MQ2SENSOR_PRESENT
@@ -859,6 +864,7 @@ void Mq2Calibration() {
   int NumConsecutive = 0;
   Serial.print(F("Sensor zero gas calibration"));
   while (1) {
+    parse_serial_command();
     digitalWrite(LED_1, HIGH);
     digitalWrite(LED_2, HIGH);
     delay(9500);
