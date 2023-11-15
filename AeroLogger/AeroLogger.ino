@@ -689,8 +689,8 @@ void setup() {
     }
     Serial.print(F("Device clock:"));
     Serial.println(DL_strNow());
-    Serial.println(F("Type any character to set time:"));
-    while (!Serial.available()) {
+    Serial.println(F("Type settime to change time"));
+    /*while (!Serial.available()) {
       if (!failed) {
         digitalWrite(LED_1, HIGH);
         digitalWrite(LED_2, LOW);
@@ -713,6 +713,7 @@ void setup() {
     } else {
       Serial.println();
     }
+    */
   } else {
     rtcPresent = false;
     Serial.println(F("RTC Failed"));
