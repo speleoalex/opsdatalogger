@@ -160,11 +160,11 @@ void listFiles() {
 
     if (entry.isDirectory()) {
     } else {
-      if (entry.size() > 0) {
+//      if (entry.size() > 0) {
         Serial.print(name);
         Serial.print('\t');
         Serial.println(entry.size());
-      }
+ //     }
     }
     entry = root.openNextFile();
   }
@@ -184,8 +184,7 @@ void downloadFile() {
     if (SD.exists(fileName)) {
       File file = SD.open(fileName);
       if (file) {
-        Serial.print(F("Start trasmission:"));
-        Serial.println(fileName);
+        Serial.println(F("Start trasmission:"));
         while (file.available()) {
           Serial.write(file.read());
         }
@@ -437,7 +436,7 @@ static void DL_openLogFile() {
       Serial.print(F("Couldnt create:"));
       Serial.println(filename);
     } else {
-      Serial.print(F("to:"));
+      Serial.print(F("Log to:"));
       Serial.println(filename);
     }
   } else {
