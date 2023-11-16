@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Aerologger Terminal</title>
+    <style>
+
+        footer {
+            min-height: 50px;
+            /* Adjust as needed */
+            /* Styles for your footer */
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background-color: black;
+            color: limegreen;
+            margin: 10px;
+            display: flex;
+            /* or grid */
+            flex-direction: column;
+            /* not needed for grid */
+            height: 100vh;
+            margin: 0;
+            /* Remove default margin */
+        }
+        #buttons {
+            padding: 5px;;
+            /*height: 40px;*/
+        }
+
+        #footer {
+            padding: 5px;;
+          /*  height: 40px;
+            margin-top: 5px;*/
+        }
+
+        #output {
+            height: 60vh;
+            /* Adjust this value as needed */
+            border: 1px solid limegreen;
+            background-color: #202020;
+            color: limegreen;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            padding: 5px;
+            margin: 5px;
+            flex-grow: 1;
+            /* Flexbox: Allow this element to grow to fill space */
+            /* Grid: Define rows and assign output to a row that takes up remaining space */
+            overflow-y: auto;
+            /* Scroll inside output if needed */
+        }
+
+        #input {
+            width: calc(100% - 80px);
+            color: limegreen;
+            background-color: #202020;
+            border: 1px solid limegreen;
+            padding: 5px;
+            display: inline-block;
+        }
+
+        #send {
+            display: inline-block;
+            width: 58px;
+            padding: 5px;
+            margin-left: 5px;
+            border: 1px solid limegreen
+        }
+
+        .continue {
+            background-color: red;
+
+        }
+
+        button {
+            background-color: limegreen;
+            color: black;
+            border: none;
+            padding: 5px 15px;
+            cursor: pointer;
+        }
+
+        button:disabled {
+            background-color: grey;
+        }
+
+    </style>
+</head>
+
+<body>
+    <nav id="buttons">
+        <button onclick="window.location='loggerviewer.htm'" >Logger viewer</button>
+        <button id="connect">Connect</button>
+        <button style="" id="disconnect" disabled>Disconnect</button>
+        <button id="logs" disabled>Download data</button>
+        <button id="settime" disabled>Set date and time</button>
+    </nav>
+    <div id="output"></div>
+    <footer id="footer">
+        <input type="text" id="input" id="sendtext"><button id="send">Send</button><br>
+    </footer>
+    <script>
+        let port, reader, writer;
+
+        document.getElementById('connect').addEventListener('click', async () => {
+            try {
+                port = await navigator.serial.requestPort();
+
+            } catch (e) {
+                alert("Il tuo browser non supporta la lettura della porta USB");
+
+            }
+
+            await port.open({ baudRate: 19200 });
+
+            const decoder = new TextDecoderStream();
+            const inputDone = port.readable.pipeTo(decoder.writable);
+            reader = decoder.readable.getReader();
+
+            const encoder = new TextEncoderStream();
+            const outputDone = encoder.readable.pipeTo(port.writable);
+            writer = encoder.writable.getWriter();
+
+            document.getElementById('connect').disabled = true;
+            document.getElementById('disconnect').disabled = false;
+            document.getElementById('logs').disabled = false;
+            document.getElementById('settime').disabled = false;
+
+            readLoop();
+        });
+        document.getElementById('logs').addEventListener('click', async () => {
+            writer.write("logs\r\n");
+        }
+        );
+        document.getElementById('settime').addEventListener('click', async () => {
+            sendSerial("settime");
+            setTimeout(() => {
+                var n = new Date().getFullYear();
+                sendSerial(n);
+                setTimeout(() => {
+                    var n = new Date().getMonth() + 1;
+                    sendSerial(n);
+                    setTimeout(() => {
+                        var n = new Date().getDate();
+                        sendSerial(n);
+                        setTimeout(() => {
+                            var n = new Date().getHours();
+                            sendSerial(n);
+                            setTimeout(() => {
+                                var n = new Date().getMinutes();
+                                sendSerial(n);
+
+                            }, 1000);
+                        }, 1000);
+                    }, 1000);
+                }, 1000);
+            }, 2000);
+        }
+        );
+        async function readLoop() {
+            const outputDiv = document.getElementById('output');
+            while (true) {
+                const { value, done } = await reader.read();
+                if (done) {
+                    reader.releaseLock();
+                    break;
+                }
+                outputDiv.textContent += value;//+ '\n';
+                if (value.indexOf("\n") !== -1) {
+                    creaBottoniPerFile(outputDiv.textContent);
+                    findFileContents(outputDiv.textContent);
+                }
+                outputDiv.scrollTop = outputDiv.scrollHeight;
+            }
+        }
+
+        document.getElementById('disconnect').addEventListener('click', async () => {
+            try {
+
+                if (reader) {
+                    await reader.cancel();
+                    await reader.releaseLock();
+                }
+                if (writer) {
+                    await writer.close();
+                    await writer.releaseLock();
+                }
+                if (port) {
+                    await port.close();
+                }
+
+                document.getElementById('connect').disabled = false;
+                document.getElementById('disconnect').disabled = true;
+
+            }
+            catch (e) {
+                window.location.reload();
+            }
+        });
+
+
+        document.getElementById('send').addEventListener('click', () => {
+            inviaDati();
+        });
+
+        function inviaDati() {
+            const text = document.getElementById('input').value + '\r\n';
+            writer.write(text);
+            document.getElementById('input').value = '';
+        }
+
+        document.getElementById('input').addEventListener('keypress', (event) => {
+            if (event.key === 'Enter') {
+                inviaDati();
+            }
+        });
+        function sendSerial(text) {
+            document.getElementById('input').value = text;
+            setTimeout(() => {
+                document.getElementById('send').click();
+
+            }, 500);
+        }
+        function clearOutput() {
+            document.getElementById('output').innerHTML = "";
+        }
+        function creaBottoniPerFile(testo) {
+            const inizio = testo.indexOf("Files:");
+            if (inizio == -1) {
+                return;
+            }
+            const fine = testo.indexOf("Type Filename or e to exit");
+            if (inizio !== -1 && fine !== -1) {
+                const listaFile = testo.substring(inizio + "Files:".length, fine).trim().split('\n');
+                const outputDiv = document.getElementById('output');
+                outputDiv.innerHTML = ''; // Pulisci il div
+                listaFile.forEach(file => {
+                    const nomeFile = file.split('\t')[0].trim();
+
+                    if (nomeFile.indexOf(".txt") !== -1 || nomeFile.indexOf(".csv") !== -1) {
+                        const size = file.split('\t')[1].trim();
+                        const bottone = document.createElement('button');
+                        bottone.textContent = nomeFile;
+                        bottone.addEventListener('click', function () {
+                            sendDownloadFileName(nomeFile);
+                        });
+                        outputDiv.appendChild(bottone);
+                        outputDiv.appendChild(document.createTextNode(" " + size + " bytes\n\n"));
+
+                    }
+                });
+                const bottone = document.createElement('button');
+                bottone.textContent = "Continue";
+                bottone.setAttribute("class", "continue");
+                bottone.addEventListener('click', function () {
+                    sendSerial('e');
+                    clearOutput();
+                });
+                outputDiv.appendChild(bottone);
+                //                outputDiv.appendChild(document.createTextNode("<button onclick=\"sendSerial('e')\">Continue</button>"));
+            }
+        }
+        function findFileContents(testo) {
+            //            const testo = document.getElementById('output').innerHTML;
+            const fine = testo.indexOf("End trasmission");
+            if (fine === -1) {
+                return;
+            }
+            document.getElementById('output').innerHTML = "Start download file:";
+            const inizio = testo.indexOf("Start trasmission:");
+            const filenameOk = testo.indexOf(".txt");
+            if (inizio !== -1 && fine !== -1 && filenameOk !== -1) {
+                const nomeFile = testo.split("End trasmission:")[1].trim();
+                const contents = testo.substring(inizio + "Start trasmission:".length, fine).trim();
+                document.getElementById('output').innerHTML = "Download starting...";
+                scaricaFile(nomeFile, contents);
+                document.getElementById('output').innerHTML = "";
+            }
+        }
+        function scaricaFile(nomeFile, contents) {
+            const elemento = document.createElement('a');
+            elemento.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(contents));
+            elemento.setAttribute('download', nomeFile);
+            // Nascondi l'elemento per non modificare il layout della pagina
+            elemento.style.display = 'none';
+            // Aggiungi l'elemento al corpo del documento
+            document.body.appendChild(elemento);
+            // Simula un click sull'elemento
+            elemento.click();
+            // Rimuovi l'elemento dal documento
+            document.body.removeChild(elemento);
+        }
+
+        function sendDownloadFileName(filename) {
+            const outputDiv = document.getElementById('output');
+            outputDiv.innerHTML = '';
+            writer.write(filename + "\r\n");
+        }
+
+    </script>
+</body>
+
+</html>
