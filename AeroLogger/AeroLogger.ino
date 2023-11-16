@@ -9,16 +9,15 @@
 */
 
 // Sensor presence configuration
-#define BMP280_PRESENT 0        // Set to 1 if BMP280 sensor is present, 0 otherwise
-#define HUMIDITY_PRESENT 0      // Set to 1 if a humidity sensor is present, 0 otherwise
-#define DEBUGSENSOR 0           // Enable (1) or disable (0) sensor debugging
-#define WINDSENSOR_PRESENT 0    // Set to 1 if a wind sensor is present, 0 otherwise
+#define BMP280_PRESENT 0     // Set to 1 if BMP280 sensor is present, 0 otherwise
+#define HUMIDITY_PRESENT 0   // Set to 1 if a humidity sensor is present, 0 otherwise
+#define DEBUGSENSOR 0        // Enable (1) or disable (0) sensor debugging
+#define WINDSENSOR_PRESENT 0 // Set to 1 if a wind sensor is present, 0 otherwise
 
 // Calibration and operation parameters
-#define MINCONSECUTIVE_POSITIVE 20  // Minimum number of consecutive positive readings
-#define MQ2_PREHEAT_TIME_S 30       // Preheat time in seconds for the MQ2 sensor
-#define MINPPMPOSITIVE 10           // Minimum PPM for a positive reading
-
+#define MINCONSECUTIVE_POSITIVE 20 // Minimum number of consecutive positive readings
+#define MQ2_PREHEAT_TIME_S 30      // Preheat time in seconds for the MQ2 sensor
+#define MINPPMPOSITIVE 10          // Minimum PPM for a positive reading
 
 #define WINDSENSOR_PRESENT 0
 #define MQ2SENSOR_PRESENT 1 // VOC MQ2 analogic
@@ -103,8 +102,6 @@ double MQ2_calc_res(double raw_adc)
 */
 
 #define S0 A0 // AIR
-// #define S0_S 2 // alimentazione S0
-// #define S1_S 3          //alimentazione S1 Lid 1
 
 #define LED_1 3 // Led 1 datalogger
 #define LED_2 4 // Led 2 datalogger
@@ -196,9 +193,29 @@ void downloadFile()
       // Aspetta l'input dall'utente
     }
     String fileName = Serial.readStringUntil('\n');
-    fileName.trim();
+    fileName.trim(); // Rimuove eventuali spazi bianchi rimanenti
     if (fileName == "e")
     {
+      return;
+    }
+
+    if (fileName.startsWith("rm "))
+    {
+      // Rimuove "rm " dalla stringa per ottenere il nome del file
+      fileName = fileName.substring(3);
+      if (SD.exists(fileName))
+      {
+        Serial.print(F("del "));
+        Serial.println(fileName);
+        if (SD.remove(fileName))
+        {
+          Serial.println(F("file deleted"));
+        }
+        else
+        {
+          Serial.println(F("error remove"));
+        }        
+      }
       return;
     }
     if (SD.exists(fileName))

@@ -4,7 +4,6 @@
 <head>
     <title>Aerologger Terminal</title>
     <style>
-
         footer {
             min-height: 50px;
             /* Adjust as needed */
@@ -24,14 +23,17 @@
             margin: 0;
             /* Remove default margin */
         }
+
         #buttons {
-            padding: 5px;;
+            padding: 5px;
+            ;
             /*height: 40px;*/
         }
 
         #footer {
-            padding: 5px;;
-          /*  height: 40px;
+            padding: 5px;
+            ;
+            /*  height: 40px;
             margin-top: 5px;*/
         }
 
@@ -69,9 +71,14 @@
             border: 1px solid limegreen
         }
 
-        .continue {
+        .delete {
             background-color: red;
+            margin-left: 2px;
+            ;
+        }
 
+        .continue {
+            background-color: rgb(136, 92, 255);
         }
 
         button {
@@ -85,13 +92,12 @@
         button:disabled {
             background-color: grey;
         }
-
     </style>
 </head>
 
 <body>
     <nav id="buttons">
-        <button onclick="window.location='loggerviewer.htm'" >Logger viewer</button>
+        <button onclick="window.location='loggerviewer.htm'">Logger viewer</button>
         <button id="connect">Connect</button>
         <button style="" id="disconnect" disabled>Disconnect</button>
         <button id="logs" disabled>Download data</button>
@@ -102,8 +108,9 @@
         <input type="text" id="input" id="sendtext"><button id="send">Send</button><br>
     </footer>
     <script>
-        let port, reader, writer;
-
+        let port, reader, writer, inDownload;
+        inDownload = false;
+        inListFile = false;
         document.getElementById('connect').addEventListener('click', async () => {
             try {
                 port = await navigator.serial.requestPort();
@@ -132,6 +139,7 @@
         });
         document.getElementById('logs').addEventListener('click', async () => {
             writer.write("logs\r\n");
+            inListFile = true;
         }
         );
         document.getElementById('settime').addEventListener('click', async () => {
@@ -159,20 +167,30 @@
             }, 2000);
         }
         );
+        var filetext = "";
+        var sizeDownload = 0;
         async function readLoop() {
             const outputDiv = document.getElementById('output');
+           
             while (true) {
                 const { value, done } = await reader.read();
                 if (done) {
                     reader.releaseLock();
                     break;
                 }
-                outputDiv.textContent += value;//+ '\n';
-                if (value.indexOf("\n") !== -1) {
-                    creaBottoniPerFile(outputDiv.textContent);
-                    findFileContents(outputDiv.textContent);
+                if (inDownload) {
+                    filetext += value
+                    outputDiv.innerHTML = "received "+filetext.length+" of "+sizeDownload+" bytes";
+                    findFileContents(filetext);
                 }
-                outputDiv.scrollTop = outputDiv.scrollHeight;
+                else {
+                    outputDiv.textContent += value;
+                    if (inListFile) {
+                        creaBottoniPerFile(outputDiv.textContent);
+                    }
+                    outputDiv.scrollTop = outputDiv.scrollHeight;
+
+                }
             }
         }
 
@@ -205,6 +223,13 @@
             inviaDati();
         });
 
+        function doDelete(nomeFile) {
+            if (confirm("Confirm delete file?")) {
+                clearOutput();
+                sendSerial("rm " + nomeFile.trim());
+            }
+        }
+
         function inviaDati() {
             const text = document.getElementById('input').value + '\r\n';
             writer.write(text);
@@ -220,12 +245,12 @@
             document.getElementById('input').value = text;
             setTimeout(() => {
                 document.getElementById('send').click();
-
             }, 500);
         }
         function clearOutput() {
             document.getElementById('output').innerHTML = "";
         }
+
         function creaBottoniPerFile(testo) {
             const inizio = testo.indexOf("Files:");
             if (inizio == -1) {
@@ -244,9 +269,20 @@
                         const bottone = document.createElement('button');
                         bottone.textContent = nomeFile;
                         bottone.addEventListener('click', function () {
+                            inDownload = true;
+                            sizeDownload = size;
                             sendDownloadFileName(nomeFile);
                         });
                         outputDiv.appendChild(bottone);
+                        const bottoneDel = document.createElement('button');
+                        bottoneDel.textContent = "delete";
+                        bottoneDel.setAttribute("class", "delete");
+                        bottoneDel.setAttribute("onclick", "doDelete('" + nomeFile + "');");
+                        outputDiv.appendChild(bottone);
+                        outputDiv.appendChild(bottoneDel);
+
+
+
                         outputDiv.appendChild(document.createTextNode(" " + size + " bytes\n\n"));
 
                     }
@@ -259,24 +295,32 @@
                     clearOutput();
                 });
                 outputDiv.appendChild(bottone);
-                //                outputDiv.appendChild(document.createTextNode("<button onclick=\"sendSerial('e')\">Continue</button>"));
+                outputDiv.appendChild(document.createTextNode("\n"));
+                inListFile = false;
+                filetext = "";
             }
         }
         function findFileContents(testo) {
             //            const testo = document.getElementById('output').innerHTML;
-            const fine = testo.indexOf("End trasmission");
+            const fine = testo.indexOf("End trasmission:");
             if (fine === -1) {
                 return;
             }
-            document.getElementById('output').innerHTML = "Start download file:";
-            const inizio = testo.indexOf("Start trasmission:");
             const filenameOk = testo.indexOf(".txt");
+            if (filenameOk === -1) {
+                return;
+            }
+
+            document.getElementById('output').innerHTML = "Start download file:";
+            console.log(testo);
+            const inizio = testo.indexOf("Start trasmission:");
             if (inizio !== -1 && fine !== -1 && filenameOk !== -1) {
                 const nomeFile = testo.split("End trasmission:")[1].trim();
                 const contents = testo.substring(inizio + "Start trasmission:".length, fine).trim();
                 document.getElementById('output').innerHTML = "Download starting...";
                 scaricaFile(nomeFile, contents);
                 document.getElementById('output').innerHTML = "";
+                inDownload = false;
             }
         }
         function scaricaFile(nomeFile, contents) {
@@ -297,6 +341,7 @@
             const outputDiv = document.getElementById('output');
             outputDiv.innerHTML = '';
             writer.write(filename + "\r\n");
+
         }
 
     </script>
