@@ -80,7 +80,7 @@ a seconda della curva di rilevamento è possibile dedurre alcune caratteristiche
 ## Transito con doppia galleria:
 ![Transito con doppia galleria](transit2.png)
 
-## Testo con passaggio in frana
+## Transito con passaggio in frana
 ![Testo con passaggio in frana](transit3.png)
 
 
