@@ -815,7 +815,7 @@ void setup()
     }
     Serial.print(F("Device clock:"));
     Serial.print(DL_strNow());
-    Serial.println(F("type settime to change"));
+    Serial.println(F(" type 'settime' to change"));
   }
   else
   {
