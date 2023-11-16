@@ -70,5 +70,17 @@ zerogas rappresenta il valore grezzo del sensore quando l'aria è in assenza di 
 - È possibile scaricare i dati da PC utilizzando Google Chrome o MS Edge tramite web application
 
 
+## Interpretazione dei dati
+
+a seconda della curva di rilevamento è possibile dedurre alcune caratteristiche della cavità.
+
+## Transito tracciante:
+![Transito](transit.png)
+
+## Transito con doppia galleria:
+![Transito con doppia galleria](transit2.png)
+
+## Testo con passaggio in frana
+![Testo con passaggio in frana](transit3.png)
 
 
