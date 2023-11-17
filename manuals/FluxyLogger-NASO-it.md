@@ -1,4 +1,4 @@
-# Datalogger NASO
+# FluxyLogger NASO
 
 ![datalogger](logo.png)
 
