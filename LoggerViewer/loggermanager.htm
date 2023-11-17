@@ -26,7 +26,8 @@
 
         #buttons {
             padding: 5px;
-            ;
+
+            background-color: #202020;
             /*height: 40px;*/
         }
 
@@ -87,6 +88,12 @@
             border: none;
             padding: 5px 15px;
             cursor: pointer;
+            margin: 3px;
+            border-radius: 6px;
+        }
+
+        #loggerviewer {
+            background-color: orange;
         }
 
         button:disabled {
@@ -97,11 +104,11 @@
 
 <body>
     <nav id="buttons">
-        <button onclick="window.location='loggerviewer.htm'">Logger viewer</button>
-        <button id="connect">Connect</button>
-        <button style="" id="disconnect" disabled>Disconnect</button>
-        <button id="logs" disabled>Download data</button>
-        <button id="settime" disabled>Send Date and hour</button>
+        <button id="loggerviewer" style="float:right" onclick="window.location='loggerviewer.htm'">Logger
+            viewer</button><button id="connect">Connect</button><button id="disconnect"
+            style="display:none;background-color: rgb(128, 0, 0);">Disconnect</button><button id="logs" disabled>View
+            stored logs</button><button id="settime" disabled>Auto Set Time</button><button id="setinterval"
+            disabled>Set Interval</button>
     </nav>
     <div id="output"></div>
     <footer id="footer">
@@ -112,12 +119,14 @@
         inDownload = false;
         inListFile = false;
         document.getElementById('connect').addEventListener('click', async () => {
+            if (navigator.serial === undefined) {
+                alert("Your browser does not support USB port reading");
+            }
             try {
                 port = await navigator.serial.requestPort();
 
             } catch (e) {
-                alert("Il tuo browser non supporta la lettura della porta USB");
-
+                //alert(e);
             }
 
             await port.open({ baudRate: 19200 });
@@ -130,10 +139,12 @@
             const outputDone = encoder.readable.pipeTo(port.writable);
             writer = encoder.writable.getWriter();
 
-            document.getElementById('connect').disabled = true;
-            document.getElementById('disconnect').disabled = false;
+            document.getElementById('connect').style.display = "none";
+            document.getElementById('disconnect').style.display = "inline-block";
             document.getElementById('logs').disabled = false;
             document.getElementById('settime').disabled = false;
+            document.getElementById('setinterval').disabled = false;
+
 
             readLoop();
         });
@@ -142,6 +153,26 @@
             inListFile = true;
         }
         );
+
+        document.getElementById('setinterval').addEventListener('click', async () => {
+            var interval = prompt("Enter interval in seconds:", "");
+            if (interval == null || isNaN(interval) || interval < 1) {
+                alert("Invalid interval");
+            }
+            else {
+                sendSerial("setconfig");
+                setTimeout(() => {
+                    sendSerial(interval);
+                    setTimeout(() => {
+                        writer.write("\r\n");
+                    }, 2000);
+                }, 2000);
+
+            }
+        }
+        );
+
+
         document.getElementById('settime').addEventListener('click', async () => {
             sendSerial("settime");
             setTimeout(() => {
@@ -171,7 +202,7 @@
         var sizeDownload = 0;
         async function readLoop() {
             const outputDiv = document.getElementById('output');
-           
+
             while (true) {
                 const { value, done } = await reader.read();
                 if (done) {
@@ -180,7 +211,7 @@
                 }
                 if (inDownload) {
                     filetext += value
-                    outputDiv.innerHTML = "received "+filetext.length+" of "+sizeDownload+" bytes";
+                    outputDiv.innerHTML = "received " + filetext.length + " of " + sizeDownload + " bytes";
                     findFileContents(filetext);
                 }
                 else {

@@ -33,16 +33,32 @@
         //*/
     </script>
     <style>
+
         body {
             font-family: Arial, Helvetica, sans-serif;
         }
-    </style>
-</head>
+        button {
+            background-color: limegreen;
+            color: black;
+            border: none;
+            padding: 5px 15px;
+            cursor: pointer;
+            margin: 3px;
+            border-radius: 6px;
+        }
+        #loggerviewer{
+            background-color: orange;
+            float:right;
+        }
+        button:disabled {
+            background-color: grey;
+        }
+    </style></head>
 
 <body>
     <nav>
         <input style="display:none" id="logfile" type="file" id="csvFileInput" accept=".csv,.txt" onchange="handleFiles(this.files)" />
-        <button onclick="window.location='loggermanager.htm'" >Logger manager</button>
+        <button id="loggerviewer"  onclick="window.location='loggermanager.htm'" >Logger manager</button>
         <button onclick="document.getElementById('logfile').click();" >Open file CSV</button>
     </nav>
     <canvas id="myChart"></canvas>

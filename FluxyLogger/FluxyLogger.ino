@@ -1,5 +1,5 @@
 /**
-   AeroLogger Datalogger - OpenSpeleo Project
+   FluxyLogger Datalogger - OpenSpeleo Project
    Author: Alessandro Vernassa (speleoalex@gmail.com)
    Copyright: 2021
    License: GNU General Public License
@@ -54,6 +54,8 @@ SGP40 sgp40Sensor; // create an object of the SGP40 class
 #include "farmerkeith_BMP280.h"
 bme280 bme0(0, DEBUGSENSOR);
 #endif
+
+bool plottermode = false;
 
 #define ZEROGAS_default 115
 #if MQ2SENSOR_PRESENT
@@ -128,7 +130,7 @@ File settingFile;
 // bool ledInternal = false;
 bool sdPresent = false;
 bool rtcPresent = false;
-bool logfileOpened = false;
+int logfileOpened = 0;
 bool echoToSerial = true;
 bool failed = false;
 bool BMP280Present = false;
@@ -167,17 +169,14 @@ void listFiles()
   {
     char name[32];
     entry.getName(name, sizeof(name));
-
     if (entry.isDirectory())
     {
     }
     else
     {
-      //      if (entry.size() > 0) {
       Serial.print(name);
       Serial.print('\t');
       Serial.println(entry.size());
-      //     }
     }
     entry = root.openNextFile();
   }
@@ -214,7 +213,7 @@ void downloadFile()
         else
         {
           Serial.println(F("error remove"));
-        }        
+        }
       }
       return;
     }
@@ -243,6 +242,7 @@ void downloadFile()
       if (fileName != "")
       {
         Serial.println(F("File not exists."));
+        return;
       }
     }
   }
@@ -278,7 +278,7 @@ float DL_analogReadAndFilter(int analogPin)
 
 void LOGSTRING(String str)
 {
-  if (logfileOpened)
+  if (logfileOpened > 0)
   {
     logfile.print(str);
     dataToWrite++;
@@ -298,7 +298,7 @@ void LOGSTRING(double val, unsigned precision = 2)
   }
   if (val < 0.0)
   {
-    if (logfileOpened)
+    if (logfileOpened >0)
       logfile.print('-');
     if (echoToSerial)
       Serial.print('-');
@@ -306,8 +306,11 @@ void LOGSTRING(double val, unsigned precision = 2)
   }
   val = round(val * pow(10, precision));
   val = val / pow(10, precision);
-  Serial.print(int(val)); // prints the int part
-  if (logfileOpened)
+  if (echoToSerial)
+  {
+    Serial.print(int(val)); // prints the int part
+  }
+  if (logfileOpened > 0)
     logfile.print(int(val), DEC);
   if (precision > 0)
   {
@@ -323,7 +326,7 @@ void LOGSTRING(double val, unsigned precision = 2)
 
     if (frac > 0)
     {
-      if (logfileOpened)
+      if (logfileOpened > 0)
         logfile.print('.');
       if (echoToSerial)
         Serial.print('.');
@@ -332,12 +335,12 @@ void LOGSTRING(double val, unsigned precision = 2)
         padding--;
       while (padding--)
       {
-        if (logfileOpened)
+        if (logfileOpened > 0)
           logfile.print('0');
         if (echoToSerial)
           Serial.print('0');
       }
-      if (logfileOpened)
+      if (logfileOpened > 0)
         logfile.print(frac, DEC);
       if (echoToSerial)
         Serial.print(frac, DEC);
@@ -346,7 +349,7 @@ void LOGSTRING(double val, unsigned precision = 2)
 }
 void LOGSTRING(unsigned long str)
 {
-  if (logfileOpened)
+  if (logfileOpened > 0)
   {
     logfile.print(str);
     dataToWrite++;
@@ -359,7 +362,7 @@ void LOGSTRING(unsigned long str)
 
 void LOGSTRINGLN(String str)
 {
-  if (logfileOpened)
+  if (logfileOpened > 0)
   {
     logfile.println(str);
     dataToWrite++;
@@ -478,11 +481,11 @@ static char *DL_strDateToFilename(void)
 */
 static void DL_closeLogFile()
 {
-  if (logfileOpened)
+  if (logfileOpened > 0)
   {
     logfile.flush();
     logfile.close();
-    logfileOpened = false;
+    logfileOpened = 0;
   }
 }
 
@@ -491,13 +494,17 @@ static void DL_closeLogFile()
 */
 static void DL_openLogFile()
 {
+  if (logfileOpened < 0)
+  {
+    return;
+  }
   if (sdPresent == true)
   {
-    if (logfileOpened)
+    if (logfileOpened > 0)
     {
       logfile.flush();
       logfile.close();
-      logfileOpened = false;
+      logfileOpened = 0;
       LogCounter = 1;
     }
     char filename[] = "xxxx-xx-xx-xx.xx.xx.txt";
@@ -510,11 +517,11 @@ static void DL_openLogFile()
         logfile = SD.open(filename, FILE_WRITE);
         if (logfile)
         {
-          logfileOpened = true;
+          logfileOpened = 1;
         }
         else
         {
-          logfileOpened = false;
+          logfileOpened = 0;
         }
         break;
       }
@@ -950,6 +957,7 @@ static bool isValidNumber(char *str)
 */
 static void execute_command(char *command)
 {
+
   if (strcmp(command, "help") == 0)
   {
     Serial.println();
@@ -959,6 +967,8 @@ static void execute_command(char *command)
     Serial.println(F("reset:reset device"));
     Serial.println(F("settime:set device clock"));
     Serial.println(F("setconfig:set config"));
+    Serial.println(F("echo start/stop: start/stop display values"));
+    Serial.println(F("log start/stop: start/stop log"));
 #if MQ2SENSOR_PRESENT
     Serial.println(F("autocalib:auto calibration MQ2 sensor"));
 #endif
@@ -966,6 +976,33 @@ static void execute_command(char *command)
 
     return;
   }
+  const char *ok = "ok";
+
+  if (strcmp(command, "log stop") == 0)
+  {
+    Serial.println(ok);
+    DL_closeLogFile();
+    logfileOpened = -1;
+  }
+  if (strcmp(command, "log start") == 0)
+  {
+    Serial.println(ok);
+    DL_closeLogFile();
+    logfileOpened = 0;
+    DL_openLogFile();
+  }
+
+  if (strcmp(command, "echo stop") == 0)
+  {
+    echoToSerial = false;
+    Serial.println(ok);
+  }
+  if (strcmp(command, "echo start") == 0)
+  {
+    echoToSerial = true;
+    Serial.println(ok);
+  }
+
 #if MQ2SENSOR_PRESENT
   if (strcmp(command, "autocalib") == 0)
   {
@@ -997,9 +1034,24 @@ static void execute_command(char *command)
     SetConfig();
     return;
   }
+  if (strcmp(command, "plotter on") == 0)
+  {
+    echoToSerial = false;
+    plottermode = true;
+    Serial.println(ok);
+    return;
+  }
+  if (strcmp(command, "plotter off") == 0)
+  {
+    echoToSerial = true;    
+    plottermode = false;
+    Serial.println(ok);
+    return;
+  }
+
+  
   if (strcmp(command, "!!") == 0)
   {
-
     Serial.println('!');
     return;
   }
@@ -1059,6 +1111,10 @@ void SetConfig()
   Serial.print(log_interval_s);
   Serial.print(')');
   interval = InputIntFromSerial(log_interval_s);
+  if (interval <= 0)
+  {
+    interval = log_interval_s;
+  }
 #if MQ2SENSOR_PRESENT
   zerogas = zerogasValue;
   Serial.print(F("\nZerogas:"));
@@ -1066,6 +1122,10 @@ void SetConfig()
   Serial.print(zerogasValue);
   Serial.print(')');
   zerogas = InputIntFromSerial(zerogasValue);
+  if (zerogas <= 0 || zerogas > 1023)
+  {
+    zerogas = zerogasValue;
+  }
 #else
   zerogas = ZEROGAS_default;
 #endif
@@ -1191,14 +1251,15 @@ void manageBlinkingByPPM(int inputValue)
   unsigned long timeOff = time / 2;
   manageBlinking(timeOn, timeOff);
 }
-
+double ppm;
+int raw;
 /**
    Loop.
 */
 void loop()
 {
   static unsigned long LedTimer = 0;
-  static bool WriteLog = false;
+  static bool LogReady = false;
   static unsigned long TimeTargetRead = 0;
   double S0Sensor = 0.0;
 
@@ -1233,9 +1294,9 @@ void loop()
   {
     digitalWrite(LED_1, LOW);
   }
-  if (TimeCurrent > TimeStartLog)
+  if (TimeCurrent > TimeStartLog || plottermode)
   {
-    WriteLog = true;
+    LogReady = true;
   }
   else
   {
@@ -1263,7 +1324,11 @@ void loop()
       digitalWrite(LED_2, HIGH);
       delay(100);
       digitalWrite(LED_2, LOW);
-      Serial.println(F("prehead sensor"));
+      if (echoToSerial)
+      {
+        Serial.println(F("prehead sensor"));
+      }
+
     }
   }
 
@@ -1281,12 +1346,21 @@ void loop()
     }
   }
 
-  if (WriteLog)
+  if (LogReady)
   {
     if (TimeCurrent > TimeTargetRead + 1000)
     {
-      manageBlinkingByPPM(MQ2_RawToPPM(analogRead(S0)));
+      raw = analogRead(S0);
+      ppm = MQ2_RawToPPM(raw);
       TimeTargetRead = TimeCurrent;
+      if (plottermode)
+      {
+        Serial.print(F("raw="));
+        Serial.print(raw);
+        Serial.print(F(",ppm="));
+        Serial.println(ppm);
+      }
+      manageBlinkingByPPM(ppm);
     }
 
     if (TimeCurrent >= TimeTarget)
