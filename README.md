@@ -1,11 +1,11 @@
-# AeroLogger
+# FluxyLogger
 
 Device for tracing air in caves.
 It detects very well the butane present in normal air freshener cans.
 
 An assembled and ready-to-use version, or in an assembly kit, can be purchased here: https://techmakers.eu/
 
-### components required for assembly (AeroLogger NASO):
+### components required for assembly (FluxyLogger NASO):
 * 1 ArduinoUNO
 * 1 PowerBank
 * 1 Data Logger Shield with RTC

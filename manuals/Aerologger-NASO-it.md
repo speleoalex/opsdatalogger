@@ -1,6 +1,12 @@
-# Aerologger NASO
+# Datalogger NASO
 
 ![datalogger](logo.png)
+
+Il datalogger N.A.S.O. (Novel Aereal Sensing Observer) ha lo scopo di verificare la presenza di connessioni tra due ingressi di cavità tramite tracciamenti dell'aria.
+
+Il tracciante viene immesso in un ingresso aspirante e il datalogger in un ingresso soffiante.
+
+Il datalogger registra il passaggio del tracciante e salva i dati acquisiti su una scheda nicroSD
 
 
 -----
@@ -40,7 +46,7 @@ esempio “Serial USB Terminal” per dispositivi Android.
 ### Collegamento da PC :
 Il programma Arduino IDE ha un terminale integrato accessibile dal menu
 Strumenti->Monitor seriale.
-Impostare la porta USB e la velocità della seriale a 9600 baud
+Impostare la porta USB e la velocità della seriale a 19200 baud
 
 ### Impostazione data e ora:
 Accendere il sensore collegandolo alla porta USB ed entro 5 secondi inviare un carattere
@@ -74,8 +80,8 @@ zerogas rappresenta il valore grezzo del sensore quando l'aria è in assenza di 
 ## Scaricamento dati
 
 - I dati sono scritti su files all'interno della scheda SD. I files hanno come nome la data di inizio log. Possono essere aperti con qualsiasi foglio di calcolo. Impostare come separatore di campo ";"
-- È possibile scaricare i dati da PC utilizzando Google Chrome o MS Edge tramite web application all'indirizzo: [https://applications.techmakers.it/datalogger/loggermanager.htm](https://applications.techmakers.it/datalogger/loggermanager.htm)
-
+- È possibile scaricare i dati da PC utilizzando **Google Chrome** o **MS Edge** tramite web application all'indirizzo: [https://applications.techmakers.it/datalogger/loggermanager.htm](https://applications.techmakers.it/datalogger/loggermanager.htm)
+ il browser Safari non è supportato
 
 ## Interpretazione dei dati
 
