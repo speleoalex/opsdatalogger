@@ -125,6 +125,7 @@ double MQ2_calc_res(double raw_adc)
 //-------------globals--------------------->
 
 const char *CONF_FILE = "CONFIG.INI"; // configuration file
+const char *ok = "ok";
 File logfile;
 File settingFile;
 // bool ledInternal = false;
@@ -154,6 +155,7 @@ char strFileDate[] = "YYYY-MM-DD_HH.mm.ss.txt";
 SdFat SD;
 
 unsigned long PPMGas;
+const char *FileNotExists = "file not exists";
 
 //-------------globals---------------------<
 #define NUM_READS 16
@@ -169,10 +171,7 @@ void listFiles()
   {
     char name[32];
     entry.getName(name, sizeof(name));
-    if (entry.isDirectory())
-    {
-    }
-    else
+    if (!entry.isDirectory())
     {
       Serial.print(name);
       Serial.print('\t');
@@ -181,7 +180,6 @@ void listFiles()
     entry = root.openNextFile();
   }
 }
-
 void downloadFile()
 {
   Serial.println(F("Type Filename or e to exit"));
@@ -197,27 +195,24 @@ void downloadFile()
     {
       return;
     }
-
     if (fileName.startsWith("rm "))
     {
       // Rimuove "rm " dalla stringa per ottenere il nome del file
       fileName = fileName.substring(3);
-      if (SD.exists(fileName))
+      Serial.print(F("del "));
+      Serial.println(fileName);
+      if (SD.remove(fileName.c_str()))
       {
-        Serial.print(F("del "));
-        Serial.println(fileName);
-        if (SD.remove(fileName))
-        {
-          Serial.println(F("file deleted"));
-        }
-        else
-        {
-          Serial.println(F("error remove"));
-        }
+        Serial.println(F("file deleted"));
+      }
+      else
+      {
+        Serial.print(F("error remove "));
+        Serial.println(fileName.c_str());
       }
       return;
     }
-    if (SD.exists(fileName))
+    if (fileName != "")
     {
       File file = SD.open(fileName);
       if (file)
@@ -235,13 +230,6 @@ void downloadFile()
       else
       {
         Serial.println(F("error opening file."));
-      }
-    }
-    else
-    {
-      if (fileName != "")
-      {
-        Serial.println(F("File not exists."));
         return;
       }
     }
@@ -298,7 +286,7 @@ void LOGSTRING(double val, unsigned precision = 2)
   }
   if (val < 0.0)
   {
-    if (logfileOpened >0)
+    if (logfileOpened > 0)
       logfile.print('-');
     if (echoToSerial)
       Serial.print('-');
@@ -812,7 +800,7 @@ void setup()
   }
   else
   {
-    Serial.println(F("ok"));
+    Serial.println(ok);
     sdPresent = true;
   }
   if (failed)
@@ -969,6 +957,7 @@ static void execute_command(char *command)
     Serial.println(F("setconfig:set config"));
     Serial.println(F("echo start/stop: start/stop display values"));
     Serial.println(F("log start/stop: start/stop log"));
+    Serial.println(F("plotter start/stop: start/stop plotter mode"));
 #if MQ2SENSOR_PRESENT
     Serial.println(F("autocalib:auto calibration MQ2 sensor"));
 #endif
@@ -976,7 +965,8 @@ static void execute_command(char *command)
 
     return;
   }
-  const char *ok = "ok";
+
+
 
   if (strcmp(command, "log stop") == 0)
   {
@@ -1002,6 +992,24 @@ static void execute_command(char *command)
     echoToSerial = true;
     Serial.println(ok);
   }
+  if (strcmp(command, "plotter on") == 0)
+  {
+    DL_closeLogFile();
+    logfileOpened = -1;
+    echoToSerial = false;
+    plottermode = true;
+    Serial.println(ok);
+    return;
+  }
+  if (strcmp(command, "plotter off") == 0)
+  {
+    echoToSerial = true;
+    plottermode = false;
+    Serial.println(ok);
+    return;
+  }
+
+
 
 #if MQ2SENSOR_PRESENT
   if (strcmp(command, "autocalib") == 0)
@@ -1011,6 +1019,8 @@ static void execute_command(char *command)
 #endif
   if (strcmp(command, "logs") == 0)
   {
+    DL_closeLogFile();
+    logfileOpened = -1;
     File root = SD.open("/");
     Serial.flush();
     listFiles();
@@ -1021,6 +1031,7 @@ static void execute_command(char *command)
   if (strcmp(command, "reset") == 0)
   {
     DL_closeLogFile();
+    Serial.println(ok);
     reset(); // reset arduino
     return;
   }
@@ -1032,27 +1043,6 @@ static void execute_command(char *command)
   if (strcmp(command, "setconfig") == 0)
   {
     SetConfig();
-    return;
-  }
-  if (strcmp(command, "plotter on") == 0)
-  {
-    echoToSerial = false;
-    plottermode = true;
-    Serial.println(ok);
-    return;
-  }
-  if (strcmp(command, "plotter off") == 0)
-  {
-    echoToSerial = true;    
-    plottermode = false;
-    Serial.println(ok);
-    return;
-  }
-
-  
-  if (strcmp(command, "!!") == 0)
-  {
-    Serial.println('!');
     return;
   }
 }
@@ -1294,7 +1284,7 @@ void loop()
   {
     digitalWrite(LED_1, LOW);
   }
-  if (TimeCurrent > TimeStartLog || plottermode)
+  if (TimeCurrent > TimeStartLog || plottermode || logfileOpened == -1)
   {
     LogReady = true;
   }
@@ -1326,9 +1316,8 @@ void loop()
       digitalWrite(LED_2, LOW);
       if (echoToSerial)
       {
-        Serial.println(F("prehead sensor"));
+        Serial.println(F("Prehead sensor"));
       }
-
     }
   }
 

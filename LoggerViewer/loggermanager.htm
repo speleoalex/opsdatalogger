@@ -293,10 +293,14 @@
                 const outputDiv = document.getElementById('output');
                 outputDiv.innerHTML = ''; // Pulisci il div
                 listaFile.forEach(file => {
+                    ///var html = "";
                     const nomeFile = file.split('\t')[0].trim();
 
                     if (nomeFile.indexOf(".txt") !== -1 || nomeFile.indexOf(".csv") !== -1) {
                         const size = file.split('\t')[1].trim();
+
+                       /// html+="<button onclick=''>"+nomeFile+"</button>";
+
                         const bottone = document.createElement('button');
                         bottone.textContent = nomeFile;
                         bottone.addEventListener('click', function () {
@@ -311,22 +315,18 @@
                         bottoneDel.setAttribute("onclick", "doDelete('" + nomeFile + "');");
                         outputDiv.appendChild(bottone);
                         outputDiv.appendChild(bottoneDel);
-
-
-
-                        outputDiv.appendChild(document.createTextNode(" " + size + " bytes\n\n"));
-
+                        outputDiv.appendChild(document.createTextNode(" " + size + " bytes\r\n\r\n"));
                     }
                 });
                 const bottone = document.createElement('button');
-                bottone.textContent = "Continue";
+                bottone.textContent = "Exit";
                 bottone.setAttribute("class", "continue");
                 bottone.addEventListener('click', function () {
                     sendSerial('e');
                     clearOutput();
                 });
                 outputDiv.appendChild(bottone);
-                outputDiv.appendChild(document.createTextNode("\n"));
+                outputDiv.appendChild(document.createElement('br'));
                 inListFile = false;
                 filetext = "";
             }
@@ -338,12 +338,13 @@
                 return;
             }
             const filenameOk = testo.indexOf(".txt");
-            if (filenameOk === -1) {
+            const filenameOk2 = testo.indexOf(".csv");
+            if (filenameOk === -1 && filenameOk2 === -1) {
                 return;
             }
 
             document.getElementById('output').innerHTML = "Start download file:";
-            console.log(testo);
+            //console.log(testo);
             const inizio = testo.indexOf("Start trasmission:");
             if (inizio !== -1 && fine !== -1 && filenameOk !== -1) {
                 const nomeFile = testo.split("End trasmission:")[1].trim();

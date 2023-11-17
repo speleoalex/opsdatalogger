@@ -48,9 +48,33 @@ Il programma Arduino IDE ha un terminale integrato accessibile dal menu
 Strumenti->Monitor seriale.
 Impostare la porta USB e la velocità della seriale a 19200 baud
 
+### Esempiodi output su seriale:
+```
+SD initialization:ok
+CONFIG.INI exist
+zerogas=89
+Interval(s)=30
+RTC present
+Device clock:2023-11-17 17:15:28 type 'settime' to change
+prehead sensor
+prehead sensor
+prehead sensor
+prehead sensor
+prehead sensor
+prehead sensor
+prehead sensor
+Log to:2023-11-17_17.16.02.txt
+"date Y-m-d m:s"	"gas adc"	"LPG PPM" 
+"2023-11-17 17:16:02"	80	0
+"2023-11-17 17:16:32"	80	0
+"2023-11-17 17:17:02"	80	0
+```
+
+inviando il comando "help" è possibile avere la lista dei comandi possibili.
+
+
 ### Impostazione data e ora:
-Accendere il sensore collegandolo alla porta USB ed entro 5 secondi inviare un carattere
-qualsiasi.
+Accendere il sensore collegandolo alla porta USB ed inviare il comando **settime**
 
 A questo punto chiederà in successione Anno, Mese, giorno, ora minuti.
 
@@ -61,7 +85,7 @@ con dispositivo connesso alla seriale è possibile in qualsiasi momento reimpost
 
 ## Calibrazione automatica
 - Collegare il datalogger a pc o smartphone in un luogo dove non c'è presenza di tracciante
-- Inviare il comando autocalib
+- Inviare il comando **autocalib**
 
 Le luci L1 e L2 lampeggiano in sincronia fino a fine calibrazione.
 
