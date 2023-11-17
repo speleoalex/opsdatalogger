@@ -1,3 +1,10 @@
+# Aerologger NASO
+
+![datalogger](logo.png)
+
+
+-----
+
 # Elenco componenti
 
 ![datalogger](datalogger.png)
@@ -67,7 +74,7 @@ zerogas rappresenta il valore grezzo del sensore quando l'aria è in assenza di 
 ## Scaricamento dati
 
 - I dati sono scritti su files all'interno della scheda SD. I files hanno come nome la data di inizio log. Possono essere aperti con qualsiasi foglio di calcolo. Impostare come separatore di campo ";"
-- È possibile scaricare i dati da PC utilizzando Google Chrome o MS Edge tramite web application
+- È possibile scaricare i dati da PC utilizzando Google Chrome o MS Edge tramite web application all'indirizzo: [https://applications.techmakers.it/datalogger/loggermanager.htm](https://applications.techmakers.it/datalogger/loggermanager.htm)
 
 
 ## Interpretazione dei dati
