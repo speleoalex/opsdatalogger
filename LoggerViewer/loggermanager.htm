@@ -281,9 +281,16 @@
         function clearOutput() {
             document.getElementById('output').innerHTML = "";
         }
+        function downloadFileClick(filename,size)
+        {
+            inDownload = true;
+            sizeDownload = size;
+            sendDownloadFileName(filename);
 
+        }
         function creaBottoniPerFile(testo) {
             const inizio = testo.indexOf("Files:");
+            let html = "";
             if (inizio == -1) {
                 return;
             }
@@ -299,8 +306,9 @@
                     if (nomeFile.indexOf(".txt") !== -1 || nomeFile.indexOf(".csv") !== -1) {
                         const size = file.split('\t')[1].trim();
 
-                       /// html+="<button onclick=''>"+nomeFile+"</button>";
-
+                        html+="<button onclick=\"downloadFileClick('"+nomeFile+"',"+size+")\">"+nomeFile+"</button>";
+                        html+="<button class=\"delete\" onclick=\"doDelete('"+nomeFile+"')\">delete</button>"+size+" bytes\r\n\r\n";
+/*
                         const bottone = document.createElement('button');
                         bottone.textContent = nomeFile;
                         bottone.addEventListener('click', function () {
@@ -309,15 +317,18 @@
                             sendDownloadFileName(nomeFile);
                         });
                         outputDiv.appendChild(bottone);
-                        const bottoneDel = document.createElement('button');
+                    const bottoneDel = document.createElement('button');
                         bottoneDel.textContent = "delete";
                         bottoneDel.setAttribute("class", "delete");
                         bottoneDel.setAttribute("onclick", "doDelete('" + nomeFile + "');");
                         outputDiv.appendChild(bottone);
                         outputDiv.appendChild(bottoneDel);
                         outputDiv.appendChild(document.createTextNode(" " + size + " bytes\r\n\r\n"));
-                    }
+                    */
+                }
                 });
+                html+="<button class=\"continue\" onclick=\"sendSerial('e');clearOutput();\">Exit</button><hr />";
+/*
                 const bottone = document.createElement('button');
                 bottone.textContent = "Exit";
                 bottone.setAttribute("class", "continue");
@@ -327,6 +338,8 @@
                 });
                 outputDiv.appendChild(bottone);
                 outputDiv.appendChild(document.createElement('br'));
+*/
+                outputDiv.innerHTML=html;
                 inListFile = false;
                 filetext = "";
             }
