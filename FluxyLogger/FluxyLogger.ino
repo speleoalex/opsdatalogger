@@ -153,6 +153,7 @@ unsigned long LogCounter = 0; // counter
 unsigned long dataToWrite = 0;
 RTC_DS1307 RTC; // define the Real Time Clock object
 DateTime now;
+char printBuffer[32];
 
 char strDate[20] ;//= "0000-00-00 00:00:00";
 char strFileDate[24];// = "YYYY-MM-DD_HH.mm.ss.txt";
@@ -171,11 +172,11 @@ void listFiles()
   File entry = root.openNextFile();
   while (entry)
   {
-    char name[32];
-    entry.getName(name, sizeof(name));
+    
+    entry.getName(printBuffer, sizeof(printBuffer));
     if (!entry.isDirectory())
     {
-      Serial.print(name);
+      Serial.print(printBuffer);
       Serial.print('\t');
       Serial.println((unsigned long)entry.size());
     }
@@ -277,7 +278,18 @@ void LOGPRINT(const __FlashStringHelper *str)
     Serial.print(str);
   }
 }
-
+void LOGPRINT(char *str)
+{
+  if (logfileOpened > 0)
+  {
+    logfile.print(str);
+    dataToWrite++;
+  }
+  if (echoToSerial)
+  {
+    Serial.print(str);
+  }
+}
 void LOGPRINTLN(const __FlashStringHelper *str)
 {
   if (logfileOpened > 0)
@@ -415,6 +427,7 @@ static char *DL_strNow(void)
 {
   if (rtcPresent)
   {
+    //DateTime now;
     now = RTC.now();
     sprintf(strDate, "%4d-%2d-%2d_%2d:%2d:%2d", now.year(), now.month(),
             now.day(), now.hour(), now.minute(), now.second());
@@ -441,7 +454,7 @@ static char *DL_strNow(void)
 */
 static char *DL_strDateToFilename(void)
 {
-  DateTime now;
+//  DateTime now;
   now = RTC.now();
   sprintf(strFileDate, "%4d-%2d-%2d_%2d.%2d.%2d.txt", now.year(), now.month(),
           now.day(), now.hour(), now.minute(), now.second());
@@ -458,7 +471,7 @@ static char *DL_strDateToFilename(void)
 
 
 */
-static void DL_closeLogFile()
+void DL_closeLogFile()
 {
   if (logfileOpened > 0)
   {
@@ -471,7 +484,7 @@ static void DL_closeLogFile()
 /**
 
 */
-static void DL_openLogFile()
+void DL_openLogFile()
 {
   if (logfileOpened < 0)
   {
@@ -753,7 +766,7 @@ bool CreateINIConf(int NewInterval_s, int NewzerogasValue = 0)
 /**
 
 */
-static void DL_initConf()
+void DL_initConf()
 {
 
   if (sdPresent)
@@ -978,7 +991,7 @@ static bool isValidNumber(char *str)
 /**
 
 */
-static void execute_command(char *command)
+void execute_command(char *command)
 {
 
   if (strcmp(command, "help") == 0)
@@ -1182,7 +1195,6 @@ void SetDateTime()
   DL_closeLogFile();
   delay(500);
   SerialFlush();
-  //    now = RTC.now();
   int year, month, day, hours, minutes;
   Serial.println(F("\nClock:"));
   Serial.print(F("Year:"));
@@ -1212,7 +1224,7 @@ void reset()
 
 
 */
-static void SerialFlush()
+void SerialFlush()
 {
   Serial.flush();
   while (Serial.available() > 0)
@@ -1265,7 +1277,7 @@ void manageBlinking(unsigned long timeOn, unsigned long timeOff)
 
 void manageBlinkingByPPM(int inputValue)
 {
-  unsigned int MaxValue = 500;
+  uint16_t MaxValue = 500;
   // Assicurati che il valore di input sia entro i limiti previsti
   if (inputValue > MaxValue || inputValue < 0)
   {
@@ -1358,7 +1370,7 @@ void loop()
       digitalWrite(LED_2, LOW);
       if (echoToSerial)
       {
-        Serial.println(F("Prehead sensor"));
+        Serial.println(F("Prehead"));
       }
     }
   }

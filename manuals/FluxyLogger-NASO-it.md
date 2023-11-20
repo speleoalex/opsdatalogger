@@ -56,13 +56,13 @@ zerogas=89
 Interval(s)=30
 RTC present
 Device clock:2023-11-17 17:15:28 type 'settime' to change
-prehead sensor
-prehead sensor
-prehead sensor
-prehead sensor
-prehead sensor
-prehead sensor
-prehead sensor
+prehead 
+prehead 
+prehead 
+prehead 
+prehead 
+prehead 
+prehead 
 Log to:2023-11-17_17.16.02.txt
 "date Y-m-d m:s"	"gas adc"	"LPG PPM" 
 "2023-11-17 17:16:02"	80	0
