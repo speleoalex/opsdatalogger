@@ -127,8 +127,8 @@ float MQ2_calc_res(float raw_adc)
 #define TXLED 30
 
 //-------------globals--------------------->
-const char CONF_FILE [] =  "CONFIG.INI"; // configuration file
-const char ok[]  = "ok";
+const char CONF_FILE[] = "CONFIG.INI"; // configuration file
+const char ok[] = "ok";
 
 File logfile;
 File settingFile;
@@ -154,9 +154,11 @@ unsigned long dataToWrite = 0;
 RTC_DS1307 RTC; // define the Real Time Clock object
 DateTime now;
 char printBuffer[32];
+char strDate[20];     //= "0000-00-00 00:00:00";
+char strFileDate[24]; // = "YYYY-MM-DD_HH.mm.ss.txt";
 
-char strDate[20] ;//= "0000-00-00 00:00:00";
-char strFileDate[24];// = "YYYY-MM-DD_HH.mm.ss.txt";
+char delimiter[] =  ";";
+
 SdFat SD;
 
 unsigned long PPMGas;
@@ -172,12 +174,12 @@ void listFiles()
   File entry = root.openNextFile();
   while (entry)
   {
-    
+
     entry.getName(printBuffer, sizeof(printBuffer));
     if (!entry.isDirectory())
     {
       Serial.print(printBuffer);
-      Serial.print('\t');
+      Serial.print(delimiter);
       Serial.println((unsigned long)entry.size());
     }
     entry = root.openNextFile();
@@ -266,18 +268,7 @@ float DL_analogReadAndFilter(int analogPin)
   sum = sum - minValue - maxValue;
   return (float)sum / (NUM_READS - 2);
 }
-void LOGPRINT(const __FlashStringHelper *str)
-{
-  if (logfileOpened > 0)
-  {
-    logfile.print(str);
-    dataToWrite++;
-  }
-  if (echoToSerial)
-  {
-    Serial.print(str);
-  }
-}
+
 void LOGPRINT(char *str)
 {
   if (logfileOpened > 0)
@@ -290,6 +281,20 @@ void LOGPRINT(char *str)
     Serial.print(str);
   }
 }
+
+void LOGPRINT(const __FlashStringHelper *str)
+{
+  if (logfileOpened > 0)
+  {
+    logfile.print(str);
+    dataToWrite++;
+  }
+  if (echoToSerial)
+  {
+    Serial.print(str);
+  }
+}
+
 void LOGPRINTLN(const __FlashStringHelper *str)
 {
   if (logfileOpened > 0)
@@ -427,7 +432,7 @@ static char *DL_strNow(void)
 {
   if (rtcPresent)
   {
-    //DateTime now;
+    // DateTime now;
     now = RTC.now();
     sprintf(strDate, "%4d-%2d-%2d_%2d:%2d:%2d", now.year(), now.month(),
             now.day(), now.hour(), now.minute(), now.second());
@@ -454,7 +459,7 @@ static char *DL_strNow(void)
 */
 static char *DL_strDateToFilename(void)
 {
-//  DateTime now;
+  //  DateTime now;
   now = RTC.now();
   sprintf(strFileDate, "%4d-%2d-%2d_%2d.%2d.%2d.txt", now.year(), now.month(),
           now.day(), now.hour(), now.minute(), now.second());
@@ -539,35 +544,56 @@ void DL_openLogFile()
   {
     Serial.println(F("Log:serial"));
   }
-  //  LOGPRINT(F("\"count\"\t\"date Y-m-d m:s\""));
+
   LOGPRINT(F("\"date Y-m-d m:s\""));
 
 #if MQ2SENSOR_PRESENT
-  LOGPRINT(F("\t\"gas adc\""));
-  LOGPRINT(F("\t\"LPG PPM\""));
+  LOGPRINT(delimiter);
+  LOGPRINT(F("\"gas adc\""));
+  LOGPRINT(delimiter);
+  LOGPRINT(F("\"LPG PPM\""));
 #endif
 
 #if BMP280_PRESENT
   if (BMP280Present)
   {
 #if HUMIDITY_PRESENT
-    LOGPRINT(F("\t\"temp\"\t\"pressure\"\t\"humidity\""));
+
+    LOGPRINT(delimiter);
+
+    LOGPRINT(delimiter);
+    LOGPRINT(F("\"temp\""));
+    OGPRINT(delimiter);
+
+    LOGPRINT(F("\"pressure\""));
+    LOGPRINT(delimiter);
+
+    LOGPRINT(F("\"humidity\""));
 #else
-    LOGPRINT(F("\t\"temp\"\t\"pressure\""));
+    LOGPRINT(delimiter);
+
+    LOGPRINT(F("\"temp\""));
+    LOGPRINT(F(\"pressure\""));
+    LOGPRINT(delimiter);
 #endif
   }
 #endif
 #if WINDSENSOR_PRESENT
-  LOGPRINT(F("\t\"wind\""));
-  LOGPRINT(F("\t\"WindTemp\""));
+  LOGPRINT(delimiter);
+  LOGPRINT(F("\"wind\""));
+  LOGPRINT(delimiter);
+  LOGPRINT(F("\"WindTemp\""));
 #endif
 #if SGP40_PRESENT
-  LOGPRINT(F("\t\"VOCIndex \""));
-  LOGPRINT(F("\t\"VOCRaw \""));
+  LOGPRINT(delimiter);
+  LOGPRINT(F("\"VOCIndex \""));
+  LOGPRINT(delimiter);
+  LOGPRINT(F("\"VOCRaw \""));
 #endif
 
 #if LOGVCC
-  LOGPRINT(F("\t\"VCC\""));
+  LOGPRINT(delimiter);
+  LOGPRINT(F("\"VCC\""));
 #endif
   LOGPRINTLN(F(" "));
 }
@@ -647,56 +673,70 @@ static uint8_t CONF_getConfValueInt(const char *filename, const char *key, uint8
   return ret;
 }
 #else
-static int CONF_getConfValueInt(char *filename, char *key, int defaultValue = 0) {
+static int CONF_getConfValueInt(char *filename, char *key, int defaultValue = 0)
+{
   File myFile;
   char character;
   String description = "";
   String value = "";
   boolean valid = true;
   int ret = defaultValue;
-  if (!SD.exists(filename)) {
+  if (!SD.exists(filename))
+  {
     return defaultValue;
   }
   myFile = SD.open(filename);
-  while (myFile.available()) {
+  while (myFile.available())
+  {
     description = "";
     character = myFile.read();
     // cerca una linea valida----->
-    if (!CONF_is_valid_char(character)) {
+    if (!CONF_is_valid_char(character))
+    {
       // Comment - ignore this line
-      while (character != '\n' && myFile.available()) {
+      while (character != '\n' && myFile.available())
+      {
         character = myFile.read();
       };
       continue;
     }
     // cerca una linea valida-----<
     //----riempo la descrizione---->
-    do {
+    do
+    {
       description.concat(character);
       character = myFile.read();
-      if (!myFile.available()) {
+      if (!myFile.available())
+      {
         myFile.close();
         return defaultValue;
       }
     } while (CONF_is_valid_char(character));
     //----riempo la descrizione----<
     //-------elimino gli spazi------->
-    if (character == ' ') {
-      do {
+    if (character == ' ')
+    {
+      do
+      {
         character = myFile.read();
-        if (!myFile.available()) {
+        if (!myFile.available())
+        {
           myFile.close();
           return defaultValue;
         }
       } while (character == ' ');
     }
     //-------elimino gli spazi-------<
-    if (character == '=') {
-      if (description == key) {
+    if (character == '=')
+    {
+      if (description == key)
+      {
         //-------elimino gli spazi------->
-        do {
+        do
+        {
           character = myFile.read();
-          if (!myFile.available()) {
+          if (!myFile.available())
+          {
             myFile.close();
             return defaultValue;
           }
@@ -704,17 +744,22 @@ static int CONF_getConfValueInt(char *filename, char *key, int defaultValue = 0)
         //-------elimino gli spazi-------<
         value = "";
         valid = true;
-        while (character != '\n' && character != '\r') {
+        while (character != '\n' && character != '\r')
+        {
           // Serial.println(character);
-          if (isdigit(character)) {
+          if (isdigit(character))
+          {
             value.concat(character);
-          } else if (character != '\n' && character != '\r') {
+          }
+          else if (character != '\n' && character != '\r')
+          {
             // Use of invalid values
             valid = false;
           }
           character = myFile.read();
         };
-        if (valid) {
+        if (valid)
+        {
           // Convert string to array of chars
           char charBuf[value.length() + 1];
           value.toCharArray(charBuf, value.length() + 1);
@@ -724,8 +769,11 @@ static int CONF_getConfValueInt(char *filename, char *key, int defaultValue = 0)
           return ret;
         }
       }
-    } else {
-      while (character != '\n' && myFile.available()) {
+    }
+    else
+    {
+      while (character != '\n' && myFile.available())
+      {
         character = myFile.read();
       };
       continue;
@@ -807,7 +855,7 @@ void DL_initConf()
 void setup()
 {
   PPMGas = 0;
-  //uint8_t n = 0;
+  // uint8_t n = 0;
   int timeout = 5;
   //--init serial------------------------------>
   Serial.begin(115200); // 19200 boud
@@ -1038,7 +1086,7 @@ void execute_command(char *command)
     echoToSerial = true;
     Serial.println(ok);
   }
-  if (strcmp(command, "plotter on") == 0)
+  if (strcmp(command, "plotter start") == 0)
   {
     DL_closeLogFile();
     logfileOpened = -1;
@@ -1047,7 +1095,7 @@ void execute_command(char *command)
     Serial.println(ok);
     return;
   }
-  if (strcmp(command, "plotter off") == 0)
+  if (strcmp(command, "plotter stop") == 0)
   {
     echoToSerial = true;
     plottermode = false;
@@ -1322,7 +1370,7 @@ void loop()
 #if WINDSENSOR_PRESENT
 #define zeroWindAdjustment 0.2; // negative numbers yield smaller wind speeds and vice versa.
   int TMP_Therm_ADunits;        // temp termistor value from wind sensor
-  float RV_Wind_ADunits;       // RV output from wind sensor
+  float RV_Wind_ADunits;        // RV output from wind sensor
   float RV_Wind_Volts;
   int TempCtimes100;
   float zeroWind_ADunits;
@@ -1426,12 +1474,12 @@ void loop()
       //-----------sensors-------------------------------------------------------<
       LogCounter++;
       // LOGPRINT(String(LogCounter));
-      // LOGPRINT(F("\t"));
+      // LOGPRINT(delimiter);
       LOGPRINT(F("\""));
       LOGPRINT(DL_strNow());
       LOGPRINT(F("\""));
 #if MQ2SENSOR_PRESENT
-      LOGPRINT(F("\t"));
+      LOGPRINT(delimiter);
       LOGPRINT(S0Sensor);
 
 #if OLED_PRESENT
@@ -1439,7 +1487,7 @@ void loop()
       oled.print(S0Sensor);
 #endif
 
-      LOGPRINT(F("\t"));
+      LOGPRINT(delimiter);
       PPMGas = MQ2_RawToPPM(S0Sensor);
       LOGPRINT(PPMGas);
       if (PPMGas > MINPPMPOSITIVE)
@@ -1472,13 +1520,13 @@ void loop()
       {
         temperature = bme0.readTemperature();
         pressure = bme0.readPressure();
-        LOGPRINT(F("\t"));
+        LOGPRINT(delimiter);
         LOGPRINT(temperature);
-        LOGPRINT(F("\t"));
+        LOGPRINT(delimiter);
         LOGPRINT(pressure, 0);
 #if HUMIDITY_PRESENT
         humidity = bme0.readHumidity();
-        LOGPRINT(F("\t"));
+        LOGPRINT(delimiter);
         LOGPRINT(humidity);
 #endif
       }
@@ -1509,24 +1557,24 @@ void loop()
         Serial.print(F("   WindSpeed MPH "));
         Serial.println((float)WindSpeed_MPH);
       */
-      LOGPRINT(F("\t"));
+      LOGPRINT(delimiter);
       float Wind_mts = WindSpeed_MPH * 0.44704;
       LOGPRINT(Wind_mts, 5); // m/s
-      LOGPRINT(F("\t"));
+      LOGPRINT(delimiter);
       LOGPRINT((TempCtimes100 / 100)); // m/s
 #endif
 
 #if SGP40_PRESENT
-      LOGPRINT(F("\t"));
+      LOGPRINT(delimiter);
       LOGPRINT(sgp40Sensor.getVOCindex(), 2);
-      LOGPRINT(F("\t"));
+      LOGPRINT(delimiter);
       LOGPRINT(sgp40Sensor.getRaw(), 2);
 
 #endif
 
 #if LOGVCC
 
-      LOGPRINT(F("\t"));
+      LOGPRINT(delimiter);
       LOGPRINT(String(vcc));
 #endif
       LOGPRINT(F("\n"));
