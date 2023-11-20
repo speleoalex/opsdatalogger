@@ -179,7 +179,7 @@ void listFiles()
     if (!entry.isDirectory())
     {
       Serial.print(printBuffer);
-      Serial.print(delimiter);
+      Serial.print("\t");
       Serial.println((unsigned long)entry.size());
     }
     entry = root.openNextFile();

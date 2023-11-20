@@ -82,7 +82,8 @@
             background-color: rgb(136, 92, 255);
         }
 
-        button,select {
+        button,
+        select {
             background-color: limegreen;
             color: black;
             border: none;
@@ -106,11 +107,11 @@
     <nav id="buttons">
         <button id="loggerviewer" style="float:right" onclick="window.location='loggerviewer.htm'">Logger
             viewer</button><button id="connect">Connect</button><select name="baudrate" id="baudrate-select">
-                <option value="9600">9600</option>
-                <option value="19200">19200</option>
-                <option value="57600">57600</option>
-                <option selected value="115200">115200</option>
-            </select><button id="disconnect"
+            <option value="9600">9600</option>
+            <option value="19200">19200</option>
+            <option value="57600">57600</option>
+            <option selected value="115200">115200</option>
+        </select><button id="disconnect"
             style="display:none;background-color: rgb(128, 0, 0);">Disconnect</button><button id="logs" disabled>View
             stored logs</button><button id="settime" disabled>Auto Set Time</button><button id="setinterval"
             disabled>Set Interval</button>
@@ -124,7 +125,7 @@
             var select = document.getElementById("baudrate-select");
             var selectedBaudRate = select.options[select.selectedIndex].value;
             return selectedBaudRate;
-        }        
+        }
         let port, reader, writer, inDownload;
         inDownload = false;
         inListFile = false;
@@ -290,8 +291,7 @@
         function clearOutput() {
             document.getElementById('output').innerHTML = "";
         }
-        function downloadFileClick(filename,size)
-        {
+        function downloadFileClick(filename, size) {
             inDownload = true;
             sizeDownload = size;
             sendDownloadFileName(filename);
@@ -305,50 +305,28 @@
             }
             const fine = testo.indexOf("Type Filename or e to exit");
             if (inizio !== -1 && fine !== -1) {
-                const listaFile = testo.substring(inizio + "Files:".length, fine).trim().split('\n');
-                const outputDiv = document.getElementById('output');
-                outputDiv.innerHTML = ''; // Pulisci il div
-                listaFile.forEach(file => {
-                    ///var html = "";
-                    const nomeFile = file.split('\t')[0].trim();
+                try {
 
-                    if (nomeFile.indexOf(".txt") !== -1 || nomeFile.indexOf(".csv") !== -1) {
-                        const size = file.split('\t')[1].trim();
+                    const listaFile = testo.substring(inizio + "Files:".length, fine).trim().split('\n');
+                    const outputDiv = document.getElementById('output');
+                    outputDiv.innerHTML = ''; // Pulisci il div
+                    listaFile.forEach(file => {
+                        const nomeFile = file.split('\t')[0].trim();
 
-                        html+="<button onclick=\"downloadFileClick('"+nomeFile+"',"+size+")\">"+nomeFile+"</button>";
-                        html+="<button class=\"delete\" onclick=\"doDelete('"+nomeFile+"')\">delete</button>"+size+" bytes\r\n\r\n";
-/*
-                        const bottone = document.createElement('button');
-                        bottone.textContent = nomeFile;
-                        bottone.addEventListener('click', function () {
-                            inDownload = true;
-                            sizeDownload = size;
-                            sendDownloadFileName(nomeFile);
-                        });
-                        outputDiv.appendChild(bottone);
-                    const bottoneDel = document.createElement('button');
-                        bottoneDel.textContent = "delete";
-                        bottoneDel.setAttribute("class", "delete");
-                        bottoneDel.setAttribute("onclick", "doDelete('" + nomeFile + "');");
-                        outputDiv.appendChild(bottone);
-                        outputDiv.appendChild(bottoneDel);
-                        outputDiv.appendChild(document.createTextNode(" " + size + " bytes\r\n\r\n"));
-                    */
+                        if (nomeFile.indexOf(".txt") !== -1 || nomeFile.indexOf(".csv") !== -1) {
+                            const size = file.split('\t')[1].trim();
+
+                            html += "<button onclick=\"downloadFileClick('" + nomeFile + "'," + size + ")\">" + nomeFile + "</button>";
+                            html += "<button class=\"delete\" onclick=\"doDelete('" + nomeFile + "')\">delete</button>" + size + " bytes\r\n\r\n";
+
+                        }
+                    });
+                    html += "<button class=\"continue\" onclick=\"sendSerial('e');clearOutput();\">Exit</button><hr />";
+                    outputDiv.innerHTML = html;
                 }
-                });
-                html+="<button class=\"continue\" onclick=\"sendSerial('e');clearOutput();\">Exit</button><hr />";
-/*
-                const bottone = document.createElement('button');
-                bottone.textContent = "Exit";
-                bottone.setAttribute("class", "continue");
-                bottone.addEventListener('click', function () {
-                    sendSerial('e');
-                    clearOutput();
-                });
-                outputDiv.appendChild(bottone);
-                outputDiv.appendChild(document.createElement('br'));
-*/
-                outputDiv.innerHTML=html;
+                catch (e) {
+
+                }
                 inListFile = false;
                 filetext = "";
             }
