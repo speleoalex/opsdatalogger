@@ -2,7 +2,7 @@
 <html>
 
 <head>
-    <title>Aerologger Terminal</title>
+    <title>FluxyLogger Terminal</title>
     <style>
         footer {
             min-height: 50px;
@@ -38,12 +38,21 @@
             margin-top: 5px;*/
         }
 
+        .ok {
+            color: greenyellow !important;
+
+        }
+        .fail {
+            color: greenyellow !important;
+
+        }
+
         #output {
             height: 60vh;
             /* Adjust this value as needed */
             border: 1px solid limegreen;
             background-color: #202020;
-            color: limegreen;
+            color: #fafafa;
             overflow-y: auto;
             white-space: pre-wrap;
             padding: 5px;
@@ -211,10 +220,10 @@
         var filetext = "";
         var sizeDownload = 0;
         async function readLoop() {
-            const outputDiv = document.getElementById('output');
+            let outputDiv = document.getElementById('output');
 
             while (true) {
-                const { value, done } = await reader.read();
+                let { value, done } = await reader.read();
                 if (done) {
                     reader.releaseLock();
                     break;
@@ -225,7 +234,8 @@
                     findFileContents(filetext);
                 }
                 else {
-                    outputDiv.textContent += value;
+                    //outputDiv.textContent += value;
+                    outputDiv.innerHTML +=  HighLighting(value);
                     if (inListFile) {
                         creaBottoniPerFile(outputDiv.textContent);
                     }
@@ -273,6 +283,7 @@
 
         function inviaDati() {
             const text = document.getElementById('input').value + '\r\n';
+            console.log("Send:" + text);
             writer.write(text);
             document.getElementById('input').value = '';
         }
@@ -296,6 +307,22 @@
             sizeDownload = size;
             sendDownloadFileName(filename);
 
+        }
+        function HighLighting(testo) {
+            console.log ("testo="+testo);
+            var lines = testo.split("\r\n");
+            for (var i in lines)
+            {
+                if (lines[i].endsWith(" ok") || lines[i]=="ok") {
+                    lines[i] = "<span class=\"ok\">" + lines[i].trim() + "</span>";
+                }
+                if (lines[i].endsWith(" fail")) {
+                    lines[i] = "<span class=\"fail\">" + lines[i].trim() + "</span>";
+                }
+            }
+            html = lines.join("\r\n");
+            console.log ("html="+html);
+            return html;
         }
         function creaBottoniPerFile(testo) {
             const inizio = testo.indexOf("Files:");
@@ -333,7 +360,7 @@
         }
         function findFileContents(testo) {
             //            const testo = document.getElementById('output').innerHTML;
-            const fine = testo.indexOf("End trasmission:");
+            const fine = testo.indexOf("End transmission:");
             if (fine === -1) {
                 return;
             }
@@ -345,10 +372,10 @@
 
             document.getElementById('output').innerHTML = "Start download file:";
             //console.log(testo);
-            const inizio = testo.indexOf("Start trasmission:");
+            const inizio = testo.indexOf("Start transmission:");
             if (inizio !== -1 && fine !== -1 && filenameOk !== -1) {
-                const nomeFile = testo.split("End trasmission:")[1].trim();
-                const contents = testo.substring(inizio + "Start trasmission:".length, fine).trim();
+                const nomeFile = testo.split("End transmission:")[1].trim();
+                const contents = testo.substring(inizio + "Start transmission:".length, fine).trim();
                 document.getElementById('output').innerHTML = "Download starting...";
                 scaricaFile(nomeFile, contents);
                 document.getElementById('output').innerHTML = "";

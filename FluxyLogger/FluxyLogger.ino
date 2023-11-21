@@ -106,8 +106,6 @@ char lineBuffer[MAX_INI_KEY_LENGTH + MAX_INI_VALUE_LENGTH + 2]; // Buffer for th
 const char CONF_FILE[] = "CONFIG.INI";                          // configuration file
 const char ok[] = "ok";
 
-File logfile;
-File settingFile;
 // bool ledInternal = false;
 bool sdPresent = false;
 bool rtcPresent = false;
@@ -130,18 +128,38 @@ unsigned long dataToWrite = 0;
 RTC_DS1307 RTC; // define the Real Time Clock object
 DateTime now;
 char printBuffer[32];
-char strDate[20];     //= "0000-00-00 00:00:00";
-char strFileDate[24]; // = "YYYY-MM-DD_HH.mm.ss.txt";
-SdFat SD;
+char strDate[20];       //= "0000-00-00 00:00:00";
+char strFileDate[24];   // = "YYYY-MM-DD_HH.mm.ss.txt";
 unsigned long PPMGas;   // Gas ppm
 char delimiter[] = ";"; // CSV delimiter
-File root;
+SdFat SD;
+File logfile;
+File settingFile;
+
 int rawSensorValue;
 int sensorReading[NUM_READS];
 uint8_t sensorReadingCounter = 0;
 // End Global variables --<
 
 // Functions
+// print ok of fail
+bool printResult(bool isOk, bool ln = false)
+{
+  if (isOk)
+  {
+    Serial.print(ok);
+  }
+  else
+  {
+    Serial.print(ok);
+  }
+  if (ln)
+  {
+    Serial.println();
+  }
+  return isOk;
+}
+
 #if MQ2SENSOR_PRESENT
 // Function to convert raw sensor value to parts per million (PPM) for MQ2 gas sensor
 float MQ2_RawToPPM(float rawValue)
@@ -193,36 +211,59 @@ float MQ2_calc_res(float rawAdc)
 }
 #endif
 
+void printDirectory(const char *dirname, int levels)
+{
+  SdFile file;
+  SdFile dir;
+
+  // Apri la directory corrente
+  if (!dir.open(dirname))
+  {
+    Serial.print("Errore nell'apertura della directory ");
+    Serial.println(dirname);
+    return;
+  }
+
+  // Leggi ogni file/directory nella cartella
+  while (file.openNext(&dir, O_RDONLY))
+  {
+    // Stampa il nome del file/directory
+    file.printName(&Serial);
+    Serial.println();
+    file.close();
+  }
+  dir.close();
+}
+
 // Function to list files on the SD card
 void listFiles()
 {
-  // Open the root directory
-  root = SD.open("/");
+  SdFile file;
+  SdFile dir;
+  if (!dir.open("/", O_RDONLY))
+  {
+    return;
+  }
   Serial.println("Files:");
-
   // Open the first file in the directory
-  File entry = root.openNextFile();
-
+  dir.rewind();
   // Loop through all files in the directory
-  while (entry)
+  while (file.openNext(&dir, O_RDONLY))
   {
     // Store the file name in a buffer
-    entry.getName(printBuffer, sizeof(printBuffer));
-
+    file.getName(printBuffer, sizeof(printBuffer));
     // Check if the entry is not a directory
-    if (!entry.isDirectory())
+    if (!file.isDir())
     {
       // Print the file name
       Serial.print(printBuffer);
       Serial.print("\t");
-
       // Print the file size
-      Serial.println((unsigned long)entry.size());
+      Serial.println((unsigned long)file.fileSize());
     }
-
-    // Open the next file in the directory
-    entry = root.openNextFile();
+    file.close();
   }
+  dir.close();
 }
 
 // Function to handle file download requests
@@ -893,11 +934,11 @@ bool CreateINIConf(int NewInterval_s, int NewzeroGasValue = 0)
 {
   SD.remove(CONF_FILE);
   settingFile = SD.open(CONF_FILE, FILE_WRITE);
+  Serial.print(F("create "));
+  Serial.println(CONF_FILE);
   if (settingFile)
   {
     // create new file config.ini------>
-    Serial.print(F("new file "));
-    Serial.println(CONF_FILE);
     settingFile.print(F("log_interval_s="));
     settingFile.println(NewInterval_s);
 #if MQ2SENSOR_PRESENT
@@ -907,11 +948,11 @@ bool CreateINIConf(int NewInterval_s, int NewzeroGasValue = 0)
     settingFile.flush();
     settingFile.close();
     // create new file config.ini------<
+    printResult(true, true);
   }
   else
   {
-    Serial.print(F("error create "));
-    Serial.println(CONF_FILE);
+    printResult(false, true);
     return false;
   }
   return true;
@@ -925,10 +966,11 @@ void DL_initConf()
 
   if (sdPresent)
   {
+    Serial.print(CONF_FILE);
+    Serial.print(' ');
     if (!SD.exists(CONF_FILE))
     {
-      Serial.print(CONF_FILE);
-      Serial.println(F(" not exist"));
+      printResult(false, true);
 #if MQ2SENSOR_PRESENT
       CreateINIConf(LOG_INTERVAL_s, ZEROGAS_default);
 #else
@@ -937,8 +979,7 @@ void DL_initConf()
     }
     else
     {
-      Serial.print(CONF_FILE);
-      Serial.println(F(" exist"));
+      printResult(true, true);
     }
     // read from CONFIG.INI------->
     log_interval_s = CONF_getConfValueInt(CONF_FILE, "log_interval_s", LOG_INTERVAL_s);
@@ -981,33 +1022,23 @@ static int readSerial(bool wait)
 
       // Read a character from Serial
       char c = Serial.read();
-
       // Check if the character is a newline, carriage return, or printable ASCII character
       if (c == '\n' || c == '\r' || (c >= 20 && c <= 126))
       {
-        // Skip initial newline or carriage return characters
-        if (cnt == 0 && (c == '\n' || c == '\r'))
+        // Store the character in the buffer
+        serialBuffer[cnt] = c;
+        // Check if the character is a newline, carriage return, or if the buffer is full
+        if (c == '\n' || c == '\r' || cnt == (size_serialBuffer - 1))
         {
-          continue;
+          // Null-terminate the string and reset the counter
+          serialBuffer[cnt] = '\0';
+          cnt = 0;
+          ready = true;
         }
         else
         {
-          // Store the character in the buffer
-          serialBuffer[cnt] = c;
-
-          // Check if the character is a newline, carriage return, or if the buffer is full
-          if (c == '\n' || c == '\r' || cnt == (size_serialBuffer - 1))
-          {
-            // Null-terminate the string and reset the counter
-            serialBuffer[cnt] = '\0';
-            cnt = 0;
-            ready = true;
-          }
-          else
-          {
-            // Increment the counter
-            cnt++;
-          }
+          // Increment the counter
+          cnt++;
         }
       }
     }
@@ -1028,6 +1059,22 @@ static int parse_serial_command()
   }
   return 0;
 }
+// switch logs
+bool SwithLogs(bool LogStart)
+{
+  if (LogStart)
+  {
+    DL_closeLogFile();
+    logfileOpened = 0;
+    DL_openLogFile();
+  }
+  else
+  {
+    DL_closeLogFile();
+    logfileOpened = -1;
+  }
+  return true;
+}
 
 void execute_command(char *command)
 {
@@ -1035,7 +1082,6 @@ void execute_command(char *command)
   if (strcmp(command, "help") == 0)
   {
     Serial.println();
-
     Serial.println(F("commands:"));
     Serial.println(F("logs:read data"));
     Serial.println(F("reset:reset device"));
@@ -1054,27 +1100,22 @@ void execute_command(char *command)
 
   if (strcmp(command, "log stop") == 0)
   {
-    Serial.println(ok);
-    DL_closeLogFile();
-    logfileOpened = -1;
+    printResult(SwithLogs(false), true);
   }
   if (strcmp(command, "log start") == 0)
   {
-    Serial.println(ok);
-    DL_closeLogFile();
-    logfileOpened = 0;
-    DL_openLogFile();
+    printResult(SwithLogs(true), true);
   }
 
   if (strcmp(command, "echo stop") == 0)
   {
     echoToSerial = false;
-    Serial.println(ok);
+    printResult(true, true);
   }
   if (strcmp(command, "echo start") == 0)
   {
     echoToSerial = true;
-    Serial.println(ok);
+    printResult(true, true);
   }
   if (strcmp(command, "plotter start") == 0)
   {
@@ -1082,14 +1123,14 @@ void execute_command(char *command)
     logfileOpened = -1;
     echoToSerial = false;
     plottermode = true;
-    Serial.println(ok);
+    printResult(true, true);
     return;
   }
   if (strcmp(command, "plotter stop") == 0)
   {
     echoToSerial = true;
     plottermode = false;
-    Serial.println(ok);
+    printResult(true, true);
     return;
   }
 
@@ -1100,11 +1141,15 @@ void execute_command(char *command)
     return;
   }
 #endif
+  if (strcmp(command, "ls") == 0)
+  {
+    DL_closeLogFile();
+    listFiles();
+  }
   if (strcmp(command, "logs") == 0)
   {
     DL_closeLogFile();
     logfileOpened = -1;
-    File root = SD.open("/");
     Serial.flush();
     listFiles();
     downloadFile();
@@ -1114,7 +1159,7 @@ void execute_command(char *command)
   if (strcmp(command, "reset") == 0)
   {
     DL_closeLogFile();
-    Serial.println(ok);
+    printResult(true, true);
     reset(); // reset arduino
     return;
   }
@@ -1194,17 +1239,19 @@ void SetConfig()
   Serial.print(log_interval_s);
   Serial.print(')');
   interval = InputIntFromSerial(log_interval_s);
+  Serial.println();
   if (interval <= 0)
   {
     interval = log_interval_s;
   }
 #if MQ2SENSOR_PRESENT
   zerogas = zeroGasValue;
-  Serial.print(F("\nZerogas:"));
+  Serial.print(F("Zerogas:"));
   Serial.print('(');
   Serial.print(zeroGasValue);
   Serial.print(')');
   zerogas = InputIntFromSerial(zeroGasValue);
+  Serial.println();
   if (zerogas <= 0 || zerogas > 1023)
   {
     zerogas = zeroGasValue;
@@ -1343,9 +1390,9 @@ void setup()
   rtcPresent = false;
   logfileOpened = false;
   Serial.print(F("FluxyLogger"));
-  #if MQ2SENSOR_PRESENT
+#if MQ2SENSOR_PRESENT
   Serial.print(F(" NASO"));
-  #endif
+#endif
   Serial.println();
   Serial.print(F("Build time: "));
   Serial.print(F(__DATE__));
@@ -1373,12 +1420,12 @@ void setup()
   if (!SD.begin(CHIP_SD))
   {
     sdPresent = false;
-    Serial.println(F("failed"));
+    printResult(false, true);
     failed = true;
   }
   else
   {
-    Serial.println(ok);
+    printResult(true, true);
     sdPresent = true;
   }
   if (failed)
@@ -1540,8 +1587,10 @@ void loop()
     }
   }
 
-  if (!logfileOpened)
+  if (logfileOpened <= 0)
   {
+    digitalWrite(LED_1, HIGH);
+    digitalWrite(LED_2, HIGH);
     if (TimeCurrent > LedTimer + 1000)
     {
       digitalWrite(LED_BUILTIN, HIGH);
@@ -1568,9 +1617,9 @@ void loop()
       TimeTargetContinuousReading = TimeCurrent;
       if (plottermode)
       {
-        Serial.print(F("raw="));
+        Serial.print(F("raw:"));
         Serial.print(rawSensorValue);
-        Serial.print(F(",ppm="));
+        Serial.print(F(",ppm:"));
         Serial.println(PPMGas);
       }
       manageBlinkingByPPM(PPMGas);
