@@ -16,10 +16,9 @@
 */
 
 // Sensor presence configuration
-#define BMP280_PRESENT 0     // Set to 1 if BMP280 sensor is present, 0 otherwise
-#define HUMIDITY_PRESENT 0   // Set to 1 if a humidity sensor is present, 0 otherwise
-#define DEBUGSENSOR 0        // Enable (1) or disable (0) sensor debugging
-#define WINDSENSOR_PRESENT 0 // Set to 1 if a wind sensor is present, 0 otherwise
+#define BMP280_PRESENT 0   // Set to 1 if BMP280 sensor is present, 0 otherwise
+#define HUMIDITY_PRESENT 0 // Set to 1 if a humidity sensor is present, 0 otherwise
+#define DEBUGSENSOR 0      // Enable (1) or disable (0) sensor debugging
 // Calibration and operation parameters
 #define MINCONSECUTIVE_POSITIVE 20 // Minimum number of consecutive positive readings
 #define MQ2_PREHEAT_TIME_S 30      // Preheat time in seconds for the MQ2 sensor
@@ -73,7 +72,7 @@
 #include <RTClib.h>
 
 #if SGP30_PRESENT
-#include "SparkFun_SGP30_Arduino_Library.h" // Click here to get the library: http://librarymanager/All#SparkFun_SGP30
+#include <SGP30.h> // Click here to get the library: http://librarymanager/All#SparkFun_SGP30
 #endif
 
 #if OLED_PRESENT
@@ -83,12 +82,12 @@ uint8_t height = 64;
 #endif
 
 #if SGP40_PRESENT
-#include "SparkFun_SGP40_Arduino_Library.h"
+#include "sensor_SGP40/SparkFun_SGP40_Arduino_Library.h"
 SGP40 sgp40Sensor; // create an object of the SGP40 class
 #endif
 
 #if BMP280_PRESENT
-#include "farmerkeith_BMP280.h"
+#include "sensor_BMP280/farmerkeith_BMP280.h"
 bme280 bme0(0, DEBUGSENSOR);
 #endif
 
@@ -99,6 +98,10 @@ bool plottermode = false;
 #if MQ2SENSOR_PRESENT
 int zeroGasValue = ZEROGAS_default; // Define the default value for zero gas calibration
 #endif
+#if SGP30_PRESENT
+SGP30 SGP;
+#endif
+
 char lineBuffer[MAX_INI_KEY_LENGTH + MAX_INI_VALUE_LENGTH + 2]; // Buffer for the line
 const char CONF_FILE[] = "CONFIG.INI";                          // configuration file
 const char ok[] = "ok";
@@ -300,20 +303,19 @@ void downloadFile()
   }
 }
 
-
 // Function to read an analog value from a pin with filtering
-float DL_FilterSensorReading( void )
+float DL_FilterSensorReading(void)
 {
   // Array to store sensorReading
-  
+
   int sum = 0.0;
   int minValue = 1023; // Initialize minValue with the highest possible analog value
-  int maxValue = 0.0;    // Initialize maxValue with the lowest possible analog value
+  int maxValue = 0.0;  // Initialize maxValue with the lowest possible analog value
 
   // Loop to read the analog value multiple times
   for (int i = 0; i < NUM_READS; i++)
   {
-    delay(READS_DELAY);                  // Delay between sensorReading for stability
+    delay(READS_DELAY); // Delay between sensorReading for stability
     // Find the minimum value among the sensorReading
     if (sensorReading[i] < minValue)
     {
@@ -339,7 +341,7 @@ float DL_FilterSensorReading( void )
 float DL_analogReadAndFilter(int analogPin)
 {
   // Array to store sensorReading
-  
+
   int sum = 0;
   int minValue = 1023; // Initialize minValue with the highest possible analog value
   int maxValue = 0;    // Initialize maxValue with the lowest possible analog value
@@ -347,7 +349,7 @@ float DL_analogReadAndFilter(int analogPin)
   // Loop to read the analog value multiple times
   for (int i = 0; i < NUM_READS; i++)
   {
-    delay(READS_DELAY);                  // Delay between sensorReading for stability
+    delay(READS_DELAY);                       // Delay between sensorReading for stability
     sensorReading[i] = analogRead(analogPin); // Read the value from the analog pin
 
     // Find the minimum value among the sensorReading
@@ -655,6 +657,13 @@ void DL_openLogFile()
   LOGPRINT(F("\"gas adc\""));
   LOGPRINT(delimiter);
   LOGPRINT(F("\"LPG PPM\""));
+#endif
+
+#if SGP30_PRESENT
+  LOGPRINT(F("\"TVOC\""));
+  LOGPRINT(delimiter);
+  LOGPRINT(F("\"CO2\""));
+
 #endif
 
 #if BMP280_PRESENT
@@ -1321,8 +1330,6 @@ void manageBlinkingByPPM(int inputValue)
   manageBlinking(timeOn, timeOff);
 }
 
-
-
 // Setup
 void setup()
 {
@@ -1335,7 +1342,11 @@ void setup()
   sdPresent = false;
   rtcPresent = false;
   logfileOpened = false;
-  Serial.println(F("Aerologger NASO"));
+  Serial.print(F("FluxyLogger"));
+  #if MQ2SENSOR_PRESENT
+  Serial.print(F(" NASO"));
+  #endif
+  Serial.println();
   Serial.print(F("Build time: "));
   Serial.print(F(__DATE__));
   Serial.print(F(" "));
@@ -1345,8 +1356,20 @@ void setup()
   // pinMode(S0_S, OUTPUT);
   pinMode(LED_1, OUTPUT);
   pinMode(LED_2, OUTPUT);
-  //  digitalWrite(S0_S, HIGH);
-  Serial.print(F("SD initialization:"));
+//  digitalWrite(S0_S, HIGH);
+#if SGP30_PRESENT
+  Serial.print(F("init SGP30 "));
+  if (!SGP.begin())
+  {
+    Serial.println(F("failed"));
+  }
+  else
+  {
+    Serial.println(ok);
+  }
+#endif
+
+  Serial.print(F("init SD "));
   if (!SD.begin(CHIP_SD))
   {
     sdPresent = false;
@@ -1540,8 +1563,8 @@ void loop()
       {
         sensorReadingCounter = 0;
       }
-      sensorReading [sensorReadingCounter++] = rawSensorValue;
-      PPMGas = round(MQ2_RawToPPM(rawSensorValue)) ;
+      sensorReading[sensorReadingCounter++] = rawSensorValue;
+      PPMGas = round(MQ2_RawToPPM(rawSensorValue));
       TimeTargetContinuousReading = TimeCurrent;
       if (plottermode)
       {
@@ -1667,6 +1690,14 @@ void loop()
       LOGPRINT(delimiter);
       LOGPRINT(sgp40Sensor.getRaw(), 2);
 
+#endif
+
+#if SGP30_PRESENT
+      SGP.measure(false); // returns false if no measurement is made
+      LOGPRINT(delimiter);
+      LOGPRINT((float)SGP.getTVOC());
+      LOGPRINT(delimiter);
+      Serial.print((float)SGP.getCO2());
 #endif
 
 #if LOGVCC
