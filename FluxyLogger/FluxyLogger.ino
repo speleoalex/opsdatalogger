@@ -6,6 +6,13 @@
    Product link: https://techmakers.eu/
 
    This sketch is designed for the N.A.S.O. datalogger, available as a pre-assembled unit or kit.
+
+
+  NOTE:
+  Datalogger use 6 pin. Analog 4 and 5 for I2C.
+  SD card use i digital pin 13, 12, 11, and 10.
+  0=seriale rx
+  1=seriale tx
 */
 
 // Sensor presence configuration
@@ -13,26 +20,53 @@
 #define HUMIDITY_PRESENT 0   // Set to 1 if a humidity sensor is present, 0 otherwise
 #define DEBUGSENSOR 0        // Enable (1) or disable (0) sensor debugging
 #define WINDSENSOR_PRESENT 0 // Set to 1 if a wind sensor is present, 0 otherwise
-
 // Calibration and operation parameters
 #define MINCONSECUTIVE_POSITIVE 20 // Minimum number of consecutive positive readings
 #define MQ2_PREHEAT_TIME_S 30      // Preheat time in seconds for the MQ2 sensor
 #define MINPPMPOSITIVE 10          // Minimum PPM for a positive reading
 
+// Sensors
 #define WINDSENSOR_PRESENT 0
 #define MQ2SENSOR_PRESENT 1 // VOC MQ2 analogic
 #define GAS_PPM 1
 #define SGP40_PRESENT 0 // VOC SGP40 i2c
 #define SGP30_PRESENT 0 // VOC SGP30 i2c
 #define OLED_PRESENT 0  // OLED
-#define size_serialBuffer 40
 #define LOGVCC 0
 
+// Pins
+#define S0 A0      // AIR
+#define LED_1 3    // Led 1 datalogger
+#define LED_2 4    // Led 2 datalogger
+#define CHIP_SD 10 // pin sd
+#define RXLED 17
+#define TXLED 30
+#if WINDSENSOR_PRESENT
+#define analogPinForRV A1 // change to pins you the analog pins are using
+#define analogPinForTMP A2
+#endif
+
+// Buffer sizes
+#define size_serialBuffer 40
+#define MAX_ROWS_PER_FILE 10000 // max rows per file
+#define MAX_INI_KEY_LENGTH 10
+#define MAX_INI_VALUE_LENGTH 10
+
+// Log configs
+#define LOG_INTERVAL_s 15      // log interval in seconds
+#define SYNC_INTERVAL_ms 20000 // mills between calls to flush() - to write data to the card
+#define NUM_READS 25
+#define READS_DELAY 20
+#define ZEROGAS_default 115
+#define RL_VALUE 5.0 // Define the load resistance value in kilo ohms
+
+// Libraries
 #define USE_FAT_FILE_FLAG_CONTIGUOUS 0
 #define USE_LONG_FILE_NAMES 0
 #define USE_UTF8_LONG_NAMES 0
 #define SDFAT_FILE_TYPE 1
 #define CHECK_FLASH_PROGRAMMING 1 // May cause SD to sleep at high current.
+
 #include <SdFatConfig.h>
 #include <SdFat.h>
 #include <Wire.h>
@@ -48,9 +82,6 @@ uint8_t width = 128;
 uint8_t height = 64;
 #endif
 
-int Detected = false;
-char serialBuffer[size_serialBuffer];
-
 #if SGP40_PRESENT
 #include "SparkFun_SGP40_Arduino_Library.h"
 SGP40 sgp40Sensor; // create an object of the SGP40 class
@@ -61,73 +92,15 @@ SGP40 sgp40Sensor; // create an object of the SGP40 class
 bme280 bme0(0, DEBUGSENSOR);
 #endif
 
+// Start Global variables -->
+int Detected = false;
+char serialBuffer[size_serialBuffer];
 bool plottermode = false;
-
-#define ZEROGAS_default 115
 #if MQ2SENSOR_PRESENT
-int zerogasValue = ZEROGAS_default;
-#define RL_VALOR 5.0
-float MQ2_RawToPPM(int RawValue)
-{
-  if (zerogasValue >= RawValue)
-  {
-    return 0;
-  }
-  if (zerogasValue <= 0)
-  {
-    zerogasValue = 1;
-  }
-  float RAL(9.83);
-  float LPGCurve[3] = {2.3, 0.21, -0.47};
-  float ResZero = MQ2_calc_res(zerogasValue) / RAL;
-  float ResCurrent = MQ2_calc_res(RawValue);
-  float Perc = MQ2_Perc_gas(ResCurrent, ResZero, LPGCurve);
-  return 1000 * Perc;
-}
-
-float MQ2_Perc_gas(float ResCurrent, float ResZero, float *pcurve)
-{
-  float rs_ro_ratio = ResCurrent / ResZero;
-  return (pow(10, (((log(rs_ro_ratio) - pcurve[1]) / pcurve[2]) + pcurve[0])));
-}
-float MQ2_calc_res(float raw_adc)
-{
-  return (((float)RL_VALOR * (1023.0 - raw_adc) / raw_adc));
-}
+int zeroGasValue = ZEROGAS_default; // Define the default value for zero gas calibration
 #endif
-
-#if WINDSENSOR_PRESENT
-#define analogPinForRV A1 // change to pins you the analog pins are using
-#define analogPinForTMP A2
-
-#endif
-
-/*
-  Datalogger use 6 pin. Analog 4 and 5 for I2C.
-  SD card use i digital pin 13, 12, 11, and 10.
-  0=seriale rx
-  1=seriale tx
-*/
-
-#define S0 A0 // AIR
-
-#define LED_1 3 // Led 1 datalogger
-#define LED_2 4 // Led 2 datalogger
-
-#define MAX_ROWS_PER_FILE 10000 // max rows per file
-#define LOG_INTERVAL_s 15       // log interval in seconds
-
-#define CHIP_SD 10             // pin sd
-#define SYNC_INTERVAL_ms 20000 // mills between calls to flush() - to write data to the card
-
-#define NUM_READS 25
-#define READS_DELAY 20
-
-#define RXLED 17
-#define TXLED 30
-
-//-------------globals--------------------->
-const char CONF_FILE[] = "CONFIG.INI"; // configuration file
+char lineBuffer[MAX_INI_KEY_LENGTH + MAX_INI_VALUE_LENGTH + 2]; // Buffer for the line
+const char CONF_FILE[] = "CONFIG.INI";                          // configuration file
 const char ok[] = "ok";
 
 File logfile;
@@ -156,56 +129,133 @@ DateTime now;
 char printBuffer[32];
 char strDate[20];     //= "0000-00-00 00:00:00";
 char strFileDate[24]; // = "YYYY-MM-DD_HH.mm.ss.txt";
-
-char delimiter[] =  ";";
-
 SdFat SD;
-
-unsigned long PPMGas;
-
-//-------------globals---------------------<
-
+unsigned long PPMGas;   // Gas ppm
+char delimiter[] = ";"; // CSV delimiter
 File root;
+int rawSensorValue;
+int sensorReading[NUM_READS];
+uint8_t sensorReadingCounter = 0;
+// End Global variables --<
 
+// Functions
+#if MQ2SENSOR_PRESENT
+// Function to convert raw sensor value to parts per million (PPM) for MQ2 gas sensor
+float MQ2_RawToPPM(float rawValue)
+{
+  // If the zero calibration value is greater than or equal to the raw value, return 0 (no gas)
+  if (zeroGasValue >= rawValue)
+  {
+    return 0;
+  }
+
+  // If the zero calibration value is less than or equal to 0, set it to 1 to avoid division by zero
+  if (zeroGasValue <= 0)
+  {
+    zeroGasValue = 1;
+  }
+
+  // Sensor characteristics for calibration
+  float RAL = 9.83;                       // Ratio of load resistance to sensor resistance in clean air
+  float LPGCurve[3] = {2.3, 0.21, -0.47}; // Calibration curve for LPG gas
+
+  // Calculate the resistance of the sensor at zero gas concentration
+  float ResZero = MQ2_calc_res(zeroGasValue) / RAL;
+
+  // Calculate the current sensor resistance
+  float ResCurrent = MQ2_calc_res(rawValue);
+
+  // Calculate the gas concentration percentage
+  float Perc = MQ2_Perc_gas(ResCurrent, ResZero, LPGCurve);
+
+  // Convert the percentage to PPM
+  return 1000 * Perc;
+}
+
+// Function to calculate the percentage of gas concentration
+float MQ2_Perc_gas(float resCurrent, float resZero, float *pCurve)
+{
+  // Calculate the ratio of current resistance to zero gas resistance
+  float rs_ro_ratio = resCurrent / resZero;
+
+  // Calculate and return the gas concentration using the calibration curve
+  return (pow(10, (((log(rs_ro_ratio) - pCurve[1]) / pCurve[2]) + pCurve[0])));
+}
+
+// Function to calculate the sensor resistance based on the raw ADC value
+float MQ2_calc_res(float rawAdc)
+{
+  // Calculate and return the sensor resistance
+  return (((float)RL_VALUE * (1023.0 - rawAdc) / rawAdc));
+}
+#endif
+
+// Function to list files on the SD card
 void listFiles()
 {
+  // Open the root directory
   root = SD.open("/");
   Serial.println("Files:");
+
+  // Open the first file in the directory
   File entry = root.openNextFile();
+
+  // Loop through all files in the directory
   while (entry)
   {
-
+    // Store the file name in a buffer
     entry.getName(printBuffer, sizeof(printBuffer));
+
+    // Check if the entry is not a directory
     if (!entry.isDirectory())
     {
+      // Print the file name
       Serial.print(printBuffer);
       Serial.print("\t");
+
+      // Print the file size
       Serial.println((unsigned long)entry.size());
     }
+
+    // Open the next file in the directory
     entry = root.openNextFile();
   }
 }
+
+// Function to handle file download requests
 void downloadFile()
 {
+  // Prompt user to type a filename or 'e' to exit
   Serial.println(F("Type Filename or e to exit"));
+
+  // Infinite loop to handle user input
   while (1)
   {
+    // Read user input from Serial
     readSerial(true);
+
+    // If user types 'e', exit the function
     if (strcmp(serialBuffer, "e") == 0)
     {
       return;
     }
+
+    // If user types 'rm ' followed by a filename, delete that file
     if (serialBuffer[0] == 'r' && serialBuffer[1] == 'm' && serialBuffer[2] == ' ')
     {
-      // Rimuove "rm " dalla stringa per ottenere il nome del file
+      // Remove "rm " from the string to get the filename
       int i;
       for (i = 0; i < size_serialBuffer - 3; i++)
       {
         serialBuffer[i] = serialBuffer[i + 3];
       }
-      serialBuffer[i] = "\0";
+      serialBuffer[i] = '\0';
+
+      // Print delete command and filename
       Serial.print(F("del "));
       Serial.println(serialBuffer);
+
+      // Delete the file and report status
       if (SD.remove(serialBuffer))
       {
         Serial.println(F("file deleted"));
@@ -217,23 +267,32 @@ void downloadFile()
       }
       return;
     }
+
+    // Check if the filename entered is longer than 4 characters
     if (strlen(serialBuffer) > 4)
     {
+      // Attempt to open the file
       File file = SD.open(serialBuffer);
       if (file)
       {
-        Serial.println(F("Start trasmission:"));
+        // Notify start of transmission
+        Serial.println(F("Start transmission:"));
+
+        // Read and transmit file contents
         while (file.available())
         {
           Serial.write(file.read());
         }
-        Serial.print(F("End trasmission:"));
+
+        // Notify end of transmission and filename
+        Serial.print(F("End transmission:"));
         Serial.println(serialBuffer);
         file.close();
         return;
       }
       else
       {
+        // Notify if file opening failed
         Serial.println(F("error opening file."));
         return;
       }
@@ -241,31 +300,75 @@ void downloadFile()
   }
 }
 
-float DL_analogReadAndFilter(int analogPin)
+
+// Function to read an analog value from a pin with filtering
+float DL_FilterSensorReading( void )
 {
-  int readings[NUM_READS];
-  int sum = 0;
-  int minValue = 1024;
-  int maxValue = 0;
-  // Leggi il pin NUM_READS volte
+  // Array to store sensorReading
+  
+  int sum = 0.0;
+  int minValue = 1023; // Initialize minValue with the highest possible analog value
+  int maxValue = 0.0;    // Initialize maxValue with the lowest possible analog value
+
+  // Loop to read the analog value multiple times
   for (int i = 0; i < NUM_READS; i++)
   {
-    delay(READS_DELAY);
-    readings[i] = analogRead(analogPin);
-    // find min value
-    if (readings[i] < minValue)
+    delay(READS_DELAY);                  // Delay between sensorReading for stability
+    // Find the minimum value among the sensorReading
+    if (sensorReading[i] < minValue)
     {
-      minValue = readings[i];
+      minValue = sensorReading[i];
     }
-    if (readings[i] > maxValue)
+    // Find the maximum value among the sensorReading
+    if (sensorReading[i] > maxValue)
     {
-      maxValue = readings[i];
+      maxValue = sensorReading[i];
     }
 
-    sum += readings[i];
+    sum += sensorReading[i]; // Sum up all the sensorReading
   }
-  // remove min e max value
+
+  // Remove the minimum and maximum value from the sum for filtering
   sum = sum - minValue - maxValue;
+
+  // Return the average value excluding the min and max values
+  return (float)sum / (NUM_READS - 2);
+}
+
+// Function to read an analog value from a pin with filtering
+float DL_analogReadAndFilter(int analogPin)
+{
+  // Array to store sensorReading
+  
+  int sum = 0;
+  int minValue = 1023; // Initialize minValue with the highest possible analog value
+  int maxValue = 0;    // Initialize maxValue with the lowest possible analog value
+
+  // Loop to read the analog value multiple times
+  for (int i = 0; i < NUM_READS; i++)
+  {
+    delay(READS_DELAY);                  // Delay between sensorReading for stability
+    sensorReading[i] = analogRead(analogPin); // Read the value from the analog pin
+
+    // Find the minimum value among the sensorReading
+    if (sensorReading[i] < minValue)
+    {
+      minValue = sensorReading[i];
+    }
+
+    // Find the maximum value among the sensorReading
+    if (sensorReading[i] > maxValue)
+    {
+      maxValue = sensorReading[i];
+    }
+
+    sum += sensorReading[i]; // Sum up all the sensorReading
+  }
+
+  // Remove the minimum and maximum value from the sum for filtering
+  sum = sum - minValue - maxValue;
+
+  // Return the average value excluding the min and max values
   return (float)sum / (NUM_READS - 2);
 }
 
@@ -310,7 +413,6 @@ void LOGPRINTLN(const __FlashStringHelper *str)
 
 void LOGPRINT(float val, uint8_t precision = 2)
 {
-
   if (isnan(val))
   {
     val = 0;
@@ -366,6 +468,7 @@ void LOGPRINT(float val, uint8_t precision = 2)
     }
   }
 }
+
 void LOGPRINT(unsigned long str)
 {
   if (logfileOpened > 0)
@@ -619,15 +722,10 @@ static bool CONF_is_valid_char(char character)
  * @param defaultValue The default value to return if the key is not found.
  * @return The integer value associated with the key, or the default value.
  */
-#define MAX_KEY_LENGTH 10
-#define MAX_VALUE_LENGTH 10
-char lineBuffer[MAX_KEY_LENGTH + MAX_VALUE_LENGTH + 2]; // Buffer for the line
-
 static uint8_t CONF_getConfValueInt(const char *filename, const char *key, uint8_t defaultValue = 0)
 {
   File myFile;
   uint8_t ret = defaultValue;
-
   if (!SD.exists(filename))
   {
     return defaultValue;
@@ -668,7 +766,6 @@ static uint8_t CONF_getConfValueInt(const char *filename, const char *key, uint8
       }
     }
   }
-
   myFile.close();
   return ret;
 }
@@ -783,7 +880,7 @@ static int CONF_getConfValueInt(char *filename, char *key, int defaultValue = 0)
   return ret;
 }
 #endif
-bool CreateINIConf(int NewInterval_s, int NewzerogasValue = 0)
+bool CreateINIConf(int NewInterval_s, int NewzeroGasValue = 0)
 {
   SD.remove(CONF_FILE);
   settingFile = SD.open(CONF_FILE, FILE_WRITE);
@@ -796,7 +893,7 @@ bool CreateINIConf(int NewInterval_s, int NewzerogasValue = 0)
     settingFile.println(NewInterval_s);
 #if MQ2SENSOR_PRESENT
     settingFile.print(F("zerogas="));
-    settingFile.println(NewzerogasValue);
+    settingFile.println(NewzeroGasValue);
 #endif
     settingFile.flush();
     settingFile.close();
@@ -837,9 +934,9 @@ void DL_initConf()
     // read from CONFIG.INI------->
     log_interval_s = CONF_getConfValueInt(CONF_FILE, "log_interval_s", LOG_INTERVAL_s);
 #if MQ2SENSOR_PRESENT
-    zerogasValue = CONF_getConfValueInt(CONF_FILE, "zerogas", ZEROGAS_default);
+    zeroGasValue = CONF_getConfValueInt(CONF_FILE, "zerogas", ZEROGAS_default);
     Serial.print(F("zerogas="));
-    Serial.println(zerogasValue);
+    Serial.println(zeroGasValue);
 #endif
     // read from CONFIG.INI-------<
     Serial.print(F("Interval(s)="));
@@ -852,160 +949,62 @@ void DL_initConf()
     Serial.println(LOG_INTERVAL_s);
   }
 }
-void setup()
-{
-  PPMGas = 0;
-  // uint8_t n = 0;
-  int timeout = 5;
-  //--init serial------------------------------>
-  Serial.begin(115200); // 19200 boud
-  //--init serial------------------------------<
-  sdPresent = false;
-  rtcPresent = false;
-  logfileOpened = false;
-  Serial.println(F("Aerologger NASO"));
-  Serial.print(F("Build time: "));
-  Serial.print(F(__DATE__));
-  Serial.print(F(" "));
-  Serial.println(F(__TIME__));
-  // initialize the SD card ------------------->
-  pinMode(CHIP_SD, OUTPUT);
-  // pinMode(S0_S, OUTPUT);
-  pinMode(LED_1, OUTPUT);
-  pinMode(LED_2, OUTPUT);
-  //  digitalWrite(S0_S, HIGH);
-  Serial.print(F("SD initialization:"));
-  if (!SD.begin(CHIP_SD))
-  {
-    sdPresent = false;
-    Serial.println(F("failed"));
-    failed = true;
-  }
-  else
-  {
-    Serial.println(ok);
-    sdPresent = true;
-  }
-  if (failed)
-  {
-    digitalWrite(LED_1, HIGH);
-    digitalWrite(LED_2, HIGH);
-  }
 
-  DL_initConf();
-  // initialize the SD card -------------------<
-  SerialFlush();
-  // connect to RTC --------------------------->
-  Wire.begin();
-  unsigned long unixtime;
-  unixtime = DateTime(__DATE__, __TIME__).unixtime();
-  if (RTC.begin())
-  {
-    Serial.println(F("RTC present"));
-    rtcPresent = true;
-    if (!RTC.isrunning())
-    {
-      Serial.println(F("Clock not running"));
-      RTC.adjust(DateTime(F(__DATE__), F(__TIME__)));
-    }
-    Serial.print(F("Device clock:"));
-    Serial.print(DL_strNow());
-    Serial.println(F(" type 'settime' to change"));
-  }
-  else
-  {
-    rtcPresent = false;
-    Serial.println(F("RTC Failed"));
-    failed = true;
-  }
-  digitalWrite(LED_2, LOW);
-  digitalWrite(LED_1, LOW);
-
-  // connect to RTC ---------------------------<
-
-#if SGP40_PRESENT
-  if (sgp40Sensor.begin() == true)
-  {
-    Serial.println(F("SGP40 detected"));
-  }
-#endif
-#if BMP280_PRESENT
-  if (!bme0.begin())
-  {
-    Serial.println(F("\nBMP280 sensor not present"));
-    BMP280Present = false;
-  }
-  else
-  {
-    Serial.println(F("\nBMP280 sensor present"));
-    BMP280Present = true;
-  }
-#endif
-  delay(10);
-  TimeCurrent = millis();
-  TimeTarget = TimeCurrent + (log_interval_s * 1000);
-  TimeTargetFileWrite = TimeCurrent + SYNC_INTERVAL_ms;
-  //---faccio una lettura a vuoto per scaricare il condensatore -------->
-  for (int i = 0; i < 10; i++)
-  {
-    DL_analogReadAndFilter(S0);
-    delay(20);
-  }
-  //---faccio una lettura a vuoto per scaricare il condensatore --------<
-  //-----------init analog input-----------------------------------------<
-  pinMode(LED_BUILTIN, OUTPUT);
-
-#if OLED_PRESENT
-
-  oled.begin(width, height, sizeof(tiny4koled_init_128x64br), tiny4koled_init_128x64br);
-  oled.clear();
-  oled.setFont(FONT6X8);
-  oled.on();
-  // oled.setCursor(0, 0);
-  // oled.println(F("Start log"));
-#endif
-  TimeStartLog = millis() + (1000 * MQ2_PREHEAT_TIME_S);
-}
 /**
  **/
+// Function to read data from Serial
 static int readSerial(bool wait)
 {
-  static bool ready = false;
-  static int cnt = 0;
+  static bool ready = false; // Flag to indicate if a complete line is ready
+  static int cnt = 0;        // Counter for the number of characters read
+
   do
   {
+    // Loop while there is data available on Serial
     while (Serial.available() > 0)
     {
+      // Check if a complete line is ready
       if (ready)
       {
         ready = false;
-        return 1;
+        return 1; // Return 1 to indicate a complete line is ready
       }
+
+      // Read a character from Serial
       char c = Serial.read();
+
+      // Check if the character is a newline, carriage return, or printable ASCII character
       if (c == '\n' || c == '\r' || (c >= 20 && c <= 126))
       {
+        // Skip initial newline or carriage return characters
         if (cnt == 0 && (c == '\n' || c == '\r'))
         {
           continue;
         }
         else
         {
+          // Store the character in the buffer
           serialBuffer[cnt] = c;
+
+          // Check if the character is a newline, carriage return, or if the buffer is full
           if (c == '\n' || c == '\r' || cnt == (size_serialBuffer - 1))
           {
+            // Null-terminate the string and reset the counter
             serialBuffer[cnt] = '\0';
             cnt = 0;
             ready = true;
           }
           else
           {
+            // Increment the counter
             cnt++;
           }
         }
       }
     }
-  } while (wait);
-  return 0;
+  } while (wait); // Continue if 'wait' is true
+
+  return 0; // Return 0 to indicate no complete line is ready
 }
 
 /**
@@ -1020,25 +1019,7 @@ static int parse_serial_command()
   }
   return 0;
 }
-/**
 
-*/
-static bool isValidNumber(char *str)
-{
-  for (byte i = 0; i < strlen(str); i++)
-  {
-    if (str[i] == '\0')
-    {
-      break;
-    }
-    if (!(isDigit(str[i]) || str[i] == '.'))
-      return false;
-  }
-  return true;
-}
-/**
-
-*/
 void execute_command(char *command)
 {
 
@@ -1180,9 +1161,9 @@ void Mq2Calibration()
     Serial.println(S0Sensor);
     if (NumConsecutive > 10)
     {
-      zerogasValue = S0Sensor + 1;
+      zeroGasValue = S0Sensor + 1;
       Serial.println(F("completed"));
-      CreateINIConf(log_interval_s, zerogasValue);
+      CreateINIConf(log_interval_s, zeroGasValue);
       return;
     }
   }
@@ -1209,15 +1190,15 @@ void SetConfig()
     interval = log_interval_s;
   }
 #if MQ2SENSOR_PRESENT
-  zerogas = zerogasValue;
+  zerogas = zeroGasValue;
   Serial.print(F("\nZerogas:"));
   Serial.print('(');
-  Serial.print(zerogasValue);
+  Serial.print(zeroGasValue);
   Serial.print(')');
-  zerogas = InputIntFromSerial(zerogasValue);
+  zerogas = InputIntFromSerial(zeroGasValue);
   if (zerogas <= 0 || zerogas > 1023)
   {
-    zerogas = zerogasValue;
+    zerogas = zeroGasValue;
   }
 #else
   zerogas = ZEROGAS_default;
@@ -1235,9 +1216,7 @@ void SetConfig()
     Serial.println(F("\nInvalid values"));
   }
 }
-/**
-
-*/
+// Set date and time
 void SetDateTime()
 {
   DL_closeLogFile();
@@ -1264,14 +1243,12 @@ void SetDateTime()
   delay(500);
   reset();
 }
+// Reset Arduino
 void reset()
 {
   asm volatile("  jmp 0");
 }
-/**
 
-
-*/
 void SerialFlush()
 {
   Serial.flush();
@@ -1343,8 +1320,125 @@ void manageBlinkingByPPM(int inputValue)
   unsigned long timeOff = time / 2;
   manageBlinking(timeOn, timeOff);
 }
-float ppm;
-int raw;
+
+
+
+// Setup
+void setup()
+{
+  PPMGas = 0;
+  // uint8_t n = 0;
+  int timeout = 5;
+  //--init serial------------------------------>
+  Serial.begin(115200); // 19200 boud
+  //--init serial------------------------------<
+  sdPresent = false;
+  rtcPresent = false;
+  logfileOpened = false;
+  Serial.println(F("Aerologger NASO"));
+  Serial.print(F("Build time: "));
+  Serial.print(F(__DATE__));
+  Serial.print(F(" "));
+  Serial.println(F(__TIME__));
+  // initialize the SD card ------------------->
+  pinMode(CHIP_SD, OUTPUT);
+  // pinMode(S0_S, OUTPUT);
+  pinMode(LED_1, OUTPUT);
+  pinMode(LED_2, OUTPUT);
+  //  digitalWrite(S0_S, HIGH);
+  Serial.print(F("SD initialization:"));
+  if (!SD.begin(CHIP_SD))
+  {
+    sdPresent = false;
+    Serial.println(F("failed"));
+    failed = true;
+  }
+  else
+  {
+    Serial.println(ok);
+    sdPresent = true;
+  }
+  if (failed)
+  {
+    digitalWrite(LED_1, HIGH);
+    digitalWrite(LED_2, HIGH);
+  }
+
+  DL_initConf();
+  // initialize the SD card -------------------<
+  SerialFlush();
+  // connect to RTC --------------------------->
+  Wire.begin();
+  unsigned long unixtime;
+  unixtime = DateTime(__DATE__, __TIME__).unixtime();
+  if (RTC.begin())
+  {
+    Serial.println(F("RTC present"));
+    rtcPresent = true;
+    if (!RTC.isrunning())
+    {
+      Serial.println(F("Clock not running"));
+      RTC.adjust(DateTime(F(__DATE__), F(__TIME__)));
+    }
+    Serial.print(F("Device clock:"));
+    Serial.print(DL_strNow());
+    Serial.println(F(" type 'settime' to change"));
+  }
+  else
+  {
+    rtcPresent = false;
+    Serial.println(F("RTC Failed"));
+    failed = true;
+  }
+  digitalWrite(LED_2, LOW);
+  digitalWrite(LED_1, LOW);
+
+  // connect to RTC ---------------------------<
+
+#if SGP40_PRESENT
+  if (sgp40Sensor.begin() == true)
+  {
+    Serial.println(F("SGP40 detected"));
+  }
+#endif
+#if BMP280_PRESENT
+  if (!bme0.begin())
+  {
+    Serial.println(F("\nBMP280 sensor not present"));
+    BMP280Present = false;
+  }
+  else
+  {
+    Serial.println(F("\nBMP280 sensor present"));
+    BMP280Present = true;
+  }
+#endif
+  delay(10);
+  TimeCurrent = millis();
+  TimeTarget = TimeCurrent + (log_interval_s * 1000);
+  TimeTargetFileWrite = TimeCurrent + SYNC_INTERVAL_ms;
+  //---faccio una lettura a vuoto per scaricare il condensatore -------->
+  for (int i = 0; i < 10; i++)
+  {
+    DL_analogReadAndFilter(S0);
+    delay(20);
+  }
+  //---faccio una lettura a vuoto per scaricare il condensatore --------<
+  //-----------init analog input-----------------------------------------<
+  pinMode(LED_BUILTIN, OUTPUT);
+
+#if OLED_PRESENT
+
+  oled.begin(width, height, sizeof(tiny4koled_init_128x64br), tiny4koled_init_128x64br);
+  oled.clear();
+  oled.setFont(FONT6X8);
+  oled.on();
+  // oled.setCursor(0, 0);
+  // oled.println(F("Start log"));
+#endif
+  TimeStartLog = millis() + (1000 * MQ2_PREHEAT_TIME_S);
+}
+
 /**
    Loop.
 */
@@ -1352,7 +1446,7 @@ void loop()
 {
   static unsigned long LedTimer = 0;
   static bool LogReady = false;
-  static unsigned long TimeTargetRead = 0;
+  static unsigned long TimeTargetContinuousReading = 0;
   float S0Sensor = 0.0;
 
   TimeCurrent = millis();
@@ -1439,19 +1533,24 @@ void loop()
 
   if (LogReady)
   {
-    if (TimeCurrent > TimeTargetRead + 1000)
+    if (TimeCurrent > TimeTargetContinuousReading + 1000)
     {
-      raw = analogRead(S0);
-      ppm = MQ2_RawToPPM(raw);
-      TimeTargetRead = TimeCurrent;
+      rawSensorValue = analogRead(S0);
+      if (sensorReadingCounter >= NUM_READS)
+      {
+        sensorReadingCounter = 0;
+      }
+      sensorReading [sensorReadingCounter++] = rawSensorValue;
+      PPMGas = round(MQ2_RawToPPM(rawSensorValue)) ;
+      TimeTargetContinuousReading = TimeCurrent;
       if (plottermode)
       {
         Serial.print(F("raw="));
-        Serial.print(raw);
+        Serial.print(rawSensorValue);
         Serial.print(F(",ppm="));
-        Serial.println(ppm);
+        Serial.println(PPMGas);
       }
-      manageBlinkingByPPM(ppm);
+      manageBlinkingByPPM(PPMGas);
     }
 
     if (TimeCurrent >= TimeTarget)
@@ -1462,7 +1561,7 @@ void loop()
         DL_openLogFile();
       }
       //-----------sensors------------------------------------------------------->
-      S0Sensor = DL_analogReadAndFilter(S0);
+      S0Sensor = DL_FilterSensorReading();
 
 #if OLED_PRESENT
       oled.clear();
@@ -1473,8 +1572,6 @@ void loop()
 #endif
       //-----------sensors-------------------------------------------------------<
       LogCounter++;
-      // LOGPRINT(String(LogCounter));
-      // LOGPRINT(delimiter);
       LOGPRINT(F("\""));
       LOGPRINT(DL_strNow());
       LOGPRINT(F("\""));
