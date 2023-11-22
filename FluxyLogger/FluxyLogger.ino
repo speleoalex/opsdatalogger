@@ -13,6 +13,7 @@
   SD card use i digital pin 13, 12, 11, and 10.
   0=seriale rx
   1=seriale tx
+  
 */
 
 // Sensor presence configuration
