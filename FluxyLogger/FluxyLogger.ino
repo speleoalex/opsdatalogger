@@ -48,8 +48,8 @@
 // Buffer sizes
 #define size_serialBuffer 40
 #define MAX_ROWS_PER_FILE 10000 // max rows per file
-#define MAX_INI_KEY_LENGTH 10
-#define MAX_INI_VALUE_LENGTH 10
+#define MAX_INI_KEY_LENGTH 20
+#define MAX_INI_VALUE_LENGTH 20
 
 // Log configs
 #define LOG_INTERVAL_s 15      // log interval in seconds
@@ -89,12 +89,12 @@ SGP40 sgp40Sensor; // create an object of the SGP40 class
 #if BMP280_PRESENT
 #include "sensor_BMP280/farmerkeith_BMP280.h"
 bme280 bme0(0, DEBUGSENSOR);
+bool BMP280Present = false;
 #endif
 
 // Start Global variables -->
-int Detected = false;
-char serialBuffer[size_serialBuffer];
 bool plottermode = false;
+int Detected = false;
 #if MQ2SENSOR_PRESENT
 int zeroGasValue = ZEROGAS_default; // Define the default value for zero gas calibration
 #endif
@@ -102,47 +102,40 @@ int zeroGasValue = ZEROGAS_default; // Define the default value for zero gas cal
 SGP30 SGP;
 #endif
 
-char lineBuffer[MAX_INI_KEY_LENGTH + MAX_INI_VALUE_LENGTH + 2]; // Buffer for the line
 const char CONF_FILE[] = "CONFIG.INI";                          // configuration file
 const char textOk[] = "ok";
 const char textFailed[] = "failed";
 const char textNotFound[] = "unknown command";
-
-// bool ledInternal = false;
+SdFat SD;
+File logfile;
+File settingFile;
+uint8_t log_interval_s = LOG_INTERVAL_s; // log interval
 bool sdPresent = false;
 bool rtcPresent = false;
 int8_t logfileOpened = 0;
 bool echoToSerial = true;
 bool failed = false;
-bool BMP280Present = false;
-unsigned int log_interval_s = LOG_INTERVAL_s; // log interval
-
 unsigned long TimeStartLog = 0;
 unsigned long TimeCurrent = 0;
 unsigned long TimeTarget = 0;
 unsigned long TimeTargetFileWrite = 0;
-
+unsigned long PPMGas;   // Gas ppm
 int Led2TimeOn = 0;
 int Led2TimeOff = 0;
-
 unsigned long LogCounter = 0; // counter
 unsigned long dataToWrite = 0;
+int rawSensorValue;
+int sensorReadingCounter = 0;
 RTC_DS1307 RTC; // define the Real Time Clock object
 DateTime now;
 char printBuffer[32];
 char strDate[20];       //= "0000-00-00 00:00:00";
 char strFileDate[24];   // = "YYYY-MM-DD_HH.mm.ss.txt";
-unsigned long PPMGas;   // Gas ppm
 char delimiter[] = ";"; // CSV delimiter
-SdFat SD;
-File logfile;
-File settingFile;
-
-int rawSensorValue;
 int sensorReading[NUM_READS];
-uint8_t sensorReadingCounter = 0;
+char lineBuffer[MAX_INI_KEY_LENGTH + MAX_INI_VALUE_LENGTH + 2]; // Buffer for the line
+char serialBuffer[size_serialBuffer];
 // End Global variables --<
-
 // Functions
 // print ok of fail
 bool printResult(bool isOk, bool ln = false)
@@ -394,7 +387,7 @@ void LOGPRINT(char *str)
 {
   if (logfileOpened > 0)
   {
-    logfile.print(str);
+    failed = logfile.print(str) ? false:true;
     dataToWrite++;
   }
   if (echoToSerial)
@@ -407,7 +400,7 @@ void LOGPRINT(const __FlashStringHelper *str)
 {
   if (logfileOpened > 0)
   {
-    logfile.print(str);
+    failed = logfile.print(str) ? false:true;
     dataToWrite++;
   }
   if (echoToSerial)
@@ -420,7 +413,7 @@ void LOGPRINTLN(const __FlashStringHelper *str)
 {
   if (logfileOpened > 0)
   {
-    logfile.println(str);
+    failed = logfile.print(str) ? false:true;
     dataToWrite++;
   }
   if (echoToSerial)
@@ -450,7 +443,9 @@ void LOGPRINT(float val, uint8_t precision = 2)
     Serial.print(int(val)); // prints the int part
   }
   if (logfileOpened > 0)
-    logfile.print(int(val), DEC);
+  {
+    failed = logfile.print(int(val), DEC) ? 0:1;
+  }
   if (precision > 0)
   {
     unsigned long frac;
@@ -480,7 +475,9 @@ void LOGPRINT(float val, uint8_t precision = 2)
           Serial.print('0');
       }
       if (logfileOpened > 0)
-        logfile.print(frac, DEC);
+      {
+        failed = logfile.print(frac, DEC) ? 0:1;
+      }
       if (echoToSerial)
         Serial.print(frac, DEC);
     }
@@ -741,7 +738,7 @@ static bool CONF_is_valid_char(char character)
   return false;
 }
 
-#if 1
+#if 0
 /**
  * Get an integer configuration value from a file.
  *
@@ -758,13 +755,12 @@ static uint8_t CONF_getConfValueInt(const char *filename, const char *key, uint8
   {
     return defaultValue;
   }
-
   myFile = SD.open(filename);
   if (!myFile)
   {
+    failed = true;
     return defaultValue;
   }
-
   while (myFile.available())
   {
     // Read a line into the buffer
@@ -1375,7 +1371,7 @@ void manageBlinking(unsigned long timeOn, unsigned long timeOff)
   }
 }
 
-void manageBlinkingByPPM(int inputValue)
+void manageBlinkingByPPM(unsigned int inputValue)
 {
   uint16_t MaxValue = 500;
   // Assicurati che il valore di input sia entro i limiti previsti
@@ -1637,7 +1633,7 @@ void loop()
         sensorReadingCounter = 0;
       }
       sensorReading[sensorReadingCounter++] = rawSensorValue;
-      PPMGas = round(MQ2_RawToPPM(rawSensorValue));
+      PPMGas = (unsigned long) round(MQ2_RawToPPM(rawSensorValue));
       TimeTargetContinuousReading = TimeCurrent;
       if (plottermode)
       {
