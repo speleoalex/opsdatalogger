@@ -21,7 +21,7 @@
 #define DEBUGSENSOR 0      // Enable (1) or disable (0) sensor debugging
 // Calibration and operation parameters
 #define MINCONSECUTIVE_POSITIVE 20 // Minimum number of consecutive positive readings
-#define MQ2_PREHEAT_TIME_S 5      // Preheat time in seconds for the MQ2 sensor
+#define MQ2_PREHEAT_TIME_S 30      // Preheat time in seconds for the MQ2 sensor
 #define MINPPMPOSITIVE 10          // Minimum PPM for a positive reading
 
 // Sensors
