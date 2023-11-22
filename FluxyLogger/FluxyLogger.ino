@@ -115,7 +115,7 @@ int8_t logfileOpened = 0;
 bool echoToSerial = true;
 bool failed = false;
 bool BMP280Present = false;
-uint8_t log_interval_s = LOG_INTERVAL_s; // log interval
+unsigned int log_interval_s = LOG_INTERVAL_s; // log interval
 
 unsigned long TimeStartLog = 0;
 unsigned long TimeCurrent = 0;

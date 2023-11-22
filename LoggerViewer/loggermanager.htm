@@ -342,7 +342,7 @@
                 const [hour, minute, second] = timePart.split('.').map(Number);
 
                 // Creazione dell'oggetto Date
-                const date = new Date(year, month , day, hour, minute, second);
+                const date = new Date(year, month -1 , day, hour, minute, second);
 
                 // Formattazione della data e dell'ora secondo le impostazioni locali del browser
                 const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',hour:'numeric',minute:'numeric',second:'numeric' };
@@ -375,7 +375,7 @@
                             const size = file.split('\t')[1].trim();
 
                             html += "<button onclick=\"downloadFileClick('" + nomeFile + "'," + size + ")\">" + nomeFile + "</button>";
-                            html += "<button class=\"delete\" onclick=\"doDelete('" + nomeFile + "')\">delete</button>" + size + " bytes\t"+formatDateTime(nomeFile)+"\r\n\r\n";
+                            html += "<button class=\"delete\" onclick=\"doDelete('" + nomeFile + "')\">delete</button>" + size + " bytes\r\n"+formatDateTime(nomeFile)+"\r\n\r\n";
 
                         }
                     });
