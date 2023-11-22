@@ -413,7 +413,7 @@ void LOGPRINTLN(const __FlashStringHelper *str)
 {
   if (logfileOpened > 0)
   {
-    failed = logfile.print(str) ? false:true;
+    failed = logfile.println(str) ? false:true;
     dataToWrite++;
   }
   if (echoToSerial)
