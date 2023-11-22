@@ -21,7 +21,7 @@
 #define DEBUGSENSOR 0      // Enable (1) or disable (0) sensor debugging
 // Calibration and operation parameters
 #define MINCONSECUTIVE_POSITIVE 20 // Minimum number of consecutive positive readings
-#define MQ2_PREHEAT_TIME_S 30      // Preheat time in seconds for the MQ2 sensor
+#define MQ2_PREHEAT_TIME_S 5      // Preheat time in seconds for the MQ2 sensor
 #define MINPPMPOSITIVE 10          // Minimum PPM for a positive reading
 
 // Sensors
@@ -93,7 +93,7 @@ bool BMP280Present = false;
 #endif
 
 // Start Global variables -->
-bool plottermode = false;
+bool plotterMode = false;
 int Detected = false;
 #if MQ2SENSOR_PRESENT
 int zeroGasValue = ZEROGAS_default; // Define the default value for zero gas calibration
@@ -109,16 +109,16 @@ const char textNotFound[] = "unknown command";
 SdFat SD;
 File logfile;
 File settingFile;
-uint8_t log_interval_s = LOG_INTERVAL_s; // log interval
 bool sdPresent = false;
 bool rtcPresent = false;
 int8_t logfileOpened = 0;
 bool echoToSerial = true;
 bool failed = false;
-unsigned long TimeStartLog = 0;
-unsigned long TimeCurrent = 0;
-unsigned long TimeTarget = 0;
-unsigned long TimeTargetFileWrite = 0;
+unsigned long log_interval_s = LOG_INTERVAL_s; // log interval
+unsigned long timeStartLog = 0;
+unsigned long currentMillis = 0;
+unsigned long timeTarget = 0;
+unsigned long timeTargetFileWrite = 0;
 unsigned long PPMGas;   // Gas ppm
 int Led2TimeOn = 0;
 int Led2TimeOff = 0;
@@ -317,9 +317,9 @@ float DL_FilterSensorReading(void)
 {
   // Array to store sensorReading
 
-  int sum = 0.0;
-  int minValue = 1023; // Initialize minValue with the highest possible analog value
-  int maxValue = 0.0;  // Initialize maxValue with the lowest possible analog value
+  unsigned long sum = 0.0;
+  uint16_t minValue = 1023; // Initialize minValue with the highest possible analog value
+  uint16_t maxValue = 0.0;  // Initialize maxValue with the lowest possible analog value
 
   // Loop to read the analog value multiple times
   for (int i = 0; i < NUM_READS; i++)
@@ -343,7 +343,7 @@ float DL_FilterSensorReading(void)
   sum = sum - minValue - maxValue;
 
   // Return the average value excluding the min and max values
-  return (float)sum / (NUM_READS - 2);
+  return (float) sum / (NUM_READS - 2);
 }
 
 // Function to read an analog value from a pin with filtering
@@ -500,7 +500,7 @@ void LOGPRINT(unsigned long str)
 /**
  *
  */
-int InputIntFromSerial(uint8_t defaultValue = 0)
+int InputIntFromSerial(unsigned int defaultValue = 0)
 {
   SerialFlush();
   readSerial(true);
@@ -1016,21 +1016,18 @@ static int readSerial(bool wait)
       }
     }
   } while (wait); // Continue if 'wait' is true
-
   return 0; // Return 0 to indicate no complete line is ready
 }
 
+// switch device in slave mode
 void switchCommandMode()
 {
-
   DL_closeLogFile();
   logfileOpened = -1;
   echoToSerial = false;
 }
 
-/**
-
-*/
+// parse command from serial
 static int parse_serial_command()
 {
   if (readSerial(false))
@@ -1041,9 +1038,9 @@ static int parse_serial_command()
   return 0;
 }
 // switch logs
-bool SwithLogs(bool LogStart)
+bool SwithLogs(bool logStart)
 {
-  if (LogStart)
+  if (logStart)
   {
     DL_closeLogFile();
     logfileOpened = 0;
@@ -1059,6 +1056,7 @@ bool SwithLogs(bool LogStart)
 
 void execute_command(char *command)
 {
+  int i;
   if (strlen(command) > 0)
   {
     switchCommandMode();
@@ -1111,13 +1109,13 @@ void execute_command(char *command)
   if (strcmp(command, "plotter start") == 0)
   {
     echoToSerial = false;
-    plottermode = true;
+    plotterMode = true;
     printResult(true, true);
     return;
   }
   if (strcmp(command, "plotter stop") == 0)
   {
-    plottermode = false;
+    plotterMode = false;
     printResult(true, true);
     return;
   }
@@ -1141,7 +1139,6 @@ void execute_command(char *command)
     downloadFile();
     return;
   }
-
   if (strcmp(command, "reset") == 0)
   {
     DL_closeLogFile();
@@ -1163,7 +1160,6 @@ void execute_command(char *command)
   if (command[0] == 'r' && command[1] == 'm' && command[2] == ' ')
   {
     // Remove "rm " from the string to get the filename
-    int i;
     for (i = 0; i < size_serialBuffer - 3; i++)
     {
       command[i] = command[i + 3];
@@ -1232,7 +1228,7 @@ void Mq2Calibration()
     {
       zeroGasValue = S0Sensor + 1;
       Serial.println(F("completed"));
-      CreateINIConf(log_interval_s, zeroGasValue);
+      CreateINIConf((unsigned int)log_interval_s, zeroGasValue);
       return;
     }
   }
@@ -1248,12 +1244,13 @@ void SetConfig()
   DL_closeLogFile();
   delay(500);
   SerialFlush();
-  int interval, zerogas;
+  unsigned long interval;
+  unsigned int zerogas;
   Serial.print(F("\nInterval(s):"));
   Serial.print('(');
   Serial.print(log_interval_s);
   Serial.print(')');
-  interval = InputIntFromSerial(log_interval_s);
+  interval = InputIntFromSerial((unsigned int)log_interval_s);
   Serial.println();
   if (interval <= 0)
   {
@@ -1265,7 +1262,7 @@ void SetConfig()
   Serial.print('(');
   Serial.print(zeroGasValue);
   Serial.print(')');
-  zerogas = InputIntFromSerial(zeroGasValue);
+  zerogas = InputIntFromSerial((unsigned int) zeroGasValue);
   Serial.println();
   if (zerogas <= 0 || zerogas > 1023)
   {
@@ -1347,7 +1344,7 @@ void manageBlinking(unsigned long timeOn, unsigned long timeOff)
     return;
   }
   // Ottieni il tempo attuale
-  unsigned long currentMillis = millis();
+  currentMillis = millis();
 
   if (ledState)
   {
@@ -1499,9 +1496,9 @@ void setup()
   }
 #endif
   delay(10);
-  TimeCurrent = millis();
-  TimeTarget = TimeCurrent + (log_interval_s * 1000);
-  TimeTargetFileWrite = TimeCurrent + SYNC_INTERVAL_ms;
+  currentMillis = millis();
+  timeTarget = currentMillis + (log_interval_s * 1000);
+  timeTargetFileWrite = currentMillis + SYNC_INTERVAL_ms;
   //---faccio una lettura a vuoto per scaricare il condensatore -------->
   for (int i = 0; i < 10; i++)
   {
@@ -1521,7 +1518,7 @@ void setup()
   // oled.setCursor(0, 0);
   // oled.println(F("Start log"));
 #endif
-  TimeStartLog = millis() + (1000 * MQ2_PREHEAT_TIME_S);
+  timeStartLog = millis() + (1000 * MQ2_PREHEAT_TIME_S);
 }
 
 /**
@@ -1529,12 +1526,12 @@ void setup()
 */
 void loop()
 {
-  static unsigned long LedTimer = 0;
-  static bool LogReady = false;
-  static unsigned long TimeTargetContinuousReading = 0;
+  static unsigned long ledTimer = 0;
+  static bool readyToMeasure = false;
+  static unsigned long timeTargetContinuousReading = 0;
   float S0Sensor = 0.0;
 
-  TimeCurrent = millis();
+  currentMillis = millis();
 
   // commands:
   parse_serial_command();
@@ -1565,9 +1562,9 @@ void loop()
   {
     digitalWrite(LED_1, LOW);
   }
-  if (TimeCurrent > TimeStartLog || plottermode || logfileOpened == -1)
+  if (currentMillis > timeStartLog || plotterMode || logfileOpened == -1)
   {
-    LogReady = true;
+    readyToMeasure = true;
   }
   else
   {
@@ -1604,19 +1601,19 @@ void loop()
 
   if (logfileOpened <= 0)
   {
-    if (TimeCurrent > LedTimer + 1000)
+    if (currentMillis > ledTimer + 1000)
     {
       digitalWrite(LED_BUILTIN, HIGH);
       digitalWrite(LED_BUILTIN, HIGH);
-      LedTimer = TimeCurrent;
+      ledTimer = currentMillis;
     }
-    if (TimeCurrent > LedTimer + 500)
+    if (currentMillis > ledTimer + 500)
     {
       digitalWrite(LED_BUILTIN, LOW);
     }
   }
 
-  if (LogReady)
+  if (readyToMeasure)
   {
 
     if (logfileOpened <= 0)
@@ -1625,8 +1622,15 @@ void loop()
       digitalWrite(LED_2, HIGH);
     }
 
-    if (TimeCurrent > TimeTargetContinuousReading + 1000)
+    if (currentMillis > timeTargetContinuousReading + 1000)
     {
+      /*
+      Serial.print("currentMillis=");
+      Serial.println(currentMillis);
+      Serial.print("timeTarget=");
+      Serial.println(timeTarget);
+      */
+      timeTargetContinuousReading = currentMillis;
       rawSensorValue = analogRead(S0);
       if (sensorReadingCounter >= NUM_READS)
       {
@@ -1634,8 +1638,7 @@ void loop()
       }
       sensorReading[sensorReadingCounter++] = rawSensorValue;
       PPMGas = (unsigned long) round(MQ2_RawToPPM(rawSensorValue));
-      TimeTargetContinuousReading = TimeCurrent;
-      if (plottermode)
+      if (plotterMode)
       {
         Serial.print(F("raw:"));
         Serial.print(rawSensorValue);
@@ -1644,10 +1647,9 @@ void loop()
       }
       manageBlinkingByPPM(PPMGas);
     }
-
-    if (TimeCurrent >= TimeTarget)
+    if (currentMillis >= timeTarget)
     {
-      TimeTarget = TimeCurrent + (log_interval_s * 1000);
+      timeTarget = currentMillis + log_interval_s * 1000;
       if (LogCounter == 0 || (LogCounter >= MAX_ROWS_PER_FILE && (LogCounter % MAX_ROWS_PER_FILE == 0)))
       {
         DL_openLogFile();
@@ -1776,14 +1778,14 @@ void loop()
 #endif
       LOGPRINT(F("\n"));
     }
-    if (dataToWrite != 0 && TimeCurrent >= TimeTargetFileWrite)
+    if (dataToWrite != 0 && currentMillis >= timeTargetFileWrite)
     {
       if (logfileOpened)
       {
         logfile.flush();
       }
       dataToWrite = 0;
-      TimeTargetFileWrite = TimeCurrent + SYNC_INTERVAL_ms;
+      timeTargetFileWrite = currentMillis + SYNC_INTERVAL_ms;
     }
   }
 }
