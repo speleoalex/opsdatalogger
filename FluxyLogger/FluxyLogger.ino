@@ -106,7 +106,7 @@ char lineBuffer[MAX_INI_KEY_LENGTH + MAX_INI_VALUE_LENGTH + 2]; // Buffer for th
 const char CONF_FILE[] = "CONFIG.INI";                          // configuration file
 const char textOk[] = "ok";
 const char textFailed[] = "failed";
-
+const char textNotFound[] = "unknown command";
 
 // bool ledInternal = false;
 bool sdPresent = false;
@@ -255,7 +255,7 @@ void listFiles()
     // Store the file name in a buffer
     file.getName(printBuffer, sizeof(printBuffer));
     // Check if the entry is not a directory
-    if (!file.isDir())
+    if (!file.isDir() && strlen(printBuffer)>0)
     {
       // Print the file name
       Serial.print(printBuffer);
@@ -265,6 +265,7 @@ void listFiles()
     }
     file.close();
   }
+  Serial.println();
   dir.close();
 }
 
@@ -283,34 +284,6 @@ void downloadFile()
     // If user types 'e', exit the function
     if (strcmp(serialBuffer, "e") == 0)
     {
-      return;
-    }
-
-    // If user types 'rm ' followed by a filename, delete that file
-    if (serialBuffer[0] == 'r' && serialBuffer[1] == 'm' && serialBuffer[2] == ' ')
-    {
-      // Remove "rm " from the string to get the filename
-      int i;
-      for (i = 0; i < size_serialBuffer - 3; i++)
-      {
-        serialBuffer[i] = serialBuffer[i + 3];
-      }
-      serialBuffer[i] = '\0';
-
-      // Print delete command and filename
-      Serial.print(F("del "));
-      Serial.println(serialBuffer);
-
-      // Delete the file and report status
-      if (SD.remove(serialBuffer))
-      {
-        Serial.println(F("file deleted"));
-      }
-      else
-      {
-        Serial.print(F("error remove "));
-        Serial.println(serialBuffer);
-      }
       return;
     }
 
@@ -627,10 +600,8 @@ static char *DL_strDateToFilename(void)
   }
   return strFileDate;
 }
-/**
 
-
-*/
+// Close log file
 void DL_closeLogFile()
 {
   if (logfileOpened > 0)
@@ -641,9 +612,7 @@ void DL_closeLogFile()
   }
 }
 
-/**
-
-*/
+// Open log file
 void DL_openLogFile()
 {
   if (logfileOpened < 0)
@@ -1055,6 +1024,14 @@ static int readSerial(bool wait)
   return 0; // Return 0 to indicate no complete line is ready
 }
 
+void switchCommandMode()
+{
+
+  DL_closeLogFile();
+  logfileOpened = -1;
+  echoToSerial = false;
+}
+
 /**
 
 */
@@ -1086,7 +1063,14 @@ bool SwithLogs(bool LogStart)
 
 void execute_command(char *command)
 {
-
+  if (strlen(command) > 0)
+  {
+    switchCommandMode();
+  }
+  else
+  {
+    return;
+  }
   if (strcmp(command, "help") == 0)
   {
     Serial.println();
@@ -1105,30 +1089,31 @@ void execute_command(char *command)
 
     return;
   }
-
   if (strcmp(command, "log stop") == 0)
   {
     printResult(SwithLogs(false), true);
+    return;
   }
   if (strcmp(command, "log start") == 0)
   {
     printResult(SwithLogs(true), true);
+    return;
   }
 
   if (strcmp(command, "echo stop") == 0)
   {
     echoToSerial = false;
     printResult(true, true);
+    return;
   }
   if (strcmp(command, "echo start") == 0)
   {
     echoToSerial = true;
     printResult(true, true);
+    return;
   }
   if (strcmp(command, "plotter start") == 0)
   {
-    DL_closeLogFile();
-    logfileOpened = -1;
     echoToSerial = false;
     plottermode = true;
     printResult(true, true);
@@ -1136,7 +1121,6 @@ void execute_command(char *command)
   }
   if (strcmp(command, "plotter stop") == 0)
   {
-    echoToSerial = true;
     plottermode = false;
     printResult(true, true);
     return;
@@ -1151,14 +1135,12 @@ void execute_command(char *command)
 #endif
   if (strcmp(command, "ls") == 0)
   {
-    DL_closeLogFile();
     listFiles();
+    return;
   }
   if (strcmp(command, "logs") == 0)
   {
-    DL_closeLogFile();
-    logfileOpened = -1;
-    Serial.flush();
+    // Serial.flush();
     listFiles();
     downloadFile();
     return;
@@ -1181,6 +1163,35 @@ void execute_command(char *command)
     SetConfig();
     return;
   }
+  // If user types 'rm ' followed by a filename, delete that file
+  if (command[0] == 'r' && command[1] == 'm' && command[2] == ' ')
+  {
+    // Remove "rm " from the string to get the filename
+    int i;
+    for (i = 0; i < size_serialBuffer - 3; i++)
+    {
+      command[i] = command[i + 3];
+    }
+    command[i] = '\0';
+
+    // Print delete command and filename
+    Serial.print(F("del "));
+    Serial.println(command);
+
+    // Delete the file and report status
+    if (SD.remove(command))
+    {
+      Serial.println(F("file deleted"));
+    }
+    else
+    {
+      Serial.print(F("error remove "));
+      Serial.println(command);
+    }
+    return;
+  }
+
+  Serial.println(textNotFound);
 }
 
 #if MQ2SENSOR_PRESENT

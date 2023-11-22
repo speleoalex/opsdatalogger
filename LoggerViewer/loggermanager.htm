@@ -42,6 +42,7 @@
             color: greenyellow !important;
 
         }
+
         .fail {
             color: red !important;
 
@@ -235,7 +236,7 @@
                 }
                 else {
                     //outputDiv.textContent += value;
-                    outputDiv.innerHTML +=  HighLighting(value);
+                    outputDiv.innerHTML += HighLighting(value);
                     if (inListFile) {
                         creaBottoniPerFile(outputDiv.textContent);
                     }
@@ -277,7 +278,10 @@
         function doDelete(nomeFile) {
             if (confirm("Confirm delete file?")) {
                 clearOutput();
-                sendSerial("rm " + nomeFile.trim());
+                sendSerial("e");
+                setTimeout(() => {
+                    sendSerial("rm " + nomeFile.trim());
+                }, 500);
             }
         }
 
@@ -309,21 +313,47 @@
 
         }
         function HighLighting(testo) {
-            console.log ("testo="+testo);
+            //console.log("testo=" + testo);
             var lines = testo.split("\r\n");
-            for (var i in lines)
-            {
-                if (lines[i].endsWith(" ok") || lines[i]=="ok") {
+            for (var i in lines) {
+                if (lines[i].endsWith(" ok") || lines[i] == "ok") {
                     lines[i] = "<span class=\"ok\">" + lines[i].trim() + "</span>";
                 }
-                if (lines[i].endsWith(" failed") || lines[i]=="failed") {
+                if (lines[i].endsWith(" failed") || lines[i] == "failed") {
                     lines[i] = "<span class=\"fail\">" + lines[i].trim() + "</span>";
                 }
             }
             html = lines.join("\r\n");
-            console.log ("html="+html);
+            //console.log("html=" + html);
             return html;
         }
+        function formatDateTime(fileName) {
+            // Controllo del formato del nome del file
+            const regex = /^\d{4}-\d{2}-\d{2}_\d{2}\.\d{2}\.\d{2}\.txt$/;
+            if (!regex.test(fileName)) {
+                return fileName; // Restituisce il nome del file in caso di formato errato
+            }
+
+            try {
+                // Estrazione di componenti data e ora dal nome del file
+                const datePart = fileName.split('_')[0];
+                const timePart = fileName.split('_')[1].split('.')[0] + '.' + fileName.split('_')[1].split('.')[1] + '.' + fileName.split('_')[1].split('.')[2];
+                const [year, month, day] = datePart.split('-').map(Number);
+                const [hour, minute, second] = timePart.split('.').map(Number);
+
+                // Creazione dell'oggetto Date
+                const date = new Date(year, month , day, hour, minute, second);
+
+                // Formattazione della data e dell'ora secondo le impostazioni locali del browser
+                const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',hour:'numeric',minute:'numeric',second:'numeric' };
+
+                // Formattazione della data secondo le impostazioni locali del browser
+                return date.toLocaleString(undefined, options);
+            } catch (error) {
+                return ""; // Restituisce il nome del file in caso di errore
+            }
+        }
+
         function creaBottoniPerFile(testo) {
             const inizio = testo.indexOf("Files:");
             let html = "";
@@ -335,6 +365,7 @@
                 try {
 
                     const listaFile = testo.substring(inizio + "Files:".length, fine).trim().split('\n');
+                    listaFile.sort();
                     const outputDiv = document.getElementById('output');
                     outputDiv.innerHTML = ''; // Pulisci il div
                     listaFile.forEach(file => {
@@ -344,11 +375,11 @@
                             const size = file.split('\t')[1].trim();
 
                             html += "<button onclick=\"downloadFileClick('" + nomeFile + "'," + size + ")\">" + nomeFile + "</button>";
-                            html += "<button class=\"delete\" onclick=\"doDelete('" + nomeFile + "')\">delete</button>" + size + " bytes\r\n\r\n";
+                            html += "<button class=\"delete\" onclick=\"doDelete('" + nomeFile + "')\">delete</button>" + size + " bytes\t"+formatDateTime(nomeFile)+"\r\n\r\n";
 
                         }
                     });
-                    html += "<button class=\"continue\" onclick=\"sendSerial('e');clearOutput();\">Exit</button><hr />";
+                    html += "<button class=\"continue\" onclick=\"clearOutput();;sendSerial('e');\">Exit</button><br />";
                     outputDiv.innerHTML = html;
                 }
                 catch (e) {
