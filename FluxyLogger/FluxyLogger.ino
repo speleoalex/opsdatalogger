@@ -104,7 +104,9 @@ SGP30 SGP;
 
 char lineBuffer[MAX_INI_KEY_LENGTH + MAX_INI_VALUE_LENGTH + 2]; // Buffer for the line
 const char CONF_FILE[] = "CONFIG.INI";                          // configuration file
-const char ok[] = "ok";
+const char textOk[] = "ok";
+const char textFailed[] = "failed";
+
 
 // bool ledInternal = false;
 bool sdPresent = false;
@@ -147,11 +149,11 @@ bool printResult(bool isOk, bool ln = false)
 {
   if (isOk)
   {
-    Serial.print(ok);
+    Serial.print(textOk);
   }
   else
   {
-    Serial.print(ok);
+    Serial.print(textFailed);
   }
   if (ln)
   {
@@ -528,11 +530,18 @@ void LOGPRINT(unsigned long str)
 /**
  *
  */
-uint8_t InputIntFromSerial(uint8_t defaultValue = 0)
+int InputIntFromSerial(uint8_t defaultValue = 0)
 {
+  SerialFlush();
   readSerial(true);
   if (strlen(serialBuffer) > 0)
   {
+    /*
+    Serial.print("read:");
+    Serial.println(serialBuffer);
+    Serial.print("atoi:");
+    Serial.println(atoi(serialBuffer));
+    */
     return atoi(serialBuffer);
   }
   else
@@ -1007,7 +1016,6 @@ static int readSerial(bool wait)
 {
   static bool ready = false; // Flag to indicate if a complete line is ready
   static int cnt = 0;        // Counter for the number of characters read
-
   do
   {
     // Loop while there is data available on Serial
@@ -1028,7 +1036,7 @@ static int readSerial(bool wait)
         // Store the character in the buffer
         serialBuffer[cnt] = c;
         // Check if the character is a newline, carriage return, or if the buffer is full
-        if (c == '\n' || c == '\r' || cnt == (size_serialBuffer - 1))
+        if (c == '\n' || c == '\r' || c == '\n' || cnt == (size_serialBuffer - 1))
         {
           // Null-terminate the string and reset the counter
           serialBuffer[cnt] = '\0';
@@ -1589,8 +1597,6 @@ void loop()
 
   if (logfileOpened <= 0)
   {
-    digitalWrite(LED_1, HIGH);
-    digitalWrite(LED_2, HIGH);
     if (TimeCurrent > LedTimer + 1000)
     {
       digitalWrite(LED_BUILTIN, HIGH);
@@ -1605,6 +1611,13 @@ void loop()
 
   if (LogReady)
   {
+
+    if (logfileOpened <= 0)
+    {
+      digitalWrite(LED_1, HIGH);
+      digitalWrite(LED_2, HIGH);
+    }
+
     if (TimeCurrent > TimeTargetContinuousReading + 1000)
     {
       rawSensorValue = analogRead(S0);

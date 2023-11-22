@@ -43,7 +43,7 @@
 
         }
         .fail {
-            color: greenyellow !important;
+            color: red !important;
 
         }
 
@@ -316,7 +316,7 @@
                 if (lines[i].endsWith(" ok") || lines[i]=="ok") {
                     lines[i] = "<span class=\"ok\">" + lines[i].trim() + "</span>";
                 }
-                if (lines[i].endsWith(" fail")) {
+                if (lines[i].endsWith(" failed") || lines[i]=="failed") {
                     lines[i] = "<span class=\"fail\">" + lines[i].trim() + "</span>";
                 }
             }
