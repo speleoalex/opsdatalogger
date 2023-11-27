@@ -5,7 +5,7 @@ It detects very well the butane present in normal air freshener cans.
 
 An assembled and ready-to-use version, or in an assembly kit, can be purchased here: [https://techmakers.eu/it/products/n-a-s-o-data-logger](https://techmakers.eu/it/products/n-a-s-o-data-logger)
 
-### components required for assembly (FluxyLogger NASO):
+### Components required for assembly (FluxyLogger NASO):
 * 1 ArduinoUNO
 * 1 PowerBank
 * 1 Data Logger Shield with RTC
@@ -14,20 +14,20 @@ An assembled and ready-to-use version, or in an assembly kit, can be purchased h
 * connecting wires
 
 
-### optionally it is possible to add sensor for temperature, humidity, pressure and wind speed:
+### Optionally it is possible to add sensor for temperature, humidity, pressure and wind speed:
 * 1 GY-BMP280-3.3
 * 1 Wind sensor 
 
-### optionally VOC Sensor SGP40:
+### Optionally VOC Sensor SGP40:
 * 1 Digital SGP40 VOC (Volatile Organic Compounds) Gas Sensor 
 
-### manuals
+### Manuals:
 
 **Italian:**
-https://github.com/speleoalex/opsdatalogger/blob/main/manuals/FluxyLogger-NASO-it.md
+[manuals/FluxyLogger-NASO-it.md](manuals/FluxyLogger-NASO-it.md)
 
 **English:**
-https://github.com/speleoalex/opsdatalogger/blob/main/manuals/FluxyLogger-NASO-en.md
+[manuals/FluxyLogger-NASO-en.md](manuals/FluxyLogger-NASO-en.md)
 
 -----
 
