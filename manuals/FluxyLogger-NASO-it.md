@@ -8,6 +8,7 @@ Il tracciante viene immesso in un ingresso aspirante e il datalogger in un ingre
 
 Il datalogger registra il passaggio del tracciante e salva i dati acquisiti su una scheda nicroSD
 
+[https://techmakers.eu/products/n-a-s-o-data-logger](https://techmakers.eu/products/n-a-s-o-data-logger)
 
 -----
 
@@ -32,6 +33,13 @@ Il rilevatore è sensibile inoltre ad alcool, metano, fumo
 La quantità di tracciante necessaria può variare a seconda dei volumi di aria.
 Per distanze superiori al chilometro Si consiglia di utilizzare almeno 2 bombolette da 300ml di tracciante.
 
+# Prevenzione dell'Impatto Ambientale durante il tracciamento
+
+Questo sensore è specificatamente progettato per identificare gas propellenti come butano e propano, comuni nelle bombolette spray. I propellenti a gas compressi sono economicamente vantaggiosi, inerti, e caratterizzati da bassa tossicità per inalazione, riducendo l'impatto ambientale. 
+
+Per minimizzare ulteriormente i danni ambientali, si suggerisce l'utilizzo di prodotti ecocompatibili. 
+
+È inoltre consigliabile applicare il contenuto delle bombolette su superfici idonee, quali carta o tessuto, anziché direttamente su roccia o terreno, per evitare di lasciare residui nocivi nell'ambiente.
 
 
  
