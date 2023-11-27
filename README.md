@@ -21,6 +21,13 @@ An assembled and ready-to-use version, or in an assembly kit, can be purchased h
 ### optionally VOC Sensor SGP40:
 * 1 Digital SGP40 VOC (Volatile Organic Compounds) Gas Sensor 
 
+### manuals
+
+**Italian:**
+https://github.com/speleoalex/opsdatalogger/blob/main/manuals/FluxyLogger-NASO-it.md
+
+**English:**
+https://github.com/speleoalex/opsdatalogger/blob/main/manuals/FluxyLogger-NASO-en.md
 
 -----
 
