@@ -16,7 +16,7 @@
 
 */
 
-#define VERSION 1.0
+#define VERSION 1.01
 // #define BOUDRATE 115200
 // #define BOUDRATE 57600
 #define BOUDRATE 19200
@@ -1316,7 +1316,7 @@ void SetDateTime()
   DL_closeLogFile();
   delay(500);
   SerialFlush();
-  int year, month, day, hours, minutes;
+  int year, month, day, hours, minutes,seconds;
   Serial.println(F("\nClock:"));
   Serial.print(F("Year:"));
   year = InputIntFromSerial();
@@ -1333,7 +1333,10 @@ void SetDateTime()
   Serial.print(F("Minutes:"));
   minutes = InputIntFromSerial();
   Serial.println(minutes);
-  RTC.adjust(DateTime(year, month, day, hours, minutes, 0));
+  Serial.print(F("Seconds:"));
+  seconds = InputIntFromSerial();
+  Serial.println(seconds);
+  RTC.adjust(DateTime(year, month, day, hours, minutes, seconds));
   delay(500);
   reset();
 }

@@ -118,9 +118,9 @@
         <button id="loggerviewer" style="float:right" onclick="window.location='loggerviewer.htm'">Logger
             viewer</button><button id="connect">Connect</button><select name="baudrate" id="baudrate-select">
             <option value="9600">9600</option>
-            <option selected  value="19200">19200</option>
+            <option selected value="19200">19200</option>
             <option value="57600">57600</option>
-            <option  value="115200">115200</option>
+            <option value="115200">115200</option>
         </select><button id="disconnect"
             style="display:none;background-color: rgb(128, 0, 0);">Disconnect</button><button id="logs" disabled>View
             stored logs</button><button id="settime" disabled>Auto Set Time</button><button id="setinterval"
@@ -149,7 +149,7 @@
             } catch (e) {
                 //alert(e);
             }
-
+            console.log("Open boudrate:" + getSelectedBaudRate());
             await port.open({ baudRate: getSelectedBaudRate() });
 
             const decoder = new TextDecoderStream();
@@ -210,7 +210,10 @@
                             setTimeout(() => {
                                 var n = new Date().getMinutes();
                                 sendSerial(n);
-
+                                setTimeout(() => {
+                                    var n = new Date().getSeconds();
+                                    sendSerial(n);
+                                }, 1000);
                             }, 1000);
                         }, 1000);
                     }, 1000);
@@ -342,10 +345,10 @@
                 const [hour, minute, second] = timePart.split('.').map(Number);
 
                 // Creazione dell'oggetto Date
-                const date = new Date(year, month -1 , day, hour, minute, second);
+                const date = new Date(year, month - 1, day, hour, minute, second);
 
                 // Formattazione della data e dell'ora secondo le impostazioni locali del browser
-                const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',hour:'numeric',minute:'numeric',second:'numeric' };
+                const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric' };
 
                 // Formattazione della data secondo le impostazioni locali del browser
                 return date.toLocaleString(undefined, options);
@@ -375,7 +378,7 @@
                             const size = file.split('\t')[1].trim();
 
                             html += "<button onclick=\"downloadFileClick('" + nomeFile + "'," + size + ")\">" + nomeFile + "</button>";
-                            html += "<button class=\"delete\" onclick=\"doDelete('" + nomeFile + "')\">delete</button>" + size + " bytes\r\n"+formatDateTime(nomeFile)+"\r\n\r\n";
+                            html += "<button class=\"delete\" onclick=\"doDelete('" + nomeFile + "')\">delete</button>" + size + " bytes\r\n" + formatDateTime(nomeFile) + "\r\n\r\n";
 
                         }
                     });
