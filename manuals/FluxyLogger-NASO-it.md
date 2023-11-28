@@ -54,7 +54,7 @@ esempio “Serial USB Terminal” per dispositivi Android.
 ### Collegamento da PC :
 Il programma Arduino IDE ha un terminale integrato accessibile dal menu
 Strumenti->Monitor seriale.
-Impostare la porta USB e la velocità della seriale a 115200 baud
+Impostare la porta USB e la velocità della seriale a 19200 baud
 
 ### Esempiodi output su seriale:
 ```

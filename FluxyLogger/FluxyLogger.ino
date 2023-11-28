@@ -16,6 +16,10 @@
   
 */
 
+#define VERSION 1.0         
+//#define BOUDRATE 115200
+//#define BOUDRATE 57600
+#define BOUDRATE 19200
 // Sensor presence configuration
 #define BMP280_PRESENT 0   // Set to 1 if BMP280 sensor is present, 0 otherwise
 #define HUMIDITY_PRESENT 0 // Set to 1 if a humidity sensor is present, 0 otherwise
@@ -1084,6 +1088,14 @@ void execute_command(char *command)
 
     return;
   }
+
+  
+  if (strcmp(command, "v") == 0)
+  {
+    SwithLogs(false);
+    Serial.println(VERSION);
+    return;
+  }
   if (strcmp(command, "log stop") == 0)
   {
     printResult(SwithLogs(false), true);
@@ -1397,16 +1409,17 @@ void setup()
   // uint8_t n = 0;
   int timeout = 5;
   //--init serial------------------------------>
-  Serial.begin(115200); // 19200 boud
+  Serial.begin(BOUDRATE); //  boud
   //--init serial------------------------------<
   sdPresent = false;
   rtcPresent = false;
   logfileOpened = false;
-  Serial.print(F("FluxyLogger"));
+  Serial.print(F("FluxyLogger "));
 #if MQ2SENSOR_PRESENT
-  Serial.print(F(" NASO"));
+  Serial.print(F("NASO "));
 #endif
-  Serial.println();
+
+  Serial.println(VERSION);
   Serial.print(F("Build time: "));
   Serial.print(F(__DATE__));
   Serial.print(F(" "));

@@ -53,7 +53,7 @@ example, "Serial USB Terminal" for Android devices.
 ### Connection from PC:
 The Arduino IDE program has a built-in terminal accessible from the menu
 Tools->Serial Monitor.
-Set the USB port and the serial speed to 115200 baud
+Set the USB port and the serial speed to 19200 baud
 
 ### Example of serial output:
 
