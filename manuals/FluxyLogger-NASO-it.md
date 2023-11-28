@@ -1,8 +1,10 @@
-# FluxyLogger NASO
+# FluxyLogger NASO #NASO4CAVE
 
 ![datalogger](logo.png)
 
 Il datalogger N.A.S.O. (Novel Aereal Sensing Observer) ha lo scopo di verificare la presenza di connessioni tra due ingressi di cavità tramite tracciamenti dell'aria.
+
+Usato in coppia può essere anche utilizzato per calcolare la velocità media dei flussi d'aria.
 
 Il tracciante viene immesso in un ingresso aspirante e il datalogger in un ingresso soffiante.
 
@@ -56,7 +58,7 @@ Il programma Arduino IDE ha un terminale integrato accessibile dal menu
 Strumenti->Monitor seriale.
 Impostare la porta USB e la velocità della seriale a 19200 baud
 
-### Esempiodi output su seriale:
+### Esempio di output su seriale:
 ```
 SD initialization:ok
 CONFIG.INI exist
@@ -67,18 +69,44 @@ Device clock:2023-11-17 17:15:28 type 'settime' to change
 prehead 
 prehead 
 prehead 
-prehead 
-prehead 
-prehead 
-prehead 
+
 Log to:2023-11-17_17.16.02.txt
 "date Y-m-d m:s"	"gas adc"	"LPG PPM" 
 "2023-11-17 17:16:02"	80	0
 "2023-11-17 17:16:32"	80	0
 "2023-11-17 17:17:02"	80	0
 ```
+inviando il comando **help** è possibile avere la lista dei comandi possibili.
 
-inviando il comando "help" è possibile avere la lista dei comandi possibili.
+### Esempio di file generato su scheda microSD:
+
+
+```
+date Y-m-d m:s;gas adc;LPG PPM 
+2022-07-31 00:02:43;35;0
+2022-07-31 00:02:53;35;0
+2022-07-31 00:03:03;35;0
+2022-07-31 00:03:13;34;0
+2022-07-31 00:03:23;34;0
+2022-07-31 00:03:33;34;0
+2022-07-31 00:03:43;34;0
+2022-07-31 00:03:53;33;0
+2022-07-31 00:04:03;33;0
+2022-07-31 00:04:13;33;0
+2022-07-31 00:04:23;33;0
+2022-07-31 00:04:33;33;0
+2022-07-31 00:04:43;33;0
+
+```
+
+i files vengono creati sulla scheda micrp SD con la **data di inizio** della registrazione, ad esempio **2023-09-18_22.13.00.txt** e contengono una tabella in formato csv con i valori registrati
+
+#### Campi della tabella:
+
+- date Y-m-d m: data
+- gas adc: valore grezzo del sensore che va da 1 a 1024
+- LPG PPM: parti per milione del gas assumendo che il tracciante sia propano o butano calcolato con il valore di zero gas impostato sul datalogger. In caso di valore di zero gas non corretto questo campo può essere calcolato anche a posteriori utilizzando il datasheet del sensore MQ-2
+
 
 
 ### Impostazione data e ora:
