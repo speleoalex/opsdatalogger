@@ -1219,7 +1219,7 @@ void Mq2Calibration()
   int S0Sensor = 0;
   int S0Sensor_old = 0;
   int NumConsecutive = 0;
-  Serial.print(F("Zerogas calibration"));
+  Serial.println(F("Zerogas calibration"));
   while (1)
   {
     S0Sensor = (int)DL_analogReadAndFilter(S0);
