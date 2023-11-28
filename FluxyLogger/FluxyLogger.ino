@@ -13,12 +13,12 @@
   SD card use i digital pin 13, 12, 11, and 10.
   0=seriale rx
   1=seriale tx
-  
+
 */
 
-#define VERSION 1.0         
-//#define BOUDRATE 115200
-//#define BOUDRATE 57600
+#define VERSION 1.0
+// #define BOUDRATE 115200
+// #define BOUDRATE 57600
 #define BOUDRATE 19200
 // Sensor presence configuration
 #define BMP280_PRESENT 0   // Set to 1 if BMP280 sensor is present, 0 otherwise
@@ -107,7 +107,7 @@ int zeroGasValue = ZEROGAS_default; // Define the default value for zero gas cal
 SGP30 SGP;
 #endif
 
-const char CONF_FILE[] = "CONFIG.INI";                          // configuration file
+const char CONF_FILE[] = "CONFIG.INI"; // configuration file
 const char textOk[] = "ok";
 const char textFailed[] = "failed";
 const char textNotFound[] = "unknown command";
@@ -124,7 +124,7 @@ unsigned long timeStartLog = 0;
 unsigned long currentMillis = 0;
 unsigned long timeTarget = 0;
 unsigned long timeTargetFileWrite = 0;
-unsigned long PPMGas;   // Gas ppm
+unsigned long PPMGas; // Gas ppm
 int Led2TimeOn = 0;
 int Led2TimeOff = 0;
 unsigned long LogCounter = 0; // counter
@@ -235,6 +235,20 @@ void printDirectory(const char *dirname, int levels)
   dir.close();
 }
 
+void printVersion()
+{
+  Serial.print(F("FluxyLogger "));
+#if MQ2SENSOR_PRESENT
+  Serial.print(F("NASO "));
+#endif
+
+  Serial.println(VERSION);
+  Serial.print(F("Build time: "));
+  Serial.print(F(__DATE__));
+  Serial.print(F(" "));
+  Serial.println(F(__TIME__));
+}
+
 // Function to list files on the SD card
 void listFiles()
 {
@@ -253,7 +267,7 @@ void listFiles()
     // Store the file name in a buffer
     file.getName(printBuffer, sizeof(printBuffer));
     // Check if the entry is not a directory
-    if (!file.isDir() && strlen(printBuffer)>0)
+    if (!file.isDir() && strlen(printBuffer) > 0)
     {
       // Print the file name
       Serial.print(printBuffer);
@@ -348,7 +362,7 @@ float DL_FilterSensorReading(void)
   sum = sum - minValue - maxValue;
 
   // Return the average value excluding the min and max values
-  return (float) sum / (NUM_READS - 2);
+  return (float)sum / (NUM_READS - 2);
 }
 
 // Function to read an analog value from a pin with filtering
@@ -392,7 +406,7 @@ void LOGPRINT(char *str)
 {
   if (logfileOpened > 0)
   {
-    failed = logfile.print(str) ? false:true;
+    failed = logfile.print(str) ? false : true;
     dataToWrite++;
   }
   if (echoToSerial)
@@ -405,7 +419,7 @@ void LOGPRINT(const __FlashStringHelper *str)
 {
   if (logfileOpened > 0)
   {
-    failed = logfile.print(str) ? false:true;
+    failed = logfile.print(str) ? false : true;
     dataToWrite++;
   }
   if (echoToSerial)
@@ -418,7 +432,7 @@ void LOGPRINTLN(const __FlashStringHelper *str)
 {
   if (logfileOpened > 0)
   {
-    failed = logfile.println(str) ? false:true;
+    failed = logfile.println(str) ? false : true;
     dataToWrite++;
   }
   if (echoToSerial)
@@ -449,7 +463,7 @@ void LOGPRINT(float val, uint8_t precision = 2)
   }
   if (logfileOpened > 0)
   {
-    failed = logfile.print(int(val), DEC) ? 0:1;
+    failed = logfile.print(int(val), DEC) ? 0 : 1;
   }
   if (precision > 0)
   {
@@ -481,7 +495,7 @@ void LOGPRINT(float val, uint8_t precision = 2)
       }
       if (logfileOpened > 0)
       {
-        failed = logfile.print(frac, DEC) ? 0:1;
+        failed = logfile.print(frac, DEC) ? 0 : 1;
       }
       if (echoToSerial)
         Serial.print(frac, DEC);
@@ -1021,7 +1035,7 @@ static int readSerial(bool wait)
       }
     }
   } while (wait); // Continue if 'wait' is true
-  return 0; // Return 0 to indicate no complete line is ready
+  return 0;       // Return 0 to indicate no complete line is ready
 }
 
 // switch device in slave mode
@@ -1089,11 +1103,10 @@ void execute_command(char *command)
     return;
   }
 
-  
   if (strcmp(command, "v") == 0)
   {
     SwithLogs(false);
-    Serial.println(VERSION);
+    printVersion();    
     return;
   }
   if (strcmp(command, "log stop") == 0)
@@ -1275,7 +1288,7 @@ void SetConfig()
   Serial.print('(');
   Serial.print(zeroGasValue);
   Serial.print(')');
-  zerogas = InputIntFromSerial((unsigned int) zeroGasValue);
+  zerogas = InputIntFromSerial((unsigned int)zeroGasValue);
   Serial.println();
   if (zerogas <= 0 || zerogas > 1023)
   {
@@ -1414,16 +1427,7 @@ void setup()
   sdPresent = false;
   rtcPresent = false;
   logfileOpened = false;
-  Serial.print(F("FluxyLogger "));
-#if MQ2SENSOR_PRESENT
-  Serial.print(F("NASO "));
-#endif
-
-  Serial.println(VERSION);
-  Serial.print(F("Build time: "));
-  Serial.print(F(__DATE__));
-  Serial.print(F(" "));
-  Serial.println(F(__TIME__));
+  printVersion();
   // initialize the SD card ------------------->
   pinMode(CHIP_SD, OUTPUT);
   // pinMode(S0_S, OUTPUT);
@@ -1651,7 +1655,7 @@ void loop()
         sensorReadingCounter = 0;
       }
       sensorReading[sensorReadingCounter++] = rawSensorValue;
-      PPMGas = (unsigned long) round(MQ2_RawToPPM(rawSensorValue));
+      PPMGas = (unsigned long)round(MQ2_RawToPPM(rawSensorValue));
       if (plotterMode)
       {
         Serial.print(F("raw:"));
