@@ -57,7 +57,7 @@
 #define MAX_INI_VALUE_LENGTH 20
 
 // Log configs
-#define LOG_INTERVAL_s 15      // log interval in seconds
+#define LOG_INTERVAL_s 30      // log interval in seconds
 #define SYNC_INTERVAL_ms 20000 // mills between calls to flush() - to write data to the card
 #define NUM_READS 25
 #define READS_DELAY 20
@@ -1088,7 +1088,9 @@ void execute_command(char *command)
   {
     Serial.println();
     Serial.println(F("commands:"));
+    Serial.println(F("v:firmware version"));
     Serial.println(F("logs:read data"));
+    Serial.println(F("date:display evice clock"));
     Serial.println(F("reset:reset device"));
     Serial.println(F("settime:set device clock"));
     Serial.println(F("setconfig:set config"));
@@ -1107,6 +1109,12 @@ void execute_command(char *command)
   {
     SwithLogs(false);
     printVersion();    
+    return;
+  }
+  if (strcmp(command, "date") == 0)
+  {
+    SwithLogs(false);
+    printDateTime();
     return;
   }
   if (strcmp(command, "log stop") == 0)
@@ -1396,7 +1404,17 @@ void manageBlinking(unsigned long timeOn, unsigned long timeOff)
     }
   }
 }
-
+void printDateTime()
+{
+  if (RTC.isrunning())
+  {
+    Serial.print(F("Device clock:"));
+    Serial.println(DL_strNow());
+  }
+  else{
+    Serial.println(textFailed);
+  }
+}
 void manageBlinkingByPPM(unsigned int inputValue)
 {
   uint16_t MaxValue = 500;
@@ -1483,9 +1501,7 @@ void setup()
       Serial.println(F("Clock not running"));
       RTC.adjust(DateTime(F(__DATE__), F(__TIME__)));
     }
-    Serial.print(F("Device clock:"));
-    Serial.print(DL_strNow());
-    Serial.println(F(" type 'settime' to change"));
+    printDateTime();
   }
   else
   {
