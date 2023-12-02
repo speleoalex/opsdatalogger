@@ -48,6 +48,11 @@
 
         }
 
+        .prehead{
+            color: orange !important;
+
+        }
+
         #output {
             height: 60vh;
             /* Adjust this value as needed */
@@ -221,15 +226,19 @@
             }, 2000);
         }
         );
+        function ascii(a) { return a.charCodeAt(0); }
+        var lastch = "";
         var filetext = "";
         var sizeDownload = 0;
+        var textContents = "";
+        var textListFiles = "";
         async function readLoop() {
             let outputDiv = document.getElementById('output');
-
             while (true) {
                 let { value, done } = await reader.read();
                 if (done) {
                     reader.releaseLock();
+                    console.log("done");
                     break;
                 }
                 if (inDownload) {
@@ -238,14 +247,29 @@
                     findFileContents(filetext);
                 }
                 else {
-                    //outputDiv.textContent += value;
-                    outputDiv.innerHTML += HighLighting(value);
+                    //work arround --->
+                    if (false && lastch == "\r" && value[0] == "\n") {
+                        textContents += value.replace("\n", "");
+                    }
+                    else {
+                        textContents += value;
+                    }
+                    //work arround ---<
+                    
                     if (inListFile) {
-                        creaBottoniPerFile(outputDiv.textContent);
+                        textListFiles+=value;
+                        createButtonsForFile(textListFiles);
+                    }
+                    else{
+                        document.getElementById('output').innerHTML = HighLighting(textContents);
+                    }
+                    if (value.length > 0) {
+                        lastch = value[value.length - 1];
                     }
                     outputDiv.scrollTop = outputDiv.scrollHeight;
-
                 }
+                //console.log("received:\"" + value + "\"");
+                //console.log("lastch:\"" + ascii(lastch) + "\"");
             }
         }
 
@@ -290,7 +314,7 @@
 
         function inviaDati() {
             const text = document.getElementById('input').value + '\r\n';
-            console.log("Send:" + text);
+           // console.log("Send:" + text);
             writer.write(text);
             document.getElementById('input').value = '';
         }
@@ -308,26 +332,35 @@
         }
         function clearOutput() {
             document.getElementById('output').innerHTML = "";
+            textListFiles = "";
+            textContents = "";
         }
         function downloadFileClick(filename, size) {
             inDownload = true;
+            textListFiles = "";
             sizeDownload = size;
             sendDownloadFileName(filename);
 
         }
         function HighLighting(testo) {
-            //console.log("testo=" + testo);
-            var lines = testo.split("\r\n");
+            testo = testo.replace("\r\n","\n");
+            testo = testo.replace("\r","\n");
+            var lines = testo.split("\n");
             for (var i in lines) {
-                if (lines[i].endsWith(" ok") || lines[i] == "ok") {
+                if (lines[i].trim().endsWith(" ok") || lines[i].trim() == "ok") {
                     lines[i] = "<span class=\"ok\">" + lines[i].trim() + "</span>";
                 }
-                if (lines[i].endsWith(" failed") || lines[i] == "failed") {
+                if (lines[i].trim().endsWith(" failed") || lines[i].trim() == "failed") {
                     lines[i] = "<span class=\"fail\">" + lines[i].trim() + "</span>";
                 }
+                if (lines[i].trim() == "Prehead") {
+                    lines[i] = "<span class=\"prehead\">" + lines[i].trim() + "</span>";
+                }
+                
             }
-            html = lines.join("\r\n");
-            //console.log("html=" + html);
+            html = lines.join("\n");
+            //console.log("testo=\"" + testo+"\"");
+            //console.log("html=\"" + html+"\"");
             return html;
         }
         function formatDateTime(fileName) {
@@ -357,7 +390,7 @@
             }
         }
 
-        function creaBottoniPerFile(testo) {
+        function createButtonsForFile(testo) {
             const inizio = testo.indexOf("Files:");
             let html = "";
             if (inizio == -1) {
@@ -366,7 +399,6 @@
             const fine = testo.indexOf("Type Filename or e to exit");
             if (inizio !== -1 && fine !== -1) {
                 try {
-
                     const listaFile = testo.substring(inizio + "Files:".length, fine).trim().split('\n');
                     listaFile.sort();
                     const outputDiv = document.getElementById('output');
@@ -390,6 +422,7 @@
                 }
                 inListFile = false;
                 filetext = "";
+
             }
         }
         function findFileContents(testo) {

@@ -16,10 +16,9 @@
 
 */
 
-#define VERSION 1.01
-// #define BOUDRATE 115200
-// #define BOUDRATE 57600
-#define BOUDRATE 19200
+#define VERSION 1.02
+
+#define BOUDRATE 19200     // 9600,57600,115200
 // Sensor presence configuration
 #define BMP280_PRESENT 0   // Set to 1 if BMP280 sensor is present, 0 otherwise
 #define HUMIDITY_PRESENT 0 // Set to 1 if a humidity sensor is present, 0 otherwise
@@ -125,8 +124,6 @@ unsigned long currentMillis = 0;
 unsigned long timeTarget = 0;
 unsigned long timeTargetFileWrite = 0;
 unsigned long PPMGas; // Gas ppm
-int Led2TimeOn = 0;
-int Led2TimeOff = 0;
 unsigned long LogCounter = 0; // counter
 unsigned long dataToWrite = 0;
 int rawSensorValue;
@@ -1084,7 +1081,7 @@ void execute_command(char *command)
   {
     return;
   }
-  if (strcmp(command, "help") == 0)
+  if (strcmp(command, "?") == 0)
   {
     Serial.println();
     Serial.println(F("commands:"));
@@ -1098,7 +1095,7 @@ void execute_command(char *command)
     Serial.println(F("log start/stop: start/stop log"));
     Serial.println(F("plotter start/stop: start/stop plotter mode"));
 #if MQ2SENSOR_PRESENT
-    Serial.println(F("autocalib:auto calibration MQ2 sensor"));
+    Serial.println(F("autocalib:auto calibration"));
 #endif
     Serial.println();
 
