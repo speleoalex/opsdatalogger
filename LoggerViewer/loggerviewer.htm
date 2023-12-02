@@ -106,7 +106,29 @@
             return firstLine.includes(delimiter);
         }
 
-
+        function saveToSessionStorage(key, value) {
+            try {
+                sessionStorage.setItem(key, value);
+                console.log('Dato salvato con successo');
+            } catch (e) {
+                console.error('Errore nel salvataggio dei dati', e);
+            }
+        }
+        function readFromSessionStorage(key) {
+            try {
+                const value = sessionStorage.getItem(key);
+                if (value === null) {
+                    console.log('Nessun dato trovato per la chiave:', key);
+                    return null;
+                } else {
+                    console.log('Dato trovato:', value);
+                    return value;
+                }
+            } catch (e) {
+                console.error('Errore nella lettura dei dati', e);
+                return null;
+            }
+        }
 
         /*
         // Example usage:
@@ -120,7 +142,15 @@
 
     <script>
         var myChart;
+
+        var csvdata = readFromSessionStorage("csv");
+        if (csvdata != null)
+        {
+            parseCSVData(csvdata);
+
+        }
         function handleFiles(files) {
+            saveToSessionStorage("csv",null);
             if (window.FileReader) {
                 let reader = new FileReader();
                 reader.onload = function (event) {
@@ -130,6 +160,8 @@
                 reader.readAsText(files[0]);
             }
         }
+
+
         var indexColor = -1;
         function parseCSVData(csvdata) {
             var delimiter = ";";

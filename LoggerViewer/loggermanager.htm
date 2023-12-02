@@ -10,6 +10,18 @@
             /* Styles for your footer */
         }
 
+        table {
+            width: 100%;
+        }
+
+        thead td {
+            color: #ffff00;
+        }
+
+        thead {
+            color: #ffffff;
+        }
+
         body {
             font-family: 'Courier New', monospace;
             background-color: black;
@@ -48,7 +60,7 @@
 
         }
 
-        .prehead{
+        .prehead {
             color: orange !important;
 
         }
@@ -118,24 +130,129 @@
     </style>
 </head>
 
-<body>
+<body onload="TranslateHtml() ">
     <nav id="buttons">
-        <button id="loggerviewer" style="float:right" onclick="window.location='loggerviewer.htm'">Logger
-            viewer</button><button id="connect">Connect</button><select name="baudrate" id="baudrate-select">
+        <button id="loggerviewer" style="float:right" data-i18n='auto'
+            onclick="window.location='loggerviewer.htm'">Logger viewer</button><button data-i18n='auto'
+            id="connect">Connect</button><select name="baudrate" id="baudrate-select">
             <option value="9600">9600</option>
             <option selected value="19200">19200</option>
             <option value="57600">57600</option>
             <option value="115200">115200</option>
-        </select><button id="disconnect"
-            style="display:none;background-color: rgb(128, 0, 0);">Disconnect</button><button id="logs" disabled>View
-            stored logs</button><button id="settime" disabled>Auto Set Time</button><button id="setinterval"
-            disabled>Set Interval</button>
+        </select><button id="disconnect" data-i18n="auto"
+            style="display:none;background-color: rgb(128, 0, 0);">Disconnect</button><button id="logs" data-i18n='auto'
+            disabled>View stored logs</button><button id="settime" data-i18n='auto' disabled>Send date and
+            time</button><button id="setinterval" disabled data-i18n="auto">Set Interval</button>
     </nav>
     <div id="output"></div>
     <footer id="footer">
-        <input type="text" id="input" id="sendtext"><button id="send">Send</button><br>
+        <input type="text" id="input" id="sendtext"><button data-i18n='auto' id="send">Send</button><br>
     </footer>
     <script>
+        if (typeof (__language) === 'undefined')
+            __language = new Array();
+
+        __language['it-IT'] = {
+            "connect": "Connetti",
+            "logger viewer": "Visualizzatore di registrazioni",
+
+            "Confirm delete file?": "Confermi di voler eliminare il file?",
+            "view stored logs": "Vedi logs memorizzati",
+            "download": "Scarica",
+            "delete": "elimina",
+            "disconnect": "Disconnetti",
+            "send": "invia",
+            "chart": "grafico",
+            "exit": "esci",
+            "Prehead": "preriscaldamento",
+            "set interval": "Imposta intervallo",
+            "send date and time": "invia data e ora"
+        };
+
+
+    </script>
+
+
+
+
+
+    <script>
+        /**
+         * 
+         * @param {type} str
+         * @param {type} LowerCaseMode
+         * @param {type} lang
+         */
+        function _i18n(str, LowerCaseMode, lang) {
+            try {
+                if (lang === undefined) {
+                    lang = navigator.language || navigator.userLanguage;
+                }
+                console.log(lang);
+                var l = "en";
+                var strori = str;
+                LowerCaseMode = (typeof (LowerCaseMode) !== 'undefined') ? LowerCaseMode : "";
+                if (LowerCaseMode === "auto") {
+                    str = str.toLowerCase();
+                }
+                lang = (typeof (lang) !== 'undefined') ? lang : l;
+                var ret = "";
+                if (typeof (__language) === 'undefined' || __language[lang] === undefined || __language[lang][str] === undefined) {
+                    ret = str;
+                }
+                else {
+                    ret = __language[lang][str];
+                }
+
+                if (LowerCaseMode === "auto") {
+
+
+                    if (strori[0].search(/[A-Z]/) !== -1 && strori[1].search(/[a-z]/) !== -1) {
+                        LowerCaseMode = "Aa";
+                    }
+                    else if (strori[0].search(/[A-Z]/) !== -1 && strori[1].search(/[A-Z]/) !== -1) {
+                        LowerCaseMode = "AA";
+                    }
+                    else if (strori[0].search(/[a-z]/) !== -1 && strori[1].search(/[a-z]/) !== -1) {
+                        LowerCaseMode = "aa";
+                    }
+                }
+                //------------------------------------------------------------------------->
+                switch (LowerCaseMode) {
+                    case "Aa":
+                        ret = ret.charAt(0).toUpperCase() + ret.slice(1);
+                        break;
+                    case "AA":
+                        ret = ret.toUpperCase();
+                        break;
+                    case "aa":
+                        ret = ret.toLowerCase();
+                        break;
+                }
+                //-------------------------------------------------------------------------<
+                console.log(ret);
+                return ret;
+            }
+            catch (e) {
+                console.log(e);
+                return str;
+            }
+        }
+        function TranslateHtml() {
+            document.querySelectorAll("[data-i18n='auto']").forEach(function (element) {
+                var contents = element.childNodes;
+                if (contents.length > 0) {
+                    if (contents[0].nodeType === Node.TEXT_NODE) {
+                        element.innerHTML = _i18n(element.innerHTML, "auto");
+                        for (let i = 1; i < contents.length; i++) {
+                            element.appendChild(contents[i].cloneNode(true));
+                        }
+                    }
+                }
+            });
+
+        }
+        var openViewer = false;
         function getSelectedBaudRate() {
             var select = document.getElementById("baudrate-select");
             var selectedBaudRate = select.options[select.selectedIndex].value;
@@ -255,12 +372,12 @@
                         textContents += value;
                     }
                     //work arround ---<
-                    
+
                     if (inListFile) {
-                        textListFiles+=value;
+                        textListFiles += value;
                         createButtonsForFile(textListFiles);
                     }
-                    else{
+                    else {
                         document.getElementById('output').innerHTML = HighLighting(textContents);
                     }
                     if (value.length > 0) {
@@ -303,7 +420,7 @@
         });
 
         function doDelete(nomeFile) {
-            if (confirm("Confirm delete file?")) {
+            if (confirm(_i18n("Confirm delete file?"))) {
                 clearOutput();
                 sendSerial("e");
                 setTimeout(() => {
@@ -314,7 +431,7 @@
 
         function inviaDati() {
             const text = document.getElementById('input').value + '\r\n';
-           // console.log("Send:" + text);
+            // console.log("Send:" + text);
             writer.write(text);
             document.getElementById('input').value = '';
         }
@@ -335,28 +452,61 @@
             textListFiles = "";
             textContents = "";
         }
-        function downloadFileClick(filename, size) {
+        function downloadFileClick(filename, size, view) {
             inDownload = true;
             textListFiles = "";
             sizeDownload = size;
+            if (view) {
+                openViewer = true;
+
+            }
+            else {
+                openViewer = false;
+            }
             sendDownloadFileName(filename);
 
         }
         function HighLighting(testo) {
-            testo = testo.replace("\r\n","\n");
-            testo = testo.replace("\r","\n");
+            var startTable = false
+            testo = testo.replace("\r\n", "\n");
+            testo = testo.replace("\r", "\n");
             var lines = testo.split("\n");
             for (var i in lines) {
                 if (lines[i].trim().endsWith(" ok") || lines[i].trim() == "ok") {
-                    lines[i] = "<span class=\"ok\">" + lines[i].trim() + "</span>";
+                    lines[i] = "<b class=\"ok\">" + lines[i].trim() + "</b>";
                 }
                 if (lines[i].trim().endsWith(" failed") || lines[i].trim() == "failed") {
                     lines[i] = "<span class=\"fail\">" + lines[i].trim() + "</span>";
                 }
                 if (lines[i].trim() == "Prehead") {
-                    lines[i] = "<span class=\"prehead\">" + lines[i].trim() + "</span>";
+                    lines[i] = "<span class=\"prehead\">" + _i18n("Prehead") + "</span>";
                 }
-                
+                if (lines[i].trim() == "unknown command") {
+                    lines[i] = "<em class=\"fail\">" + lines[i].trim() + "</em>";
+                }
+                if (lines[i].includes("FluxyLogger ")) {
+                    lines[i] = "<h3>" + lines[i].trim() + "</h3>";
+                }
+
+                if (lines[i].includes(';')) {
+                    lines[i] = "<tr><td>" + lines[i].trim().replace(/;/g, "</td><td>") + "</td></tr>";
+                }
+                if (lines[i].includes('date Y-m-d m:s')) {
+                    lines[i] = "<table><thead>" + lines[i].replace(/"/g, "") + "</thead>";
+                    startTable = true;
+                }
+                if (!lines[i].includes('<td>') && startTable) {
+                    startTable = false;
+                    lines[i] = "</table>";
+                }
+                if (startTable && i >= lines.length - 1) {
+                    lines[i] = "</table>";
+                    startTable = false;
+                }
+
+
+
+
             }
             html = lines.join("\n");
             //console.log("testo=\"" + testo+"\"");
@@ -409,8 +559,9 @@
                         if (nomeFile.indexOf(".txt") !== -1 || nomeFile.indexOf(".csv") !== -1) {
                             const size = file.split('\t')[1].trim();
 
-                            html += "<button onclick=\"downloadFileClick('" + nomeFile + "'," + size + ")\">" + nomeFile + "</button>";
-                            html += "<button class=\"delete\" onclick=\"doDelete('" + nomeFile + "')\">delete</button>" + size + " bytes\r\n" + formatDateTime(nomeFile) + "\r\n\r\n";
+                            html += "<button onclick=\"downloadFileClick('" + nomeFile + "'," + size + ",false)\">" + nomeFile + "</button>";
+                            html += "<button onclick=\"downloadFileClick('" + nomeFile + "'," + size + ",true)\">" + _i18n("chart","Aa") + "</button>";
+                            html += "<button class=\"delete\" onclick=\"doDelete('" + nomeFile + "')\">" + _i18n("delete") + "</button>" + size + " bytes\r\n" + formatDateTime(nomeFile) + "\r\n\r\n";
 
                         }
                     });
@@ -423,6 +574,29 @@
                 inListFile = false;
                 filetext = "";
 
+            }
+        }
+        function saveToSessionStorage(key, value) {
+            try {
+                sessionStorage.setItem(key, value);
+                console.log('Dato salvato con successo');
+            } catch (e) {
+                console.error('Errore nel salvataggio dei dati', e);
+            }
+        }
+        function readFromSessionStorage(key) {
+            try {
+                const value = sessionStorage.getItem(key);
+                if (value === null) {
+                    console.log('Nessun dato trovato per la chiave:', key);
+                    return null;
+                } else {
+                    console.log('Dato trovato:', value);
+                    return value;
+                }
+            } catch (e) {
+                console.error('Errore nella lettura dei dati', e);
+                return null;
             }
         }
         function findFileContents(testo) {
@@ -444,7 +618,13 @@
                 const nomeFile = testo.split("End transmission:")[1].trim();
                 const contents = testo.substring(inizio + "Start transmission:".length, fine).trim();
                 document.getElementById('output').innerHTML = "Download starting...";
-                scaricaFile(nomeFile, contents);
+                if (openViewer) {
+                    saveToSessionStorage("csv", contents);
+                    window.open("loggerviewer.htm")  ;
+                }
+                else {
+                    scaricaFile(nomeFile, contents);
+                }
                 document.getElementById('output').innerHTML = "";
                 inDownload = false;
             }
