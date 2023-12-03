@@ -11,15 +11,22 @@
         }
 
         table {
+            border-collapse: collapse;
+            border: 1px solid #ffffff;
             width: 100%;
         }
 
-        thead td {
+        table td {
+            border: 1px solid #dadada;
             color: #ffff00;
+            padding: 5px;
+        }
+        table td:first-child {
+            border-left: 0px solid #dadada;
         }
 
-        thead {
-            color: #ffffff;
+        thead td{
+            color: #ffffff !important;
         }
 
         body {
@@ -57,6 +64,11 @@
 
         .fail {
             color: red !important;
+
+        }
+
+        .command {
+            color: #8888ff !important;
 
         }
 
@@ -141,8 +153,8 @@
             <option value="115200">115200</option>
         </select><button id="disconnect" data-i18n="auto"
             style="display:none;background-color: rgb(128, 0, 0);">Disconnect</button><button id="logs" data-i18n='auto'
-            disabled>View stored logs</button><button id="settime" 
-            data-i18n='auto' disabled>Send date and time</button><button id="setinterval" disabled data-i18n="auto">Set Interval</button>
+            disabled>View stored logs</button><button id="settime" data-i18n='auto' disabled>Send date and
+            time</button><button id="setinterval" disabled data-i18n="auto">Set Interval</button>
     </nav>
     <div id="output"></div>
     <footer id="footer">
@@ -188,7 +200,7 @@
                 if (lang === undefined) {
                     lang = navigator.language || navigator.userLanguage;
                 }
-                console.log(lang);
+                //console.log(lang);
                 var l = "en";
                 var strori = str;
                 LowerCaseMode = (typeof (LowerCaseMode) !== 'undefined') ? LowerCaseMode : "";
@@ -230,7 +242,7 @@
                         break;
                 }
                 //-------------------------------------------------------------------------<
-                console.log(ret);
+                //console.log(ret);
                 return ret;
             }
             catch (e) {
@@ -433,6 +445,7 @@
             const text = document.getElementById('input').value + '\r\n';
             // console.log("Send:" + text);
             writer.write(text);
+            textContents += text;
             document.getElementById('input').value = '';
         }
 
@@ -478,6 +491,18 @@
                 if (lines[i].trim().endsWith(" failed") || lines[i].trim() == "failed") {
                     lines[i] = "<span class=\"fail\">" + lines[i].trim() + "</span>";
                 }
+                if (lines[i].trim() == "ls" ||
+                    lines[i].trim() == "setconfig" ||
+                    lines[i].trim() == "date" ||
+                    lines[i].trim() == "plotter stop" ||
+                    lines[i].trim() == "log start" ||
+                    lines[i].trim() == "log stop" ||
+                    lines[i].trim() == "autocalib" ||
+                    lines[i].trim() == "logs"
+                ) {
+                    lines[i] = "<span class=\"command\">" + lines[i].trim() + "</span>";
+                }
+
                 if (lines[i].trim() == "Prehead") {
                     lines[i] = "<span class=\"prehead\">" + _i18n("Prehead") + "</span>";
                 }
@@ -560,7 +585,7 @@
                             const size = file.split('\t')[1].trim();
 
                             html += "<button onclick=\"downloadFileClick('" + nomeFile + "'," + size + ",false)\">" + nomeFile + "</button>";
-                            html += "<button onclick=\"downloadFileClick('" + nomeFile + "'," + size + ",true)\">" + _i18n("chart","Aa") + "</button>";
+                            html += "<button onclick=\"downloadFileClick('" + nomeFile + "'," + size + ",true)\">" + _i18n("chart", "Aa") + "</button>";
                             html += "<button class=\"delete\" onclick=\"doDelete('" + nomeFile + "')\">" + _i18n("delete") + "</button>" + size + " bytes\r\n" + formatDateTime(nomeFile) + "\r\n\r\n";
 
                         }
@@ -614,19 +639,22 @@
             document.getElementById('output').innerHTML = "Start download file:";
             //console.log(testo);
             const inizio = testo.indexOf("Start transmission:");
-            if (inizio !== -1 && fine !== -1 && filenameOk !== -1) {
+            if (inizio !== -1) {
                 const nomeFile = testo.split("End transmission:")[1].trim();
                 const contents = testo.substring(inizio + "Start transmission:".length, fine).trim();
                 document.getElementById('output').innerHTML = "Download starting...";
                 if (openViewer) {
                     saveToSessionStorage("csv", contents);
-                    window.open("loggerviewer.htm")  ;
+                    window.open("loggerviewer.htm");
                 }
                 else {
                     scaricaFile(nomeFile, contents);
                 }
                 document.getElementById('output').innerHTML = "";
                 inDownload = false;
+            }
+            else {
+                console.log("extension not found txt:" + filenameOk + " - csv:" + filenameOk2);
             }
         }
         function scaricaFile(nomeFile, contents) {

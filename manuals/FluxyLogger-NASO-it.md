@@ -27,6 +27,8 @@ Il datalogger registra il passaggio del tracciante e salva i dati acquisiti su u
 - Il tempo di acquisizione predefinito è 15 secondi
 - I dati verranno salvati su files all'interno della scheda SD. Il nome del file corrisponde alla data e all'ora di inizio acquisizione
 - In caso di errore di lettura/scrittura della scheda SD led1 e led2 rimangono fissi accesi
+- In assenza di gas led2 lampeggia ogni 30 secondi, in caso di rilevazione il led lampeggia più velocemente
+- Durante il rilevamento led1 rimane normalmente spento, dopo 20 rilevamenti consecutivi led1 rimane acceso fisso segnalando che il tracciante è stato rilevato
 
 # Tracciante
 
@@ -59,6 +61,7 @@ Strumenti->Monitor seriale.
 Impostare la porta USB e la velocità della seriale a 19200 baud
 
 ### Esempio di output su seriale:
+
 ```
 SD initialization:ok
 CONFIG.INI exist

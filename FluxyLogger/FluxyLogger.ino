@@ -18,7 +18,7 @@
 
 #define VERSION 1.02
 
-#define BOUDRATE 19200     // 9600,57600,115200
+#define BOUDRATE 19200 // 9600,57600,115200
 // Sensor presence configuration
 #define BMP280_PRESENT 0   // Set to 1 if BMP280 sensor is present, 0 otherwise
 #define HUMIDITY_PRESENT 0 // Set to 1 if a humidity sensor is present, 0 otherwise
@@ -41,6 +41,8 @@
 #define S0 A0      // AIR
 #define LED_1 3    // Led 1 datalogger
 #define LED_2 4    // Led 2 datalogger
+//#define LED_1 8    // Led 1 datalogger
+//#define LED_2 9    // Led 2 datalogger
 #define CHIP_SD 10 // pin sd
 #define RXLED 17
 #define TXLED 30
@@ -52,14 +54,12 @@
 // Buffer sizes
 #define size_serialBuffer 40
 #define MAX_ROWS_PER_FILE 10000 // max rows per file
-#define MAX_INI_KEY_LENGTH 20
-#define MAX_INI_VALUE_LENGTH 20
 
 // Log configs
 #define LOG_INTERVAL_s 30      // log interval in seconds
 #define SYNC_INTERVAL_ms 20000 // mills between calls to flush() - to write data to the card
-#define NUM_READS 25
-#define READS_DELAY 20
+#define NUM_READS 10
+#define READS_DELAY 30
 #define ZEROGAS_default 115
 #define RL_VALUE 5.0 // Define the load resistance value in kilo ohms
 
@@ -87,6 +87,10 @@ uint8_t height = 64;
 
 #if SGP40_PRESENT
 #include "sensor_SGP40/SparkFun_SGP40_Arduino_Library.h"
+#include "sensor_SGP40/sensirion_voc_algorithm.h"
+#include "sensor_SGP40/SparkFun_SGP40_Arduino_Library.cpp"
+#include "sensor_SGP40/sensirion_voc_algorithm.c"
+
 SGP40 sgp40Sensor; // create an object of the SGP40 class
 #endif
 
@@ -97,45 +101,50 @@ bool BMP280Present = false;
 #endif
 
 // Start Global variables -->
-bool plotterMode = false;
-int Detected = false;
+bool plotterMode = false; // Arduino plotter protocol
+int gasDetected = false;  // Gas detected
 #if MQ2SENSOR_PRESENT
 int zeroGasValue = ZEROGAS_default; // Define the default value for zero gas calibration
 #endif
 #if SGP30_PRESENT
 SGP30 SGP;
 #endif
-
+// strings used multiple times
 const char CONF_FILE[] = "CONFIG.INI"; // configuration file
 const char textOk[] = "ok";
 const char textFailed[] = "failed";
 const char textNotFound[] = "unknown command";
+// variables for the microSD
 SdFat SD;
 File logfile;
 File settingFile;
-bool sdPresent = false;
-bool rtcPresent = false;
 int8_t logfileOpened = 0;
+bool sdPresent = false;
+
+// variables for realtime clock
+bool rtcPresent = false;
+RTC_DS1307 RTC; // define the Real Time Clock object
+DateTime now;
+
 bool echoToSerial = true;
-bool failed = false;
 unsigned long log_interval_s = LOG_INTERVAL_s; // log interval
 unsigned long timeStartLog = 0;
 unsigned long currentMillis = 0;
 unsigned long timeTarget = 0;
 unsigned long timeTargetFileWrite = 0;
-unsigned long PPMGas; // Gas ppm
+unsigned long PPMGas;         // Gas ppm
 unsigned long LogCounter = 0; // counter
 unsigned long dataToWrite = 0;
 int rawSensorValue;
 int sensorReadingCounter = 0;
-RTC_DS1307 RTC; // define the Real Time Clock object
-DateTime now;
-char printBuffer[32];
+
+// status
+bool failed = false;
+
 char strDate[20];       //= "0000-00-00 00:00:00";
 char strFileDate[24];   // = "YYYY-MM-DD_HH.mm.ss.txt";
 char delimiter[] = ";"; // CSV delimiter
 int sensorReading[NUM_READS];
-char lineBuffer[MAX_INI_KEY_LENGTH + MAX_INI_VALUE_LENGTH + 2]; // Buffer for the line
 char serialBuffer[size_serialBuffer];
 // End Global variables --<
 // Functions
@@ -249,6 +258,9 @@ void printVersion()
 // Function to list files on the SD card
 void listFiles()
 {
+  //size log files: 2023-11-22_20.18.33.txt
+  char printBuffer[25];
+
   SdFile file;
   SdFile dir;
   if (!dir.open("/", O_RDONLY))
@@ -461,6 +473,7 @@ void LOGPRINT(float val, uint8_t precision = 2)
   if (logfileOpened > 0)
   {
     failed = logfile.print(int(val), DEC) ? 0 : 1;
+    dataToWrite++;
   }
   if (precision > 0)
   {
@@ -518,7 +531,7 @@ void LOGPRINT(unsigned long str)
  */
 int InputIntFromSerial(unsigned int defaultValue = 0)
 {
-  SerialFlush();
+  SerialFlushAndClear();
   readSerial(true);
   if (strlen(serialBuffer) > 0)
   {
@@ -754,61 +767,137 @@ static bool CONF_is_valid_char(char character)
   return false;
 }
 
-#if 0
-/**
- * Get an integer configuration value from a file.
- *
- * @param filename The name of the configuration file.
- * @param key The key for which the value is to be fetched.
- * @param defaultValue The default value to return if the key is not found.
- * @return The integer value associated with the key, or the default value.
- */
-static uint8_t CONF_getConfValueInt(const char *filename, const char *key, uint8_t defaultValue = 0)
+#if 1
+//log_interval_s
+#define MAX_INI_KEY_LENGTH 20
+#define MAX_INI_VALUE_LENGTH 5
+char lineBuffer[MAX_INI_KEY_LENGTH + MAX_INI_VALUE_LENGTH + 2]; // Buffer for the line
+
+static int CONF_getConfValueInt(char *filename, char *key, int defaultValue = 0)
 {
   File myFile;
-  uint8_t ret = defaultValue;
+  char character;
+  char description[MAX_INI_KEY_LENGTH + 2]; // Buffer for the line
+  char value[MAX_INI_VALUE_LENGTH + 2];     // Buffer for the line
+  bool valid = true;
+  int ret = defaultValue;
+  int i = 0;
   if (!SD.exists(filename))
   {
     return defaultValue;
   }
   myFile = SD.open(filename);
-  if (!myFile)
-  {
-    failed = true;
-    return defaultValue;
-  }
   while (myFile.available())
   {
-    // Read a line into the buffer
-    size_t len = myFile.readBytesUntil('\n', lineBuffer, sizeof(lineBuffer) - 1);
-    lineBuffer[len] = '\0'; // Null-terminate the string
-    // Ignore empty lines or lines that do not contain '='
-    if (len == 0 || strchr(lineBuffer, '=') == NULL)
+    i = 0;
+    description[0] = '\0';
+    value[0] = '\0';
+    character = myFile.read();
+    // cerca una linea valida----->
+    if (!CONF_is_valid_char(character))
     {
+      // Comment - ignore this line
+      while (character != '\n' && myFile.available())
+      {
+        character = myFile.read();
+      };
       continue;
     }
-
-    // Split the line into key and value
-    char *token = strtok(lineBuffer, "=");
-    if (token != NULL && strcmp(token, key) == 0)
+    // cerca una linea valida-----<
+    //----riempo la descrizione---->
+    do
     {
-      token = strtok(NULL, "=");
-      if (token != NULL)
+      //Serial.println(character);
+      if (i >= MAX_INI_KEY_LENGTH - 2)
       {
-        // Check if the value is a valid integer
-        char *endptr;
-        long val = strtol(token, &endptr, 10);
-        if (*endptr == '\0' || *endptr == '\n' || *endptr == '\r')
+        myFile.close();
+        return defaultValue;
+      }
+      description[i++] = character;
+      character = myFile.read();
+      if (!myFile.available())
+      {
+        myFile.close();
+        return defaultValue;
+      }
+    } while (CONF_is_valid_char(character));
+    description[i] = '\0';
+    //Serial.println(description);
+    //----riempo la descrizione----<
+    //-------elimino gli spazi------->
+    if (character == ' ')
+    {
+      do
+      {
+        character = myFile.read();
+        if (!myFile.available())
         {
-          ret = (int)val;
-          break;
+          myFile.close();
+          return defaultValue;
+        }
+      } while (character == ' ');
+    }
+    //-------elimino gli spazi-------<
+    if (character == '=')
+    {
+      if (strcmp(description, key) == 0)
+      {
+        //-------elimino gli spazi------->
+        do
+        {
+          character = myFile.read();
+          if (!myFile.available())
+          {
+            myFile.close();
+            return defaultValue;
+          }
+        } while (character == ' ');
+        //-------elimino gli spazi-------<
+        i = 0;
+        value[0] = '\0';
+        valid = true;
+        while (character != '\n' && character != '\r')
+        {
+          if (i >= MAX_INI_VALUE_LENGTH - 2)
+          {
+            myFile.close();
+            return defaultValue;
+          }
+          // Serial.println(character);
+          if (isdigit(character))
+          {
+            value[i++] = character;
+          }
+          else if (character != '\n' && character != '\r')
+          {
+            // Use of invalid values
+            valid = false;
+          }
+          character = myFile.read();
+        };
+        value[i]='\0';
+        if (valid)
+        {
+          myFile.close();
+          // Convert chars to integer
+          ret = atoi(value);
+          return ret;
         }
       }
+    }
+    else
+    {
+      while (character != '\n' && myFile.available())
+      {
+        character = myFile.read();
+      };
+      continue;
     }
   }
   myFile.close();
   return ret;
 }
+
 #else
 static int CONF_getConfValueInt(char *filename, char *key, int defaultValue = 0)
 {
@@ -947,13 +1036,9 @@ bool CreateINIConf(int NewInterval_s, int NewzeroGasValue = 0)
   }
   return true;
 }
-
-/**
-
-*/
+// initialize CONFIG.INI
 void DL_initConf()
 {
-
   if (sdPresent)
   {
     Serial.print(CONF_FILE);
@@ -990,8 +1075,6 @@ void DL_initConf()
   }
 }
 
-/**
- **/
 // Function to read data from Serial
 static int readSerial(bool wait)
 {
@@ -1069,10 +1152,10 @@ bool SwithLogs(bool logStart)
   }
   return true;
 }
-
+// manage commands
 void execute_command(char *command)
 {
-  int i;
+  unsigned int i;
   if (strlen(command) > 0)
   {
     switchCommandMode();
@@ -1091,8 +1174,8 @@ void execute_command(char *command)
     Serial.println(F("reset:reset device"));
     Serial.println(F("settime:set device clock"));
     Serial.println(F("setconfig:set config"));
-    Serial.println(F("echo start/stop: start/stop display values"));
-    Serial.println(F("log start/stop: start/stop log"));
+    //Serial.println(F("echo start/stop: start/stop display values"));
+    //Serial.println(F("log start/stop: start/stop log"));
     Serial.println(F("plotter start/stop: start/stop plotter mode"));
 #if MQ2SENSOR_PRESENT
     Serial.println(F("autocalib:auto calibration"));
@@ -1105,7 +1188,7 @@ void execute_command(char *command)
   if (strcmp(command, "v") == 0)
   {
     SwithLogs(false);
-    printVersion();    
+    printVersion();
     return;
   }
   if (strcmp(command, "date") == 0)
@@ -1114,6 +1197,7 @@ void execute_command(char *command)
     printDateTime();
     return;
   }
+  /*
   if (strcmp(command, "log stop") == 0)
   {
     printResult(SwithLogs(false), true);
@@ -1124,7 +1208,6 @@ void execute_command(char *command)
     printResult(SwithLogs(true), true);
     return;
   }
-
   if (strcmp(command, "echo stop") == 0)
   {
     echoToSerial = false;
@@ -1137,6 +1220,7 @@ void execute_command(char *command)
     printResult(true, true);
     return;
   }
+  */
   if (strcmp(command, "plotter start") == 0)
   {
     echoToSerial = false;
@@ -1218,6 +1302,7 @@ void execute_command(char *command)
 }
 
 #if MQ2SENSOR_PRESENT
+// MQ2 sensor auto calibration
 void Mq2Calibration()
 {
   int timeCount;
@@ -1237,10 +1322,9 @@ void Mq2Calibration()
       S0Sensor_old = S0Sensor;
       NumConsecutive = 0;
     }
-
     digitalWrite(LED_1, HIGH);
     digitalWrite(LED_2, HIGH);
-    // blinking and parse command
+    // blinking, delay and parse command
     for (timeCount = 0; timeCount < 100; timeCount++)
     {
       if (parse_serial_command())
@@ -1267,16 +1351,13 @@ void Mq2Calibration()
 
 #endif
 
-/**
-
-*/
+// manage config
 void SetConfig()
 {
+  unsigned int interval;
+  unsigned int zerogas;
   DL_closeLogFile();
   delay(500);
-  SerialFlush();
-  unsigned long interval;
-  unsigned int zerogas;
   Serial.print(F("\nInterval(s):"));
   Serial.print('(');
   Serial.print(log_interval_s);
@@ -1302,17 +1383,14 @@ void SetConfig()
 #else
   zerogas = ZEROGAS_default;
 #endif
-  if (interval > 0)
+  if (CreateINIConf(interval, zerogas))
   {
-    if (CreateINIConf(interval, zerogas))
-    {
-      delay(500);
-      reset(); // reset arduino
-    }
+    delay(500);
+    reset(); // reset arduino
   }
   else
   {
-    Serial.println(F("\nInvalid values"));
+    Serial.println(textFailed);
   }
 }
 // Set date and time
@@ -1320,8 +1398,8 @@ void SetDateTime()
 {
   DL_closeLogFile();
   delay(500);
-  SerialFlush();
-  int year, month, day, hours, minutes,seconds;
+  SerialFlushAndClear();
+  int year, month, day, hours, minutes, seconds;
   Serial.println(F("\nClock:"));
   Serial.print(F("Year:"));
   year = InputIntFromSerial();
@@ -1350,8 +1428,8 @@ void reset()
 {
   asm volatile("  jmp 0");
 }
-
-void SerialFlush()
+// flush serial and clears the reading queue
+void SerialFlushAndClear()
 {
   Serial.flush();
   while (Serial.available() > 0)
@@ -1359,7 +1437,7 @@ void SerialFlush()
     Serial.read();
   }
 }
-
+// manages the flashing time depending on the ppm
 void manageBlinking(unsigned long timeOn, unsigned long timeOff)
 {
   if (failed)
@@ -1368,7 +1446,6 @@ void manageBlinking(unsigned long timeOn, unsigned long timeOff)
     digitalWrite(LED_2, HIGH);
     return;
   }
-
   static bool ledState = false;
   static unsigned long previousMillis = 0;
   if (timeOn <= 0 && timeOff <= 0)
@@ -1379,7 +1456,6 @@ void manageBlinking(unsigned long timeOn, unsigned long timeOff)
   }
   // Ottieni il tempo attuale
   currentMillis = millis();
-
   if (ledState)
   {
     // Se il LED è acceso, controlla se è ora di spegnerlo
@@ -1401,6 +1477,7 @@ void manageBlinking(unsigned long timeOn, unsigned long timeOff)
     }
   }
 }
+// print date and time to Serial
 void printDateTime()
 {
   if (RTC.isrunning())
@@ -1408,10 +1485,12 @@ void printDateTime()
     Serial.print(F("Device clock:"));
     Serial.println(DL_strNow());
   }
-  else{
+  else
+  {
     Serial.println(textFailed);
   }
 }
+// manages the flashing time depending on the ppm
 void manageBlinkingByPPM(unsigned int inputValue)
 {
   uint16_t MaxValue = 500;
@@ -1423,7 +1502,7 @@ void manageBlinkingByPPM(unsigned int inputValue)
   inputValue = constrain(inputValue, 0, MaxValue);
   if (inputValue == 0)
   {
-    manageBlinking(0, 0);
+    manageBlinking(500, 30000);
     return;
   }
   unsigned long time = map(inputValue, 1, MaxValue, 2000, 100);
@@ -1484,11 +1563,9 @@ void setup()
 
   DL_initConf();
   // initialize the SD card -------------------<
-  SerialFlush();
+  SerialFlushAndClear();
   // connect to RTC --------------------------->
   Wire.begin();
-  unsigned long unixtime;
-  unixtime = DateTime(__DATE__, __TIME__).unixtime();
   if (RTC.begin())
   {
     Serial.println(F("RTC present"));
@@ -1588,7 +1665,7 @@ void loop()
   float WindSpeed_MPH;
 #endif
 
-  if (Detected >= MINCONSECUTIVE_POSITIVE)
+  if (gasDetected >= MINCONSECUTIVE_POSITIVE)
   {
     digitalWrite(LED_1, HIGH);
   }
@@ -1656,6 +1733,7 @@ void loop()
       digitalWrite(LED_2, HIGH);
     }
 
+    #if MQ2SENSOR_PRESENT
     if (currentMillis > timeTargetContinuousReading + 1000)
     {
       /*
@@ -1681,6 +1759,8 @@ void loop()
       }
       manageBlinkingByPPM(PPMGas);
     }
+    #endif 
+
     if (currentMillis >= timeTarget)
     {
       timeTarget = currentMillis + log_interval_s * 1000;
@@ -1717,16 +1797,16 @@ void loop()
       LOGPRINT(PPMGas);
       if (PPMGas > MINPPMPOSITIVE)
       {
-        if (Detected < MINCONSECUTIVE_POSITIVE)
+        if (gasDetected < MINCONSECUTIVE_POSITIVE)
         {
-          Detected++;
+          gasDetected++;
         }
       }
       else
       {
-        if (Detected < MINCONSECUTIVE_POSITIVE)
+        if (gasDetected < MINCONSECUTIVE_POSITIVE)
         {
-          Detected = 0;
+          gasDetected = 0;
         }
       }
 
@@ -1817,6 +1897,7 @@ void loop()
       if (logfileOpened)
       {
         logfile.flush();
+        //Serial.println("flush");
       }
       dataToWrite = 0;
       timeTargetFileWrite = currentMillis + SYNC_INTERVAL_ms;
