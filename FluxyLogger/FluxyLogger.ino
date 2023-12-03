@@ -16,7 +16,7 @@
 
 */
 
-#define VERSION 1.02
+#define VERSION 1.03
 
 #define BOUDRATE 19200 // 9600,57600,115200
 // Sensor presence configuration
