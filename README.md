@@ -6,6 +6,7 @@ It detects very well the butane present in normal air freshener cans.
 An assembled and ready-to-use version, or in an assembly kit, can be purchased here: [https://techmakers.eu/it/products/n-a-s-o-data-logger](https://techmakers.eu/it/products/n-a-s-o-data-logger)
 
 ### Components required for assembly (FluxyLogger NASO):
+
 * 1 ArduinoUNO
 * 1 PowerBank
 * 1 Data Logger Shield with RTC
