@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Terminale Seriale</title>
+  <style>
+    #terminal {
+      white-space: pre-wrap;
+      background: black;
+      color: limegreen;
+      padding: 10px;
+      height: 300px;
+      overflow-y: auto;
+      font-family: 'Courier New', Courier, monospace;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 5px;
+    }
+  </style>
+</head>
+<body>
+  <button id="connect">Connetti</button>
+  <div id="terminal"></div>
+  <input type="text" id="input" placeholder="Scrivi qui e premi Enter per inviare">
+
+  <script>
+    const connectButton = document.getElementById('connect');
+    const terminal = document.getElementById('terminal');
+    const input = document.getElementById('input');
+    let  reader, writer;
+
+    connectButton.addEventListener('click', async () => {
+    port = await navigator.serial.requestPort();
+    await port.open({ baudRate: 9600 });
+   // writer = port.writable.getWriter();
+    reader = false;
+    //readSerial();
+//    window.setInterval(function(){readSerial();},10000)
+//    window.setInterval(function(){readSerial();},10000)
+
+    });
+
+    input.addEventListener('keyup', async (event) => {
+      if (event.key === 'Enter') {
+        readSerial();
+        return;
+        const text = input.value + '\n';
+        await writer.write(new TextEncoder().encode(text));
+        terminal.innerHTML += '> ' + text;
+        input.value = '';
+
+      }
+    });
+
+
+    async function readSerial() {
+        console.log("readSerial");
+        while(port.readable)
+        {
+            console.log("read");
+            try {
+            connectButton.disabled = true;
+            if (!reader)
+            {
+                reader = port.readable.getReader();
+            }
+            //writer = port.writable.getWriter();
+//                while (true) {
+                const { value, done } = await reader.read();
+                    terminal.innerHTML += new TextDecoder().decode(value);
+                    terminal.scrollTop = terminal.scrollHeight;
+                if (done) return;
+  //              break;
+   //             }
+            } catch (error) {
+                console.log(error);
+            } finally {
+                //connectButton.disabled = false;
+
+                //window.setTimeout(function(){readSerial();},5000);
+                return;
+                //reader.releaseLock();
+            }
+        }
+        //window.setTimeout(function(){readSerial();},5000)
+    }
+  </script>
+</body>
+</html>

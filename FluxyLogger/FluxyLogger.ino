@@ -16,7 +16,7 @@
 
 */
 
-#define VERSION 1.03
+#define VERSION 1.04
 
 #define BOUDRATE 19200 // 9600,57600,115200
 // Sensor presence configuration
@@ -1170,7 +1170,7 @@ void execute_command(char *command)
     Serial.println(F("commands:"));
     Serial.println(F("v:firmware version"));
     Serial.println(F("logs:read data"));
-    Serial.println(F("date:display evice clock"));
+    Serial.println(F("date:display device clock"));
     Serial.println(F("reset:reset device"));
     Serial.println(F("settime:set device clock"));
     Serial.println(F("setconfig:set config"));
@@ -1258,6 +1258,7 @@ void execute_command(char *command)
   {
     DL_closeLogFile();
     printResult(true, true);
+    delay(500);
     reset(); // reset arduino
     return;
   }

@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "compare": "cpp",
+        "sensirion_voc_algorithm.c": "cpp"
+    }
+}

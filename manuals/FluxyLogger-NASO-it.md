@@ -37,6 +37,13 @@ Il rilevatore è sensibile inoltre ad alcool, metano, fumo
 La quantità di tracciante necessaria può variare a seconda dei volumi di aria.
 Per distanze superiori al chilometro Si consiglia di utilizzare almeno 2 bombolette da 300ml di tracciante.
 
+
+# Alimentazione e consumi
+
+Fluxylogger può essere alimentato tramite cavo USB, è possibile utilizzare powerbank per la ricarica degli smartphones. I consumi sono di circa 275 mA all'ora.
+
+
+
 # Impatto ambientale durante il tracciamento
 
 Questo sensore è specificatamente progettato per identificare gas propellenti come butano e propano, comuni nelle bombolette spray. I propellenti a gas compressi sono economicamente vantaggiosi, inerti, e caratterizzati da bassa tossicità per inalazione, riducendo l'impatto ambientale. 
