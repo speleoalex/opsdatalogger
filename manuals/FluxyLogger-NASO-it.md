@@ -12,6 +12,12 @@ Il datalogger registra il passaggio del tracciante e salva i dati acquisiti su u
 
 [https://techmakers.eu/products/n-a-s-o-data-logger](https://techmakers.eu/products/n-a-s-o-data-logger)
 
+
+Gruppo Telegram
+[https://t.me/+u5CoELQNjC1iODZk](https://t.me/+u5CoELQNjC1iODZk)
+
+
+
 -----
 
 # Elenco componenti
