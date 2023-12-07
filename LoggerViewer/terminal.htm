@@ -67,35 +67,76 @@
 
     <script>
         let port, reader, writer;
-
+        var is_usb = false;
         document.getElementById('connect').addEventListener('click', async () => {
             try {
                 port = await navigator.serial.requestPort();
 
             } catch (e) {
-                alert("Il tuo browser non supporta la lettura della porta USB");
 
+                try {
+                    device = await navigator.usb.requestDevice({ filters: [] });
+                    await device.open(); // Apre il dispositivo
+                    if (device.configuration === null)
+                        await device.selectConfiguration(1); // Seleziona la configurazione
+                    await device.claimInterface(0); // Richiede l'interfaccia
+                    readLoopRunning = true;
+                    readLoop();
+                    is_usb = true;
+
+                } catch (e) {
+                    alert("Il tuo browser non supporta la lettura della porta USB");
+                    return;
+                }
             }
 
-            await port.open({ baudRate: 19200 });
+            if (is_usb) {
 
-            const decoder = new TextDecoderStream();
-            const inputDone = port.readable.pipeTo(decoder.writable);
-            reader = decoder.readable.getReader();
+                readLoopRunning = true;
+                readLoopUsb();
 
-            const encoder = new TextEncoderStream();
-            const outputDone = encoder.readable.pipeTo(port.writable);
-            writer = encoder.writable.getWriter();
+            }
+            else {
+                await port.open({ baudRate: 19200 });
 
-            document.getElementById('connect').disabled = true;
-            document.getElementById('disconnect').disabled = false;
-            document.getElementById('logs').disabled = false;
-            readLoop();
+                const decoder = new TextDecoderStream();
+                const inputDone = port.readable.pipeTo(decoder.writable);
+                reader = decoder.readable.getReader();
+
+                const encoder = new TextEncoderStream();
+                const outputDone = encoder.readable.pipeTo(port.writable);
+                writer = encoder.writable.getWriter();
+
+                document.getElementById('connect').disabled = true;
+                document.getElementById('disconnect').disabled = false;
+                document.getElementById('logs').disabled = false;
+                readLoop();
+
+            }
         });
         document.getElementById('logs').addEventListener('click', async () => {
             writer.write("logs\n\0");
         }
         );
+
+        async function readLoopUsb() {
+            while (readLoopRunning && device) {
+                try {
+                    const result = await device.transferIn(2, 64); // Modifica il numero endpoint e la lunghezza in base al tuo dispositivo
+                    const decoder = new TextDecoder();
+                    var value = decoder.decode(result.data);
+                    outputDiv.textContent += value;//+ '\n';
+                    creaBottoniPerFile(outputDiv.textContent);
+                    findFileContents();
+                    outputDiv.scrollTop = outputDiv.scrollHeight;
+
+                } catch (error) {
+                    alert('Errore di lettura:'+ error);
+                    break;
+                }
+            }
+        }
+
         async function readLoop() {
             const outputDiv = document.getElementById('output');
             while (true) {
@@ -105,8 +146,8 @@
                     break;
                 }
                 outputDiv.textContent += value;//+ '\n';
-                    creaBottoniPerFile(outputDiv.textContent);
-                    findFileContents();
+                creaBottoniPerFile(outputDiv.textContent);
+                findFileContents();
                 outputDiv.scrollTop = outputDiv.scrollHeight;
             }
         }
@@ -161,17 +202,17 @@
                 outputDiv.innerHTML = ''; // Pulisci il div
                 listaFile.forEach(file => {
                     const nomeFile = file.split('\t')[0].trim();
-                    
+
                     if (nomeFile.indexOf(".txt") !== -1 || nomeFile.indexOf(".csv") !== -1) {
                         const size = file.split('\t')[1].trim();
                         const bottone = document.createElement('button');
-                        bottone.textContent = nomeFile ;
+                        bottone.textContent = nomeFile;
                         bottone.addEventListener('click', function () {
                             // Aggiungi qui la logica per gestire il click sul file
                             sendDownloadFileName(nomeFile);
                         });
                         outputDiv.appendChild(bottone);
-                        outputDiv.appendChild(document.createTextNode(" "+size+" bytes\n\n"));
+                        outputDiv.appendChild(document.createTextNode(" " + size + " bytes\n\n"));
 
                     }
                 });
@@ -184,7 +225,7 @@
             const fine = testo.indexOf("End trasmission");
             const filenameOk = testo.indexOf(".txt");
             const filenameOk2 = testo.indexOf(".csv");
-            if (inizio !== -1 && fine !== -1 && (filenameOk !==-1 || filenameOk2 !==-1)) {
+            if (inizio !== -1 && fine !== -1 && (filenameOk !== -1 || filenameOk2 !== -1)) {
                 const nomeFile = testo.split("End trasmission:")[1].trim();
                 const contents = testo.substring(inizio + "Start trasmission:".length, fine).trim();
                 scaricaFile(nomeFile, contents);

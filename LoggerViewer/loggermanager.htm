@@ -21,11 +21,12 @@
             color: #ffff00;
             padding: 5px;
         }
+
         table td:first-child {
             border-left: 0px solid #dadada;
         }
 
-        thead td{
+        thead td {
             color: #ffffff !important;
         }
 
@@ -140,6 +141,8 @@
             background-color: grey;
         }
     </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
 </head>
 
 <body onload="TranslateHtml() ">
@@ -158,7 +161,7 @@
     </nav>
     <div id="output"></div>
     <footer id="footer">
-        <input type="text" id="input" id="sendtext"><button data-i18n='auto' id="send">Send</button><br>
+        <input autocapitalize="none" type="text" id="input" id="sendtext"><button data-i18n='auto' id="send">Send</button><br>
     </footer>
     <script>
         if (typeof (__language) === 'undefined')
@@ -273,26 +276,59 @@
         let port, reader, writer, inDownload;
         inDownload = false;
         inListFile = false;
+        var is_usb = false;
         document.getElementById('connect').addEventListener('click', async () => {
-            if (navigator.serial === undefined) {
+            if (navigator.serial === undefined && navigator.usb === undefined) {
                 alert("Your browser does not support USB port reading");
             }
-            try {
-                port = await navigator.serial.requestPort();
+            if (navigator.serial !== undefined) {
 
-            } catch (e) {
-                //alert(e);
+                try {
+                    port = await navigator.serial.requestPort();
+
+                } catch (e) {
+
+                }
             }
-            console.log("Open boudrate:" + getSelectedBaudRate());
-            await port.open({ baudRate: getSelectedBaudRate() });
+            else {
+                try {
+                    device = await navigator.usb.requestDevice({ filters: [] });
+                    await device.open(); // Apre il dispositivo
+                    if (device.configuration === null)
+                        await device.selectConfiguration(1); // Seleziona la configurazione
+                    await device.claimInterface(0); // Richiede l'interfaccia
+                    readLoopRunning = true;
+                    readLoop();
+                    is_usb = true;
 
-            const decoder = new TextDecoderStream();
-            const inputDone = port.readable.pipeTo(decoder.writable);
-            reader = decoder.readable.getReader();
+                } catch (e) {
+                    alert(e);
+                    return;
+                }
 
-            const encoder = new TextEncoderStream();
-            const outputDone = encoder.readable.pipeTo(port.writable);
-            writer = encoder.writable.getWriter();
+            }
+
+
+            if (is_usb) {
+
+                readLoopRunning = true;
+                readLoopUsb();
+
+            }
+            else {
+                console.log("Open boudrate:" + getSelectedBaudRate());
+                await port.open({ baudRate: getSelectedBaudRate() });
+
+                const decoder = new TextDecoderStream();
+                const inputDone = port.readable.pipeTo(decoder.writable);
+                reader = decoder.readable.getReader();
+
+                const encoder = new TextEncoderStream();
+                const outputDone = encoder.readable.pipeTo(port.writable);
+                writer = encoder.writable.getWriter();
+
+            }
+
 
             document.getElementById('connect').style.display = "none";
             document.getElementById('baudrate-select').style.display = "none";
@@ -303,7 +339,8 @@
             readLoop();
         });
         document.getElementById('logs').addEventListener('click', async () => {
-            writer.write("logs\r\n");
+            //writer.write("logs\r\n");
+            sebdToSerial("logs\r\n");
             inListFile = true;
         }
         );
@@ -314,11 +351,11 @@
                 alert("Invalid interval");
             }
             else {
-                sendSerial("setconfig");
+                EnterTextToSerial("setconfig");
                 setTimeout(() => {
-                    sendSerial(interval);
+                    EnterTextToSerial(interval);
                     setTimeout(() => {
-                        writer.write("\r\n");
+                        sebdToSerial("\r\n");
                     }, 2000);
                 }, 2000);
 
@@ -328,25 +365,25 @@
 
 
         document.getElementById('settime').addEventListener('click', async () => {
-            sendSerial("settime");
+            EnterTextToSerial("settime");
             setTimeout(() => {
                 var n = new Date().getFullYear();
-                sendSerial(n);
+                EnterTextToSerial(n);
                 setTimeout(() => {
                     var n = new Date().getMonth() + 1;
-                    sendSerial(n);
+                    EnterTextToSerial(n);
                     setTimeout(() => {
                         var n = new Date().getDate();
-                        sendSerial(n);
+                        EnterTextToSerial(n);
                         setTimeout(() => {
                             var n = new Date().getHours();
-                            sendSerial(n);
+                            EnterTextToSerial(n);
                             setTimeout(() => {
                                 var n = new Date().getMinutes();
-                                sendSerial(n);
+                                EnterTextToSerial(n);
                                 setTimeout(() => {
                                     var n = new Date().getSeconds();
-                                    sendSerial(n);
+                                    EnterTextToSerial(n);
                                 }, 1000);
                             }, 1000);
                         }, 1000);
@@ -361,6 +398,50 @@
         var sizeDownload = 0;
         var textContents = "";
         var textListFiles = "";
+        async function readLoopUsb() {
+            while (readLoopRunning && device) {
+                let outputDiv = document.getElementById('output');
+                try {
+                    const result = await device.transferIn(2, 64); // Modifica il numero endpoint e la lunghezza in base al tuo dispositivo
+                    const decoder = new TextDecoder();
+                    var value = decoder.decode(result.data);
+                    if (inDownload) {
+                        filetext += value
+                        outputDiv.innerHTML = "received " + filetext.length + " of " + sizeDownload + " bytes";
+                        findFileContents(filetext);
+                    }
+                    else {
+                        //work arround --->
+                        if (false && lastch == "\r" && value[0] == "\n") {
+                            textContents += value.replace("\n", "");
+                        }
+                        else {
+                            textContents += value;
+                        }
+                        //work arround ---<
+
+                        if (inListFile) {
+                            textListFiles += value;
+                            createButtonsForFile(textListFiles);
+                        }
+                        else {
+                            document.getElementById('output').innerHTML = HighLighting(textContents);
+                        }
+                        if (value.length > 0) {
+                            lastch = value[value.length - 1];
+                        }
+
+                        outputDiv.scrollTop = outputDiv.scrollHeight;
+
+                    }
+                } catch (e) {
+                    alert('Errore di lettura:' + e);
+                    break;
+                }
+
+            }
+        }
+
         async function readLoop() {
             let outputDiv = document.getElementById('output');
             while (true) {
@@ -403,8 +484,14 @@
         }
 
         document.getElementById('disconnect').addEventListener('click', async () => {
+            if (is_usb) {
+                await device.close();
+                device = null;
+                window.location.reload();
+                document.getElementById('connect').disabled = false;
+                document.getElementById('disconnect').disabled = true;
+            }
             try {
-
                 if (reader) {
                     await reader.cancel();
                     await reader.releaseLock();
@@ -434,17 +521,43 @@
         function doDelete(nomeFile) {
             if (confirm(_i18n("Confirm delete file?"))) {
                 clearOutput();
-                sendSerial("e");
+                EnterTextToSerial("e");
                 setTimeout(() => {
-                    sendSerial("rm " + nomeFile.trim());
+                    EnterTextToSerial("rm " + nomeFile.trim());
                 }, 500);
             }
         }
 
+        async function sebdToUSB(data) {
+            if (is_usb) {
+                try {
+                    const textEncoder = new TextEncoder();
+                    data = textEncoder.encode(data);
+
+                    await device.transferOut(2, data); // Invia i dati al dispositivo
+                    //alert("send "+data)
+                } catch (error) {
+                    alert("Errore di trasferimento: " + error);
+                }
+            }
+        }
+  
+
+        function sebdToSerial(data) {
+
+            if (is_usb) {
+                sebdToUSB(data);
+            }
+            else {
+                writer.write(data);
+            }
+        }
+
+
         function inviaDati() {
             const text = document.getElementById('input').value + '\r\n';
+            sebdToSerial(text);
             // console.log("Send:" + text);
-            writer.write(text);
             textContents += text;
             document.getElementById('input').value = '';
         }
@@ -454,7 +567,7 @@
                 inviaDati();
             }
         });
-        function sendSerial(text) {
+        function EnterTextToSerial(text) {
             document.getElementById('input').value = text;
             setTimeout(() => {
                 document.getElementById('send').click();
@@ -590,7 +703,7 @@
 
                         }
                     });
-                    html += "<button class=\"continue\" onclick=\"clearOutput();;sendSerial('e');\">Exit</button><br />";
+                    html += "<button class=\"continue\" onclick=\"clearOutput();;EnterTextToSerial('e');\">Exit</button><br />";
                     outputDiv.innerHTML = html;
                 }
                 catch (e) {
@@ -645,7 +758,15 @@
                 document.getElementById('output').innerHTML = "Download starting...";
                 if (openViewer) {
                     saveToSessionStorage("csv", contents);
-                    window.open("loggerviewer.htm");
+                    if(is_usb)
+                    {
+                        window.location = "loggerviewer.htm";
+
+                    }
+                    else{
+                        window.open("loggerviewer.htm");
+
+                    }
                 }
                 else {
                     scaricaFile(nomeFile, contents);
@@ -674,8 +795,7 @@
         function sendDownloadFileName(filename) {
             const outputDiv = document.getElementById('output');
             outputDiv.innerHTML = '';
-            writer.write(filename + "\r\n");
-
+            sebdToSerial(filename + "\r\n");
         }
 
     </script>
