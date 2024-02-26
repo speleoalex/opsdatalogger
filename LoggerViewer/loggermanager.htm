@@ -86,7 +86,7 @@
 
         }
 
-        .prehead {
+        .preheating {
             color: orange !important;
 
         }
@@ -433,7 +433,7 @@
             "chart": "grafico",
             "exit": "esci",
             "sensor": "sensore",
-            "Prehead": "preriscaldamento",
+            "preheating": "preriscaldamento",
             "set interval": "Imposta intervallo",
             "send date and time": "invia data e ora"
         };
@@ -741,8 +741,8 @@
                     lines[i] = "<span class=\"command\">" + lines[i].trim() + "</span>";
                 }
 
-                if (lines[i].trim() == "Prehead") {
-                    lines[i] = "<span class=\"prehead\">" + _i18n("Prehead") + "</span>";
+                if (lines[i].trim() == "Preheating" || lines[i].trim() == "Prehead") {
+                    lines[i] = "<span class=\"preheating\">" + _i18n("preheating") + "</span>";
                 }
                 if (lines[i].trim() == "unknown command") {
                     lines[i] = "<em class=\"fail\">" + lines[i].trim() + "</em>";

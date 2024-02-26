@@ -16,7 +16,7 @@
 
 */
 
-#define VERSION 2.10
+#define VERSION 2.20
 
 #define BOUDRATE 19200  // 9600,57600,19200,115200
 // Sensor presence configuration
@@ -139,7 +139,7 @@ unsigned long currentMillis = 0;
 unsigned long timeTarget = 0;
 unsigned long timeTargetFileWrite = 0;
 unsigned long PPMGas;          // Gas ppm
-unsigned long PPMGasOld = 0;          // Gas ppm
+unsigned long PPMGasOld = 0;   // Gas ppm
 unsigned long LogCounter = 0;  // counter
 unsigned long dataToWrite = 0;
 int rawSensorValue;
@@ -214,31 +214,8 @@ float MQ2_calc_res(float rawAdc) {
   return (((float)RL_VALUE * (1023.0 - rawAdc) / rawAdc));
 }
 #endif
-/*
-void printDirectory(const char *dirname, int levels)
-{
-  SdFile file;
-  SdFile dir;
 
-  // Apri la directory corrente
-  if (!dir.open(dirname))
-  {
-    Serial.print("Errore nell'apertura della directory ");
-    Serial.println(dirname);
-    return;
-  }
-
-  // Leggi ogni file/directory nella cartella
-  while (file.openNext(&dir, O_RDONLY))
-  {
-    // Stampa il nome del file/directory
-    file.printName(&Serial);
-    Serial.println();
-    file.close();
-  }
-  dir.close();
-}
-*/
+// Print firmware version
 void printVersion() {
   Serial.print(F("FluxyLogger "));
 #if MQ2SENSOR_PRESENT
@@ -323,36 +300,6 @@ void downloadFile() {
       }
     }
   }
-}
-
-// Function to read an analog value from a pin with filtering
-float DL_FilterSensorReading(void) {
-  // Array to store sensorReading
-
-  unsigned long sum = 0.0;
-  uint16_t minValue = 1023;  // Initialize minValue with the highest possible analog value
-  uint16_t maxValue = 0.0;   // Initialize maxValue with the lowest possible analog value
-
-  // Loop to read the analog value multiple times
-  for (int i = 0; i < NUM_READS; i++) {
-    delay(READS_DELAY);  // Delay between sensorReading for stability
-    // Find the minimum value among the sensorReading
-    if (sensorReading[i] < minValue) {
-      minValue = sensorReading[i];
-    }
-    // Find the maximum value among the sensorReading
-    if (sensorReading[i] > maxValue) {
-      maxValue = sensorReading[i];
-    }
-
-    sum += sensorReading[i];  // Sum up all the sensorReading
-  }
-
-  // Remove the minimum and maximum value from the sum for filtering
-  sum = sum - minValue - maxValue;
-
-  // Return the average value excluding the min and max values
-  return (float)sum / (NUM_READS - 2);
 }
 
 // Function to read an analog value from a pin with filtering
@@ -1306,8 +1253,8 @@ void manageBlinkingByPPM(unsigned int inputValue) {
 
 #ifdef LCD_I2C_ENABLED
 void GestLcd() {
-  int val=0;
-  static int oldval=0;
+  int val = 0;
+  static int oldval = 0;
   static unsigned long ledTimer = 0;
   if (currentMillis > ledTimer + 1000) {
     val = digitalRead(BTN_1);
@@ -1315,10 +1262,10 @@ void GestLcd() {
       //Serial.println(val);
       if (val) {
         lcd.setBacklight(1);
-//        Serial.println("lcd on");
+        //        Serial.println("lcd on");
       } else {
         lcd.setBacklight(0);
-//        Serial.println("lcd off");
+        //        Serial.println("lcd off");
       }
     }
     oldval = val;
@@ -1370,7 +1317,16 @@ void setup() {
   DL_initConf();
   // initialize the SD card -------------------<
   SerialFlushAndClear();
-  // connect to RTC --------------------------->
+// connect to RTC --------------------------->
+#ifdef LCD_I2C_ENABLED
+  pinMode(BTN_1, INPUT);
+  lcd.init();
+  lcd.setBacklight(1);
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print(F("NASO "));
+  lcd.print(VERSION);
+#endif
   Wire.begin();
   if (RTC.begin()) {
     Serial.println(F("RTC present"));
@@ -1428,19 +1384,16 @@ void setup() {
 #endif
 
 #ifdef LCD_I2C_ENABLED
-  pinMode(BTN_1, INPUT);
-  lcd.init();
   // turn on the backlight
   //  lcd.backlight();
-  lcd.setCursor(0, 0);
+  lcd.setCursor(0, 1);
   if (failed) {
     lcd.print(textFailed);
 
   } else {
     lcd.print("SD OK");
-    lcd.setCursor(0, 1);
+    lcd.setCursor(0, 0);
     lcd.print(DL_strNow());
-     
   }
   //lcd.print(""+S0Sensor);
 #endif
@@ -1455,6 +1408,9 @@ void setup() {
    Loop.
 */
 void loop() {
+  static float adcTotal = 0;
+  static unsigned long adcCount = 0;
+
   static unsigned long ledTimer = 0;
   static bool readyToMeasure = false;
   static unsigned long timeTargetContinuousReading = 0;
@@ -1464,9 +1420,7 @@ void loop() {
   // commands:
   parse_serial_command();
 
-#ifdef LCD_I2C_ENABLED
-  GestLcd();
-#endif
+
 
 
 
@@ -1519,11 +1473,11 @@ void loop() {
       delay(100);
       digitalWrite(LED_2, LOW);
       if (echoToSerial) {
-        Serial.println(F("Prehead"));
+        Serial.println(F("Preheating"));
       }
 #ifdef LCD_I2C_ENABLED
-      lcd.setCursor(0, 0);
-      lcd.print(F("Prehead"));
+      lcd.setCursor(0, 1);
+      lcd.print(F("Preheating"));
 #endif
     }
   }
@@ -1555,11 +1509,9 @@ void loop() {
       Serial.println(timeTarget);
       */
       timeTargetContinuousReading = currentMillis;
-      rawSensorValue = analogRead(S0);
-      if (sensorReadingCounter >= NUM_READS) {
-        sensorReadingCounter = 0;
-      }
-      sensorReading[sensorReadingCounter++] = rawSensorValue;
+      rawSensorValue = DL_analogReadAndFilter(S0);
+      adcTotal += rawSensorValue;
+      adcCount++;
       PPMGas = (unsigned long)round(MQ2_RawToPPM(rawSensorValue));
       if (plotterMode) {
         Serial.print(F("raw:"));
@@ -1572,8 +1524,7 @@ void loop() {
         lcd.setCursor(14, 0);  //col row
         lcd.print(gasDetected);
       }
-      if (rawSensorValue != rawSensorValueOld ||PPMGas != PPMGasOld )
-      {
+      if (rawSensorValue != rawSensorValueOld || PPMGas != PPMGasOld) {
         lcd.clear();
         rawSensorValueOld = rawSensorValue;
         PPMGasOld = PPMGas;
@@ -1595,7 +1546,14 @@ void loop() {
         DL_openLogFile();
       }
       //-----------sensors------------------------------------------------------->
-      S0Sensor = DL_FilterSensorReading();
+      if (adcCount > 0) {
+        S0Sensor = adcTotal / adcCount;
+        adcCount = 0;
+        adcTotal = 0;
+      } else {
+        S0Sensor = DL_analogReadAndFilter(S0);
+      }
+
 
 #if OLED_PRESENT
       oled.clear();
@@ -1721,4 +1679,7 @@ void loop() {
       timeTargetFileWrite = currentMillis + SYNC_INTERVAL_ms;
     }
   }
+#ifdef LCD_I2C_ENABLED
+  GestLcd();
+#endif
 }
