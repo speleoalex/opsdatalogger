@@ -16,7 +16,7 @@
 
 */
 
-#define VERSION 2.20
+#define VERSION 2.21
 
 #define BOUDRATE 19200  // 9600,57600,19200,115200
 // Sensor presence configuration
@@ -108,7 +108,7 @@ bool BMP280Present = false;
 
 // Start Global variables -->
 bool plotterMode = false;  // Arduino plotter protocol
-int gasDetected = false;   // Gas detected
+int gasDetected = 0;   // Gas detected
 #if MQ2SENSOR_PRESENT
 int zeroGasValue = ZEROGAS_default;  // Define the default value for zero gas calibration
 #endif
@@ -1579,10 +1579,10 @@ void loop() {
       LOGPRINT(delimiter);
       PPMGas = MQ2_RawToPPM(S0Sensor);
       LOGPRINT(PPMGas);
-      if (PPMGas > MINPPMPOSITIVE) {
-        if (gasDetected < MINCONSECUTIVE_POSITIVE) {
+      if (PPMGas >= MINPPMPOSITIVE) {
+        //if (gasDetected < MINCONSECUTIVE_POSITIVE) {
           gasDetected++;
-        }
+        //}
       } else {
         if (gasDetected < MINCONSECUTIVE_POSITIVE) {
           gasDetected = 0;
