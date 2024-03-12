@@ -17,14 +17,21 @@ The datalogger records the passage of the tracer and saves the acquired data on 
 ![datalogger](datalogger_lcd.png)
 
 
+1. Sensor
+2. micro SD
+3. usb/power port
+4. Backlight button
+5. Display
+
+
 # How to Start Recording
 
 - Connect the device via the USB port to a powerbank.
-- The two LEDs on the datalogger will flash for a few seconds alternately.
+- The firmware version appears on the display for a few seconds, then the sensor pre-heating phase starts for about 30 seconds. On the display, compare the time and current data with the words "Preheating".
 - After that, the acquisition will start.
 - The default acquisition time is 15 seconds.
 - Data will be saved in files on the SD card. The file name corresponds to the date and time of the start of acquisition.
-- In case of SD card read/write error, led1 and led2 will remain steadily on.
+- The number of consecutive positive gas detections appears on the top right of the display. The counting takes place after having detected a value greater than 10 ppm for at least 20 consecutive times.
 
 # Tracer
 

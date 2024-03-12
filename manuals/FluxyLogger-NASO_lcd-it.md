@@ -24,6 +24,12 @@ Gruppo Telegram
 
 ![datalogger](datalogger_lcd.png)
 
+1. Sensore
+2. Micro SD
+3. Porta usb/alimentazione
+4. Pulsante retroilluminazione
+5. Display
+
 # Display
 
 - Il display mostra i valori di ADC (valore del sensore) e PPM (quantità di gas calcolata in base al valore zerogas di riferimento ADC. Sono visualizzate inoltre il numero di acquisizioni positive consecutive.
