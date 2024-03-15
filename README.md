@@ -3,7 +3,11 @@
 Device for tracing air in caves.
 It detects very well the butane present in normal air freshener cans.
 
-An assembled and ready-to-use version, or in an assembly kit, can be purchased here: [https://techmakers.eu/it/products/n-a-s-o-data-logger](https://techmakers.eu/it/products/n-a-s-o-data-logger)
+An assembled and ready-to-use version, or in an assembly kit, can be purchased here: [https://techmakers.eu/products/new-cave-monitoring-n-a-s-o-datalogger-for-atmospheric-tracer-tracking-assembled](https://techmakers.eu/products/new-cave-monitoring-n-a-s-o-datalogger-for-atmospheric-tracer-tracking-assembled)
+
+
+
+
 
 ### Components required for assembly (FluxyLogger NASO):
 
