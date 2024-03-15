@@ -16,7 +16,7 @@
 
 */
 
-#define VERSION 2.26
+#define VERSION 2.25
 
 #define BOUDRATE 19200  // 9600,57600,19200,115200
 // Sensor presence configuration
@@ -137,8 +137,8 @@ unsigned long timeStartLog = 0;
 unsigned long currentMillis = 0;
 unsigned long timeTarget = 0;
 unsigned long timeTargetFileWrite = 0;
-float PPMGas;          // Gas ppm
-float PPMGasOld = 0;   // Gas ppm
+unsigned long PPMGas;          // Gas ppm
+unsigned long PPMGasOld = 0;   // Gas ppm
 unsigned long LogCounter = 0;  // counter
 unsigned long dataToWrite = 0;
 float rawSensorValue;
@@ -1548,7 +1548,7 @@ void loop() {
       rawSensorValue = DL_analogReadAndFilter(S0);
       adcTotal += rawSensorValue;
       adcCount++;
-      PPMGas = MQ2_RawToPPM(rawSensorValue);
+      PPMGas = (unsigned long)round(MQ2_RawToPPM(rawSensorValue));
       if (plotterMode) {
         Serial.print(F("raw:"));
         Serial.print(rawSensorValue);
