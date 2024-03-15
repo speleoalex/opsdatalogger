@@ -16,7 +16,7 @@
 
 */
 
-#define VERSION 2.21
+#define VERSION 2.25
 
 #define BOUDRATE 19200  // 9600,57600,19200,115200
 // Sensor presence configuration
@@ -31,7 +31,7 @@
 // Sensors
 #define WINDSENSOR_PRESENT 0
 #define MQ2SENSOR_PRESENT 1  // VOC MQ2 analogic
-#define GAS_PPM 1
+
 #define SGP40_PRESENT 0  // VOC SGP40 i2c
 #define SGP30_PRESENT 0  // VOC SGP30 i2c
 #define OLED_PRESENT 0   // OLED
@@ -45,8 +45,7 @@
 //#define LED_1 8    // Led 1 datalogger
 //#define LED_2 9    // Led 2 datalogger
 #define CHIP_SD 10  // pin sd
-#define RXLED 17
-#define TXLED 30
+
 #if WINDSENSOR_PRESENT
 #define analogPinForRV A1  // change to pins you the analog pins are using
 #define analogPinForTMP A2
@@ -108,7 +107,7 @@ bool BMP280Present = false;
 
 // Start Global variables -->
 bool plotterMode = false;  // Arduino plotter protocol
-int gasDetected = 0;   // Gas detected
+int gasDetected = 0;       // Gas detected
 #if MQ2SENSOR_PRESENT
 int zeroGasValue = ZEROGAS_default;  // Define the default value for zero gas calibration
 #endif
@@ -116,7 +115,7 @@ int zeroGasValue = ZEROGAS_default;  // Define the default value for zero gas ca
 SGP30 SGP;
 #endif
 // strings used multiple times
-const char CONF_FILE[] = "CONFIG.INI";  // configuration file
+char CONF_FILE[] = "CONFIG.INI";  // configuration file
 const char textOk[] = "ok";
 const char textFailed[] = "failed";
 const char textNotFound[] = "unknown command";
@@ -142,8 +141,8 @@ unsigned long PPMGas;          // Gas ppm
 unsigned long PPMGasOld = 0;   // Gas ppm
 unsigned long LogCounter = 0;  // counter
 unsigned long dataToWrite = 0;
-int rawSensorValue;
-int rawSensorValueOld = 0;
+float rawSensorValue;
+float rawSensorValueOld = 0;
 int sensorReadingCounter = 0;
 
 // status
@@ -185,27 +184,22 @@ float MQ2_RawToPPM(float rawValue) {
   // Sensor characteristics for calibration
   float RAL = 9.83;                          // Ratio of load resistance to sensor resistance in clean air
   float LPGCurve[3] = { 2.3, 0.21, -0.47 };  // Calibration curve for LPG gas
-
   // Calculate the resistance of the sensor at zero gas concentration
   float ResZero = MQ2_calc_res(zeroGasValue) / RAL;
-
   // Calculate the current sensor resistance
   float ResCurrent = MQ2_calc_res(rawValue);
-
-  // Calculate the gas concentration percentage
-  float Perc = MQ2_Perc_gas(ResCurrent, ResZero, LPGCurve);
-
   // Convert the percentage to PPM
-  return 1000 * Perc;
+  return MQ2_PPM_gas(ResCurrent, ResZero, LPGCurve);
 }
 
 // Function to calculate the percentage of gas concentration
-float MQ2_Perc_gas(float resCurrent, float resZero, float *pCurve) {
+float MQ2_PPM_gas(float resCurrent, float resZero, float *pCurve) {
   // Calculate the ratio of current resistance to zero gas resistance
   float rs_ro_ratio = resCurrent / resZero;
 
   // Calculate and return the gas concentration using the calibration curve
-  return (pow(10, (((log(rs_ro_ratio) - pCurve[1]) / pCurve[2]) + pCurve[0])));
+  return pow(10, (((log10(rs_ro_ratio) - pCurve[1]) / pCurve[2]) + pCurve[0]));
+  //return pow(10, (((log10(rs_ro_ratio) - pCurve[1]) / pCurve[2]) + pCurve[0]));
 }
 
 // Function to calculate the sensor resistance based on the raw ADC value
@@ -301,30 +295,34 @@ void downloadFile() {
     }
   }
 }
-
+float mapTo_0_1023(float value) {
+  return value * 1023.0 / 4095;
+}
 // Function to read an analog value from a pin with filtering
 float DL_analogReadAndFilter(int analogPin) {
-  // Array to store sensorReading
-
+// Array to store sensorReading
+#if defined(ARDUINO_UNOWIFIR4)
+  analogReadResolution(12);  //  0- 4095
+#endif
   int sum = 0;
-  int minValue = 1023;  // Initialize minValue with the highest possible analog value
-  int maxValue = 0;     // Initialize maxValue with the lowest possible analog value
+  int minValue = 1023.0;  // Initialize minValue with the highest possible analog value
+  int maxValue = 0.0;     // Initialize maxValue with the lowest possible analog value
 
   // Loop to read the analog value multiple times
   for (int i = 0; i < NUM_READS; i++) {
-    delay(READS_DELAY);                        // Delay between sensorReading for stability
-    sensorReading[i] = analogRead(analogPin);  // Read the value from the analog pin
-
+    delay(READS_DELAY);  // Delay between sensorReading for stability
+    sensorReading[i] = analogRead(analogPin);
+#if defined(ARDUINO_UNOWIFIR4)
+    sensorReading[i] = mapTo_0_1023(sensorReading[i]);  // Read the value from the analog pin
+#endif
     // Find the minimum value among the sensorReading
     if (sensorReading[i] < minValue) {
       minValue = sensorReading[i];
     }
-
     // Find the maximum value among the sensorReading
     if (sensorReading[i] > maxValue) {
       maxValue = sensorReading[i];
     }
-
     sum += sensorReading[i];  // Sum up all the sensorReading
   }
 
@@ -336,6 +334,15 @@ float DL_analogReadAndFilter(int analogPin) {
 }
 
 void LOGPRINT(char *str) {
+  if (logfileOpened > 0) {
+    failed = logfile.print(str) ? false : true;
+    dataToWrite++;
+  }
+  if (echoToSerial) {
+    Serial.print(str);
+  }
+}
+void LOGPRINT(const char *str) {
   if (logfileOpened > 0) {
     failed = logfile.print(str) ? false : true;
     dataToWrite++;
@@ -358,6 +365,24 @@ void LOGPRINT(const __FlashStringHelper *str) {
 void LOGPRINTLN(const __FlashStringHelper *str) {
   if (logfileOpened > 0) {
     failed = logfile.println(str) ? false : true;
+    dataToWrite++;
+  }
+  if (echoToSerial) {
+    Serial.println(str);
+  }
+}
+void LOGPRINTLN(char *str) {
+  if (logfileOpened > 0) {
+    failed = logfile.print(str) ? false : true;
+    dataToWrite++;
+  }
+  if (echoToSerial) {
+    Serial.println(str);
+  }
+}
+void LOGPRINTLN(const char *str) {
+  if (logfileOpened > 0) {
+    failed = logfile.print(str) ? false : true;
     dataToWrite++;
   }
   if (echoToSerial) {
@@ -537,8 +562,9 @@ void DL_openLogFile() {
       LogCounter = 1;
     }
     char filename[] = "xxxx-xx-xx-xx.xx.xx.txt";
-    sprintf(filename, DL_strDateToFilename());
+
     for (uint8_t i = 0; i < 9; i++) {
+      sprintf(filename, DL_strDateToFilename());
       if (!SD.exists(filename)) {
         // only open a new file if it doesn't exist
         logfile = SD.open(filename, FILE_WRITE);
@@ -550,7 +576,6 @@ void DL_openLogFile() {
         break;
       } else {
         delay(1000);
-        sprintf(filename, DL_strDateToFilename());
       }
     }
 
@@ -869,9 +894,9 @@ void DL_initConf() {
       printResult(true, true);
     }
     // read from CONFIG.INI------->
-    log_interval_s = CONF_getConfValueInt(CONF_FILE, "log_interval_s", LOG_INTERVAL_s);
+    log_interval_s = CONF_getConfValueInt(CONF_FILE, (char *)"log_interval_s", LOG_INTERVAL_s);
 #if MQ2SENSOR_PRESENT
-    zeroGasValue = CONF_getConfValueInt(CONF_FILE, "zerogas", ZEROGAS_default);
+    zeroGasValue = CONF_getConfValueInt(CONF_FILE, (char *)"zerogas", (int)ZEROGAS_default);
     Serial.print(F("zerogas="));
     Serial.println(zeroGasValue);
 #endif
@@ -1071,7 +1096,7 @@ void Mq2Calibration() {
   int S0Sensor_old = 0;
   int NumConsecutive = 0;
   Serial.println(F("Zerogas calibration"));
-#ifdef LCD_I2C_ENABLED
+#if LCD_I2C_ENABLED
   lcd.setCursor(0, 0);
   lcd.print(F("Calibration"));
 #endif
@@ -1099,7 +1124,7 @@ void Mq2Calibration() {
     digitalWrite(LED_2, LOW);
     Serial.print(F("Value:"));
     Serial.println(S0Sensor);
-#ifdef LCD_I2C_ENABLED
+#if LCD_I2C_ENABLED
     lcd.setCursor(0, 10);
     lcd.print(S0Sensor);
 #endif
@@ -1180,10 +1205,24 @@ void SetDateTime() {
   delay(500);
   reset();
 }
-// Reset Arduino
+
+// Funzione di reset personalizzata
 void reset() {
+#ifdef ARDUINO_AVR_UNO
   asm volatile("  jmp 0");
+#elif defined(ARDUINO_AVR_MEGA2560)
+  asm volatile("  jmp 0");
+#elif defined(ARDUINO_AVR_NANO)
+  asm volatile("  jmp 0");
+#else
+  NVIC_SystemReset();
+#endif
 }
+// Reset Arduino
+
+
+//  asm volatile("  jmp 0");
+
 // flush serial and clears the reading queue
 void SerialFlushAndClear() {
   Serial.flush();
@@ -1251,7 +1290,7 @@ void manageBlinkingByPPM(unsigned int inputValue) {
   manageBlinking(timeOn, timeOff);
 }
 
-#ifdef LCD_I2C_ENABLED
+#if LCD_I2C_ENABLED
 void GestLcd() {
   int val = 0;
   static int oldval = 0;
@@ -1313,12 +1352,11 @@ void setup() {
     digitalWrite(LED_1, HIGH);
     digitalWrite(LED_2, HIGH);
   }
-
   DL_initConf();
   // initialize the SD card -------------------<
   SerialFlushAndClear();
 // connect to RTC --------------------------->
-#ifdef LCD_I2C_ENABLED
+#if LCD_I2C_ENABLED
   pinMode(BTN_1, INPUT);
   lcd.init();
   lcd.setBacklight(1);
@@ -1328,6 +1366,8 @@ void setup() {
   lcd.print(VERSION);
 #endif
   Wire.begin();
+
+
   if (RTC.begin()) {
     Serial.println(F("RTC present"));
     rtcPresent = true;
@@ -1364,14 +1404,11 @@ void setup() {
   currentMillis = millis();
   timeTarget = currentMillis + (log_interval_s * 1000);
   timeTargetFileWrite = currentMillis + SYNC_INTERVAL_ms;
-  //---faccio una lettura a vuoto per scaricare il condensatore -------->
-  for (int i = 0; i < 10; i++) {
-    DL_analogReadAndFilter(S0);
-    delay(20);
-  }
-  //---faccio una lettura a vuoto per scaricare il condensatore --------<
   //-----------init analog input-----------------------------------------<
-  pinMode(LED_BUILTIN, OUTPUT);
+  // pinMode(LED_BUILTIN, OUTPUT);
+
+  //return;
+
 
 #if OLED_PRESENT
 
@@ -1383,7 +1420,7 @@ void setup() {
   // oled.println(F("Start log"));
 #endif
 
-#ifdef LCD_I2C_ENABLED
+#if LCD_I2C_ENABLED
   // turn on the backlight
   //  lcd.backlight();
   lcd.setCursor(0, 1);
@@ -1419,7 +1456,6 @@ void loop() {
   currentMillis = millis();
   // commands:
   parse_serial_command();
-
 
 
 
@@ -1475,13 +1511,13 @@ void loop() {
       if (echoToSerial) {
         Serial.println(F("Preheating"));
       }
-#ifdef LCD_I2C_ENABLED
+#if LCD_I2C_ENABLED
       lcd.setCursor(0, 1);
       lcd.print(F("Preheating"));
 #endif
     }
   }
-
+  /*
   if (logfileOpened <= 0) {
     if (currentMillis > ledTimer + 1000) {
       digitalWrite(LED_BUILTIN, HIGH);
@@ -1492,7 +1528,7 @@ void loop() {
       digitalWrite(LED_BUILTIN, LOW);
     }
   }
-
+*/
   if (readyToMeasure) {
 
     if (logfileOpened <= 0) {
@@ -1519,7 +1555,7 @@ void loop() {
         Serial.print(F(",ppm:"));
         Serial.println(PPMGas);
       }
-#ifdef LCD_I2C_ENABLED
+#if LCD_I2C_ENABLED
       if (gasDetected >= MINCONSECUTIVE_POSITIVE) {
         lcd.setCursor(14, 0);  //col row
         lcd.print(gasDetected);
@@ -1581,7 +1617,7 @@ void loop() {
       LOGPRINT(PPMGas);
       if (PPMGas >= MINPPMPOSITIVE) {
         //if (gasDetected < MINCONSECUTIVE_POSITIVE) {
-          gasDetected++;
+        gasDetected++;
         //}
       } else {
         if (gasDetected < MINCONSECUTIVE_POSITIVE) {
@@ -1679,7 +1715,7 @@ void loop() {
       timeTargetFileWrite = currentMillis + SYNC_INTERVAL_ms;
     }
   }
-#ifdef LCD_I2C_ENABLED
+#if LCD_I2C_ENABLED
   GestLcd();
 #endif
 }

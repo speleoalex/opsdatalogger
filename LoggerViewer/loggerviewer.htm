@@ -61,8 +61,8 @@
         <button id="loggerviewer" onclick="window.location='loggermanager.htm'">Logger manager</button>
         <button onclick="document.getElementById('logfile').click();">Open file CSV</button>
         <span style="display:none" id="MQ2Div">
-            <input placeholder="zero gas gas adc" id="zerogasInput" onchange="updateChartWithZerogas();" type="number" min="0" max="1023"
-                value=""><button onclick="ZeroGasAuto();">Auto Calibration</button>
+            <input placeholder="zero gas gas adc" id="zerogasInput" onchange="updateChartWithZerogas();" type="number"
+                min="0" max="1023" value=""><button onclick="ZeroGasAuto();">Auto Calibration</button>
             <button onclick="exportCSV();">Export CSV</button>
         </span>
 
@@ -104,7 +104,10 @@
             document.getElementById("zerogasInput").onchange();
 
         }
-        // Function to convert raw sensor value to parts per million (PPM) for MQ2 gas sensor
+
+
+
+
         function MQ2_RawToPPM(rawValue, zeroGasValue) {
             // If the zero calibration value is less than or equal to 0, set it to 1 to avoid division by zero
             rawValue = parseFloat(rawValue);
@@ -122,28 +125,23 @@
             ResCurrent = MQResistanceCalculation(rawValue);
             console.log("ResZero=" + ResZero);
             // Calculate the gas concentration percentage
-            Perc = MQ2_Perc_gas(ResCurrent, ResZero, LPGCurve);
-            // Convert the percentage to PPM
-            return Perc;
+            PPM = MQ2_PPM_gas(ResCurrent, ResZero, LPGCurve);
+            // Fix Marco Corvi
+            return PPM;
         }
         // Function to calculate the percentage of gas concentration
-        function MQ2_Perc_gas(resCurrent, resZero) {
+        function MQ2_PPM_gas(resCurrent, resZero) {
             // Calculate the ratio of current resistance to zero gas resistance
             rs_ro_ratio = resCurrent / resZero;
             // Calculate and return the gas concentration using the calibration curve
             //return (pow(10, (((log(rs_ro_ratio) - pcurve[1]) / pcurve[2]) + pcurve[0])));
-            var ret1 = 1000 * (Math.exp((((Math.log(rs_ro_ratio) - LPGCurve[1]) / LPGCurve[2]) + LPGCurve[0])));
-            var ret = 1000 * (Math.pow(10, (((Math.log(rs_ro_ratio) - LPGCurve[1]) / LPGCurve[2]) + LPGCurve[0])));
-            //console.log("rs_ro_ratio = " + rs_ro_ratio + " resCurrent = " + resCurrent);
-            //console.log("MQ2_Perc_gas: ret = " + ret + " ret1 = " + ret1);
-
+            var ret = Math.pow(10, (((Math.log10(rs_ro_ratio) - LPGCurve[1]) / LPGCurve[2]) + LPGCurve[0]));
             if (isNaN(ret)) {
-                // ret = 0;
+                ret = 0;
             }
-            return ret;
+            return  ret;
         }
-
-
+     
         /****************** MQResistanceCalculation ****************************************
         Input:   raw_adc - raw value read from adc, which represents the voltage
         Output:  the calculated sensor resistance
