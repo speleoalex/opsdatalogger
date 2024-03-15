@@ -376,7 +376,8 @@
 
             // Verifica che l'ultima riga segua il formato del protocollo plotter
             // Il formato è chiave:valore e può avere più coppie separate da virgole
-            const pattern = /^(\w+:\d+)(,\w+:\d+)*$/;
+            const pattern = /^(\w+:\d+(\.\d+)?)(,\w+:\d+(\.\d+)?)*$/;
+
             var res = pattern.test(lastLine);
             //console.log(res);
             return res;
