@@ -16,7 +16,7 @@
 
 */
 
-#define VERSION 2.25
+#define VERSION 2.28
 
 #define BOUDRATE 19200  // 9600,57600,19200,115200
 // Sensor presence configuration
@@ -58,7 +58,7 @@
 // Log configs
 #define LOG_INTERVAL_s 30       // log interval in seconds
 #define SYNC_INTERVAL_ms 20000  // mills between calls to flush() - to write data to the card
-#define NUM_READS 10
+#define NUM_READS 8
 #define READS_DELAY 30
 #define ZEROGAS_default 115
 #define RL_VALUE 5.0  // Define the load resistance value in kilo ohms
@@ -115,7 +115,7 @@ int zeroGasValue = ZEROGAS_default;  // Define the default value for zero gas ca
 SGP30 SGP;
 #endif
 // strings used multiple times
-char CONF_FILE[] = "CONFIG.INI";  // configuration file
+const char CONF_FILE[] = "CONFIG.INI";  // configuration file
 const char textOk[] = "ok";
 const char textFailed[] = "failed";
 const char textNotFound[] = "unknown command";
@@ -137,10 +137,10 @@ unsigned long timeStartLog = 0;
 unsigned long currentMillis = 0;
 unsigned long timeTarget = 0;
 unsigned long timeTargetFileWrite = 0;
-unsigned long PPMGas;          // Gas ppm
-unsigned long PPMGasOld = 0;   // Gas ppm
-unsigned long LogCounter = 0;  // counter
-unsigned long dataToWrite = 0;
+float PPMGas = 0;                 // Gas ppm
+float PPMGasOld = 0;          // Gas ppm
+unsigned int LogCounter = 0;  // counter
+unsigned int dataToWrite = 0;
 float rawSensorValue;
 float rawSensorValueOld = 0;
 int sensorReadingCounter = 0;
@@ -181,8 +181,8 @@ float MQ2_RawToPPM(float rawValue) {
     zeroGasValue = 1;
   }
 
-  // Sensor characteristics for calibration
-  float RAL = 9.83;                          // Ratio of load resistance to sensor resistance in clean air
+// Sensor characteristics for calibration
+#define RAL 9.83                             // Ratio of load resistance to sensor resistance in clean air
   float LPGCurve[3] = { 2.3, 0.21, -0.47 };  // Calibration curve for LPG gas
   // Calculate the resistance of the sensor at zero gas concentration
   float ResZero = MQ2_calc_res(zeroGasValue) / RAL;
@@ -196,16 +196,14 @@ float MQ2_RawToPPM(float rawValue) {
 float MQ2_PPM_gas(float resCurrent, float resZero, float *pCurve) {
   // Calculate the ratio of current resistance to zero gas resistance
   float rs_ro_ratio = resCurrent / resZero;
-
   // Calculate and return the gas concentration using the calibration curve
   return pow(10, (((log10(rs_ro_ratio) - pCurve[1]) / pCurve[2]) + pCurve[0]));
-  //return pow(10, (((log10(rs_ro_ratio) - pCurve[1]) / pCurve[2]) + pCurve[0]));
 }
 
 // Function to calculate the sensor resistance based on the raw ADC value
 float MQ2_calc_res(float rawAdc) {
   // Calculate and return the sensor resistance
-  return (((float)RL_VALUE * (1023.0 - rawAdc) / rawAdc));
+  return (float)RL_VALUE * (1023.0 - rawAdc) / rawAdc;
 }
 #endif
 
@@ -227,7 +225,6 @@ void printVersion() {
 void listFiles() {
   //size log files: 2023-11-22_20.18.33.txt
   char printBuffer[25];
-
   SdFile file;
   SdFile dir;
   if (!dir.open("/", O_RDONLY)) {
@@ -263,7 +260,6 @@ void downloadFile() {
   while (1) {
     // Read user input from Serial
     readSerial(true);
-
     // If user types 'e', exit the function
     if (strcmp(serialBuffer, "e") == 0) {
       return;
@@ -276,7 +272,6 @@ void downloadFile() {
       if (file) {
         // Notify start of transmission
         Serial.println(F("Start transmission:"));
-
         // Read and transmit file contents
         while (file.available()) {
           Serial.write(file.read());
@@ -295,9 +290,11 @@ void downloadFile() {
     }
   }
 }
+#if defined(ARDUINO_UNOWIFIR4)
 float mapTo_0_1023(float value) {
   return value * 1023.0 / 4095;
 }
+#endif
 // Function to read an analog value from a pin with filtering
 float DL_analogReadAndFilter(int analogPin) {
 // Array to store sensorReading
@@ -332,7 +329,7 @@ float DL_analogReadAndFilter(int analogPin) {
   // Return the average value excluding the min and max values
   return (float)sum / (NUM_READS - 2);
 }
-
+/*
 void LOGPRINT(char *str) {
   if (logfileOpened > 0) {
     failed = logfile.print(str) ? false : true;
@@ -342,6 +339,7 @@ void LOGPRINT(char *str) {
     Serial.print(str);
   }
 }
+*/
 void LOGPRINT(const char *str) {
   if (logfileOpened > 0) {
     failed = logfile.print(str) ? false : true;
@@ -351,6 +349,7 @@ void LOGPRINT(const char *str) {
     Serial.print(str);
   }
 }
+
 
 void LOGPRINT(const __FlashStringHelper *str) {
   if (logfileOpened > 0) {
@@ -371,6 +370,7 @@ void LOGPRINTLN(const __FlashStringHelper *str) {
     Serial.println(str);
   }
 }
+/*
 void LOGPRINTLN(char *str) {
   if (logfileOpened > 0) {
     failed = logfile.print(str) ? false : true;
@@ -380,6 +380,7 @@ void LOGPRINTLN(char *str) {
     Serial.println(str);
   }
 }
+*/
 void LOGPRINTLN(const char *str) {
   if (logfileOpened > 0) {
     failed = logfile.print(str) ? false : true;
@@ -652,14 +653,13 @@ void DL_openLogFile() {
 /**
 
 */
-static bool CONF_is_valid_char(char character) {
+bool CONF_is_valid_char(char character) {
   if (isalnum(character) || character == '_') {
     return true;
   }
   return false;
 }
 
-#if 1
 //log_interval_s
 #define MAX_INI_KEY_LENGTH 20
 #define MAX_INI_VALUE_LENGTH 5
@@ -766,95 +766,7 @@ int CONF_getConfValueInt(char *filename, char *key, int defaultValue = 0) {
   return ret;
 }
 
-#else
-static int CONF_getConfValueInt(char *filename, char *key, int defaultValue = 0) {
-  File myFile;
-  char character;
-  String description = "";
-  String value = "";
-  boolean valid = true;
-  int ret = defaultValue;
-  if (!SD.exists(filename)) {
-    return defaultValue;
-  }
-  myFile = SD.open(filename);
-  while (myFile.available()) {
-    description = "";
-    character = myFile.read();
-    // cerca una linea valida----->
-    if (!CONF_is_valid_char(character)) {
-      // Comment - ignore this line
-      while (character != '\n' && myFile.available()) {
-        character = myFile.read();
-      };
-      continue;
-    }
-    // cerca una linea valida-----<
-    //----riempo la descrizione---->
-    do {
-      description.concat(character);
-      character = myFile.read();
-      if (!myFile.available()) {
-        myFile.close();
-        return defaultValue;
-      }
-    } while (CONF_is_valid_char(character));
-    //----riempo la descrizione----<
-    //-------elimino gli spazi------->
-    if (character == ' ') {
-      do {
-        character = myFile.read();
-        if (!myFile.available()) {
-          myFile.close();
-          return defaultValue;
-        }
-      } while (character == ' ');
-    }
-    //-------elimino gli spazi-------<
-    if (character == '=') {
-      if (description == key) {
-        //-------elimino gli spazi------->
-        do {
-          character = myFile.read();
-          if (!myFile.available()) {
-            myFile.close();
-            return defaultValue;
-          }
-        } while (character == ' ');
-        //-------elimino gli spazi-------<
-        value = "";
-        valid = true;
-        while (character != '\n' && character != '\r') {
-          // Serial.println(character);
-          if (isdigit(character)) {
-            value.concat(character);
-          } else if (character != '\n' && character != '\r') {
-            // Use of invalid values
-            valid = false;
-          }
-          character = myFile.read();
-        };
-        if (valid) {
-          // Convert string to array of chars
-          char charBuf[value.length() + 1];
-          value.toCharArray(charBuf, value.length() + 1);
-          // Convert chars to integer
-          ret = atoi(charBuf);
-          myFile.close();
-          return ret;
-        }
-      }
-    } else {
-      while (character != '\n' && myFile.available()) {
-        character = myFile.read();
-      };
-      continue;
-    }
-  }
-  myFile.close();
-  return ret;
-}
-#endif
+
 bool CreateINIConf(int NewInterval_s, int NewzeroGasValue = 0) {
   SD.remove(CONF_FILE);
   settingFile = SD.open(CONF_FILE, FILE_WRITE);
@@ -1272,7 +1184,7 @@ void printDateTime() {
   }
 }
 // manages the flashing time depending on the ppm
-void manageBlinkingByPPM(unsigned int inputValue) {
+void manageBlinkingByPPM(float inputValue) {
   uint16_t MaxValue = 500;
   // Assicurati che il valore di input sia entro i limiti previsti
   if (inputValue > MaxValue || inputValue < 0) {
@@ -1314,9 +1226,16 @@ void GestLcd() {
 #endif
 // Setup
 void setup() {
-  PPMGas = 0;
-  // uint8_t n = 0;
-  int timeout = 5;
+  #if LCD_I2C_ENABLED
+  lcd.init();
+  lcd.clear();
+  lcd.setBacklight(1);
+  lcd.setCursor(0, 0);
+  lcd.print(F("NASO "));
+  lcd.print(VERSION);
+  delay(1000);
+  lcd.setBacklight(0);
+  #endif
   //--init serial------------------------------>
   Serial.begin(BOUDRATE);  //  boud
   //--init serial------------------------------<
@@ -1326,10 +1245,7 @@ void setup() {
   printVersion();
   // initialize the SD card ------------------->
   pinMode(CHIP_SD, OUTPUT);
-  // pinMode(S0_S, OUTPUT);
-  pinMode(LED_1, OUTPUT);
-  pinMode(LED_2, OUTPUT);
-//  digitalWrite(S0_S, HIGH);
+  delay(200);
 #if SGP30_PRESENT
   Serial.print(F("init SGP30 "));
   if (!SGP.begin()) {
@@ -1348,26 +1264,19 @@ void setup() {
     printResult(true, true);
     sdPresent = true;
   }
+
+  pinMode(LED_1, OUTPUT);
+  pinMode(LED_2, OUTPUT);
   if (failed) {
     digitalWrite(LED_1, HIGH);
     digitalWrite(LED_2, HIGH);
   }
+  delay(200);
   DL_initConf();
   // initialize the SD card -------------------<
   SerialFlushAndClear();
 // connect to RTC --------------------------->
-#if LCD_I2C_ENABLED
-  pinMode(BTN_1, INPUT);
-  lcd.init();
-  lcd.setBacklight(1);
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print(F("NASO "));
-  lcd.print(VERSION);
-#endif
   Wire.begin();
-
-
   if (RTC.begin()) {
     Serial.println(F("RTC present"));
     rtcPresent = true;
@@ -1421,6 +1330,7 @@ void setup() {
 #endif
 
 #if LCD_I2C_ENABLED
+  pinMode(BTN_1, INPUT);
   // turn on the backlight
   //  lcd.backlight();
   lcd.setCursor(0, 1);
@@ -1446,7 +1356,7 @@ void setup() {
 */
 void loop() {
   static float adcTotal = 0;
-  static unsigned long adcCount = 0;
+  static unsigned int adcCount = 0;
 
   static unsigned long ledTimer = 0;
   static bool readyToMeasure = false;
@@ -1517,18 +1427,6 @@ void loop() {
 #endif
     }
   }
-  /*
-  if (logfileOpened <= 0) {
-    if (currentMillis > ledTimer + 1000) {
-      digitalWrite(LED_BUILTIN, HIGH);
-      digitalWrite(LED_BUILTIN, HIGH);
-      ledTimer = currentMillis;
-    }
-    if (currentMillis > ledTimer + 500) {
-      digitalWrite(LED_BUILTIN, LOW);
-    }
-  }
-*/
   if (readyToMeasure) {
 
     if (logfileOpened <= 0) {
@@ -1538,17 +1436,11 @@ void loop() {
 
 #if MQ2SENSOR_PRESENT
     if (currentMillis > timeTargetContinuousReading + 1000) {
-      /*
-      Serial.print("currentMillis=");
-      Serial.println(currentMillis);
-      Serial.print("timeTarget=");
-      Serial.println(timeTarget);
-      */
       timeTargetContinuousReading = currentMillis;
       rawSensorValue = DL_analogReadAndFilter(S0);
       adcTotal += rawSensorValue;
       adcCount++;
-      PPMGas = (unsigned long)round(MQ2_RawToPPM(rawSensorValue));
+      PPMGas = MQ2_RawToPPM(rawSensorValue);
       if (plotterMode) {
         Serial.print(F("raw:"));
         Serial.print(rawSensorValue);
@@ -1571,6 +1463,12 @@ void loop() {
       lcd.setCursor(0, 1);
       lcd.print("PPM: ");
       lcd.print(PPMGas);
+      if (logfileOpened<=0) 
+      {
+        lcd.setCursor(14, 1);
+        lcd.print('E');
+      }
+
 #endif
       manageBlinkingByPPM(PPMGas);
     }
