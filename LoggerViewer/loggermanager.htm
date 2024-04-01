@@ -43,20 +43,23 @@
             margin: 0;
             /* Remove default margin */
         }
-        td.plotter{
-            width:50%;
+
+        td.plotter {
+            width: 50%;
             padding: 10px;
         }
-        th.plotter{
+
+        th.plotter {
             font-size: 20px
-           
         }
-        .plotter{
+
+        .plotter {
             font-size: 30px;
             text-align: center;
             text-transform: uppercase;
             font-family: Arial, Helvetica, sans-serif !important;
         }
+
         #buttons {
             padding: 5px;
 
@@ -167,9 +170,9 @@
             <option selected value="19200">19200</option>
             <option value="57600">57600</option>
             <option value="115200">115200</option>
-        </select><button id="disconnect" data-i18n="auto"
-            style="display:none;background-color: rgb(128, 0, 0);">Disconnect</button><button id="logs" data-i18n='auto'
-            disabled>View stored logs</button>
+        </select><button style="display:none" data-i18n='auto' id="connectBLE">Connect BLE</button><button id="disconnect"
+            data-i18n="auto" style="display:none;background-color: rgb(128, 0, 0);">Disconnect</button><button id="logs"
+            data-i18n='auto' disabled>View stored logs</button>
         <button id="settime" data-i18n='auto' disabled>Send date and time</button><button id="setinterval" disabled
             data-i18n="auto">Set Interval</button>
         <button id="plotterstart" data-i18n='auto'>Real time on</button>
@@ -187,13 +190,18 @@
         var inDownload = false;
         var inListFile = false;
         var is_usb = false;
+        var is_BLE = false;
         var connected_serial = false;
         var connected_usb = false;
+        var connected_BLE = false;
         var lastch = "";
         var filetext = "";
         var sizeDownload = 0;
         var textContents = "";
         var textListFiles = "";
+        //BLE
+        var UID_SERVICE = '12345678-9878-9878-9878-123456789abc';
+        var UID_Characteristic = 'abcd1234-9878-9878-9878-abcdef123456';
 
 
         //-----------------------actions ------------------------------------------>
@@ -272,7 +280,7 @@
 
         // SEND (CLICK)
         document.getElementById('send').addEventListener('click', () => {
-            inviaDati();            
+            inviaDati();
         });
         // SEND (ENTER)
         document.getElementById('input').addEventListener('keypress', (event) => {
@@ -308,7 +316,7 @@
 
                 } catch (e) {
                     UpdateButtonsStatus();
-//                    alert(e);
+                    //                    alert(e);
                     return;
                 }
 
@@ -338,11 +346,10 @@
         // LOGS
         document.getElementById('logs').addEventListener('click', async () => {
             //writer.write("logs\r\n");
-            sebdToSerial("logs\r\n");
+            sendToDevice("logs\r\n");
             inListFile = true;
         }
         );
-
         document.getElementById('setinterval').addEventListener('click', async () => {
             var interval = prompt("Enter interval in seconds:", "");
             if (interval == null || isNaN(interval) || interval < 1) {
@@ -353,14 +360,90 @@
                 setTimeout(() => {
                     EnterTextToSerial(interval);
                     setTimeout(() => {
-                        sebdToSerial("\r\n");
+                        sendToDevice("\r\n");
                     }, 2000);
                 }, 2000);
 
             }
         }
         );
+        document.querySelector('#connectBLE').addEventListener('click', function () {
+            navigator.bluetooth.requestDevice({
+                //filters: [{ name: 'BTService' }],
+                acceptAllDevices: true,
+                optionalServices: [UID_SERVICE] // UUID del servizio BLE
+            })
+                .then(device => {
+                    is_BLE = true;
+                    bleDevice = device;
+                    console.log('Connessione al dispositivo: ', device.name);
+                    return device.gatt.connect();
+                })
+                .then(server => {
+                    bleServer = server;
+                    return server.getPrimaryService(UID_SERVICE);
+                })
+                .then(service => {
+                    return service.getCharacteristic(UID_Characteristic);
+                })
+                .then(characteristic => {
+                    myCharacteristic = characteristic;
+                    console.log('Caratteristica ottenuta');
+                    // Ascolta le notifiche sulla caratteristica
+                    myCharacteristic.startNotifications().then(_ => {
+                        console.log('Notifiche avviate');
+                        myCharacteristic.addEventListener('characteristicvaluechanged', handleNotifications);
+                        connected_BLE = true;
+                        UpdateButtonsStatus();
+                    });
+                })
+                .catch(error => {
+                    console.log('Errore di connessione: ', error);
+                });
+        });
+        var btntimer;
+        function handleNotifications(event) {
+            let target_value = event.target.value;
+            let decoder = new TextDecoder('utf-8');
+            let value = decoder.decode(target_value);
+            let outputDiv = document.getElementById('output');
+            if (inDownload) {
+                filetext += value
+                outputDiv.innerHTML = "received " + filetext.length + " of " + sizeDownload + " bytes";
+                findFileContents(filetext);
+            }
+            else {
+                textContents += value;
+                if (inListFile) {
+                    textListFiles += value;
+                    setTimeout(function(){
+                        if(createButtonsForFile(textListFiles))
+                        {
+                            //clearInterval(btntimer);
+                            //inListFile = false;
 
+                        }
+                    },1000);
+                }
+                else {
+                    document.getElementById('output').innerHTML = HighLighting(textContents);
+                    try{
+                     //   clearInterval(btntimer);
+                    }
+                    catch(e){}
+                }
+                if (value.length > 0) {
+                    lastch = value[value.length - 1];
+                }
+                UpdateButtonsStatus();
+                outputDiv.scrollTop = outputDiv.scrollHeight;
+            }
+            //console.log("received:\"" + value + "\"");
+            //console.log("lastch:\"" + ascii(lastch) + "\"");
+
+
+
+        }
         //-----------------------actions ------------------------------------<
         function isLastLineArduinoPlotterProtocol() {
             // Dividere l'output in righe
@@ -384,8 +467,10 @@
         }
 
         function UpdateButtonsStatus() {
-            if (connected_usb || connected_serial) {
+
+            if (connected_usb || connected_serial || connected_BLE) {
                 document.getElementById('connect').style.display = "none";
+                document.getElementById('connectBLE').style.display = "none";
                 document.getElementById('baudrate-select').style.display = "none";
                 document.getElementById('disconnect').style.display = "inline-block";
                 document.getElementById('plotterstart').disabled = false;
@@ -396,6 +481,11 @@
 
             }
             else {
+                if (navigator.bluetooth !== undefined) {
+
+                    document.getElementById('connectBLE').style.display = "inline-block";
+
+                }
                 document.getElementById('connect').style.display = "inline-block";
                 document.getElementById('baudrate-select').style.display = "inline-block";
                 document.getElementById('plotterstart').disabled = true;
@@ -539,7 +629,7 @@
                         findFileContents(filetext);
                     }
                     else {
-                        
+
                         //work arround --->
                         if (false && lastch == "\r" && value[0] == "\n") {
                             textContents += value.replace("\n", "");
@@ -642,20 +732,26 @@
         }
 
 
-        function sebdToSerial(data) {
-
-            if (is_usb) {
-                sebdToUSB(data);
+        function sendToDevice(data) {
+            data=data.trim();
+            if (is_BLE) {
+                const valueArray = new TextEncoder().encode(data);
+                myCharacteristic.writeValue(valueArray)
             }
             else {
-                writer.write(data);
+                if (is_usb) {
+                    sebdToUSB(data);
+                }
+                else {
+                    writer.write(data);
+                }
             }
         }
 
 
         function inviaDati() {
             const text = document.getElementById('input').value + '\r\n';
-            sebdToSerial(text);
+            sendToDevice(text);
             // console.log("Send:" + text);
             textContents += text;
             document.getElementById('input').value = '';
@@ -675,6 +771,7 @@
         }
         function downloadFileClick(filename, size, view) {
             inDownload = true;
+            filetext = "";
             textListFiles = "";
             sizeDownload = size;
             if (view) {
@@ -688,7 +785,7 @@
 
         }
         function plotterLineToHtmlTable(plotterLine) {
-            console.log("plotterLine="+plotterLine);
+            console.log("plotterLine=" + plotterLine);
             // Dividere la linea in coppie chiave-valore
             const pairs = plotterLine.split(',');
 
@@ -697,9 +794,8 @@
             let values = '<tr>';
             pairs.forEach(pair => {
                 var [key, value] = pair.split(':');
-                if (key=="raw")
-                {
-                    key=_i18n("sensor");
+                if (key == "raw") {
+                    key = _i18n("sensor");
                 }
                 headers += `<th class="plotter" >${key}</th>`;
                 values += `<td class="plotter">${value}</td>`;
@@ -805,11 +901,12 @@
         }
 
         function createButtonsForFile(testo) {
+            
             testo = testo.trim();
             const inizio = testo.indexOf("Files:");
             let html = "";
-            if (inizio == -1) {                
-                return;
+            if (inizio == -1) {
+                return false;
             }
             const fine = testo.indexOf("Type Filename or e to exit");
             if (inizio !== -1 && fine !== -1) {
@@ -832,12 +929,15 @@
                     });
                     html += "<button class=\"continue\" onclick=\"clearOutput();EnterTextToSerial('e');\">Exit</button><br />";
                     outputDiv.innerHTML = html;
+                    return true;
+
                 }
                 catch (e) {
                     alert(e);
                 }
                 inListFile = false;
                 filetext = "";
+                return false;
 
             }
         }
@@ -921,7 +1021,7 @@
         function sendDownloadFileName(filename) {
             const outputDiv = document.getElementById('output');
             outputDiv.innerHTML = '';
-            sebdToSerial(filename + "\r\n");
+            sendToDevice(filename + "\r\n");
         }
 
         UpdateButtonsStatus();

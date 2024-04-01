@@ -16,7 +16,7 @@
 
 */
 
-#define VERSION 2.28
+#define VERSION 2.41
 
 #define BOUDRATE 19200  // 9600,57600,19200,115200
 // Sensor presence configuration
@@ -36,14 +36,18 @@
 #define SGP30_PRESENT 0  // VOC SGP30 i2c
 #define OLED_PRESENT 0   // OLED
 #define LOGVCC 0
-#define LCD_I2C_ENABLED 1  //LCD
-
+#define LCD_I2C_ENABLED 1  // LCD
+#if defined(ARDUINO_UNOWIFIR4)
+#define BLE_ENABLED 1
+#else
+#define BLE_ENABLED 0
+#endif
 // Pins
 #define S0 A0    // AIR
 #define LED_1 3  // Led 1 datalogger
 #define LED_2 4  // Led 2 datalogger
-//#define LED_1 8    // Led 1 datalogger
-//#define LED_2 9    // Led 2 datalogger
+// #define LED_1 8    // Led 1 datalogger
+// #define LED_2 9    // Led 2 datalogger
 #define CHIP_SD 10  // pin sd
 
 #if WINDSENSOR_PRESENT
@@ -99,6 +103,230 @@ LiquidCrystal_I2C lcd(0x27, 16, 2);
 SGP40 sgp40Sensor;  // create an object of the SGP40 class
 #endif
 
+#if BLE_ENABLED
+
+#include <ArduinoBLE.h>
+#define BLE_NAME "NASO_BT"
+
+//#define BLE_UUID_SERVICE "0000ffe0-0000-1000-8000-00805f9b34fb"
+//#define BLE_UUID_Characteristic "0000ffe1-0000-1000-8000-00805f9b34fb"
+
+#define BLE_UUID_SERVICE "12345678-9878-9878-9878-123456789abc"
+#define BLE_UUID_Characteristic "abcd1234-9878-9878-9878-abcdef123456"
+#define BLE_BUFFERLEN 80
+
+BLEService btMyService(BLE_UUID_SERVICE);  // create service: "Device Information"
+// create direction control characteristic and allow remote device to read and write
+BLEStringCharacteristic myCharacteristic(BLE_UUID_Characteristic, BLERead | BLEWrite | BLENotify, BLE_BUFFERLEN);
+BLEDevice btController;
+bool BLEconnected = false;
+
+void initBluetouth() {
+  if (!BLE.begin()) {
+    Serial.println("Bluetooth® Low Energy module failed!");
+  } else {
+    Serial.println("Bluetooth® Low Energy module enabled");
+  }
+  BLE.setLocalName(BLE_NAME);
+  BLE.setAdvertisedService(btMyService);
+  // add the characteristics to the service
+  btMyService.addCharacteristic(myCharacteristic);
+  // add the service
+  BLE.addService(btMyService);
+  // start advertising
+  BLE.advertise();
+}
+
+/**
+ * @brief Manage Bluetouth
+ *
+ */
+void gestBluetouth() {
+  String bufferRead = "";
+  if (!BLEconnected) {
+    // listen for BLE peripherals to connect:
+    // if a central is connected to peripheral:
+    btController = BLE.central();
+    if (btController) {
+      SerialPrintln("BLE Connected to controller: ");
+      // print the controller's MAC address:
+      Serial.println(btController.address());
+      BLEconnected = true;
+    }
+  } else {
+    // while the controller is still connected to peripheral:
+    if (btController.connected()) {
+      /*if (myCharacteristic.written()) {
+        bufferRead = myCharacteristic.value();
+      }
+      Serial.print(bufferRead);*/
+    } else {
+      BLEconnected = false;
+      Serial.println("BLE disconnected");
+    }
+  }
+}
+
+String readBluetouth() {
+  String bufferRead = "";
+  if (!BLEconnected) {
+    // listen for BLE peripherals to connect:
+    // if a central is connected to peripheral:
+    btController = BLE.central();
+    if (btController) {
+      Serial.println("BLE Connected to controller: ");
+      // print the controller's MAC address:
+      Serial.println(btController.address());
+      BLEconnected = true;
+    }
+  } else {
+    // while the controller is still connected to peripheral:
+    if (btController.connected()) {
+      if (myCharacteristic.written()) {
+        bufferRead = myCharacteristic.value();
+      }
+      Serial.print(bufferRead);
+    } else {
+      BLEconnected = false;
+      Serial.println("BLE disconnected");
+    }
+  }
+  return bufferRead;
+}
+
+#endif
+//none
+void SerialPrintln() {
+  SerialPrint("\r\n");
+}
+
+//const char *
+void SerialPrint(const char *data) {
+  Serial.print(data);
+#if BLE_ENABLED
+  if (BLEconnected) {
+    myCharacteristic.writeValue((const char *)data);
+  }
+#endif
+}
+void SerialPrintln(const char *data) {
+  SerialPrint(data);
+  SerialPrint("\r\n");
+}
+//char
+void SerialPrint(char data) {
+  Serial.print(data);
+#if BLE_ENABLED
+  if (BLEconnected) {
+    myCharacteristic.writeValue((const char *)data);
+    myCharacteristic.writeValue("\n");
+  }
+#endif
+}
+void SerialPrintln(char data) {
+  SerialPrint(data);
+  SerialPrint("\r\n");
+}
+#if defined(ARDUINO_UNOWIFIR4)
+//const arduino::__FlashStringHelper *
+void SerialPrint(const arduino::__FlashStringHelper *data) {
+  Serial.print(data);
+#if BLE_ENABLED
+  if (BLEconnected) {
+    myCharacteristic.writeValue(data);
+    myCharacteristic.writeValue("\n");
+  }
+#endif
+}
+void SerialPrintln(const arduino::__FlashStringHelper *data) {
+  SerialPrint(data);
+  SerialPrint("\r\n");
+}
+
+#else
+void SerialPrint(const __FlashStringHelper *data) {
+  Serial.print(data);
+}
+void SerialPrintln(const __FlashStringHelper *data) {
+  SerialPrint(data);
+  SerialPrint("\r\n");
+}
+#endif
+
+
+
+
+
+
+
+//int
+void SerialPrint(int data, int format) {
+  Serial.print(data, format);
+#if BLE_ENABLED
+  if (BLEconnected) {
+    myCharacteristic.writeValue(String(data));
+  }
+#endif
+}
+void SerialPrintln(int data, int format) {
+  SerialPrint(data, format);
+  SerialPrint("\r\n");
+}
+//int
+void SerialPrint(unsigned long data) {
+  Serial.print(data);
+#if BLE_ENABLED
+  if (BLEconnected) {
+    myCharacteristic.writeValue(String(data));
+  }
+#endif
+}
+void SerialPrintln(unsigned long data) {
+  SerialPrint(data);
+  SerialPrint("\r\n");
+}
+void SerialPrint(int data) {
+  Serial.print(data);
+#if BLE_ENABLED
+  if (BLEconnected) {
+    myCharacteristic.writeValue(String(data));
+  }
+#endif
+}
+void SerialPrintln(int data) {
+  SerialPrint(data);
+  SerialPrint("\r\n");
+}
+//float
+void SerialPrint(float data) {
+  Serial.print(data);
+#if BLE_ENABLED
+  if (BLEconnected) {
+    myCharacteristic.writeValue(String(data));
+  }
+#endif
+}
+void SerialPrintln(float data) {
+  SerialPrint(data);
+  SerialPrint("\r\n");
+}
+//char *
+void SerialPrint(char *data) {
+  Serial.print(data);
+#if BLE_ENABLED
+  if (BLEconnected) {
+    myCharacteristic.writeValue(data);
+  }
+#endif
+}
+void SerialPrintln(char *data) {
+  SerialPrint(data);
+  SerialPrint("\r\n");
+}
+
+
+
+
 #if BMP280_PRESENT
 #include "sensor_BMP280/farmerkeith_BMP280.h"
 bme280 bme0(0, DEBUGSENSOR);
@@ -115,7 +343,7 @@ int zeroGasValue = ZEROGAS_default;  // Define the default value for zero gas ca
 SGP30 SGP;
 #endif
 // strings used multiple times
-const char CONF_FILE[] = "CONFIG.INI";  // configuration file
+char CONF_FILE[] = "CONFIG.INI";  // configuration file
 const char textOk[] = "ok";
 const char textFailed[] = "failed";
 const char textNotFound[] = "unknown command";
@@ -137,7 +365,7 @@ unsigned long timeStartLog = 0;
 unsigned long currentMillis = 0;
 unsigned long timeTarget = 0;
 unsigned long timeTargetFileWrite = 0;
-float PPMGas = 0;                 // Gas ppm
+float PPMGas = 0;             // Gas ppm
 float PPMGasOld = 0;          // Gas ppm
 unsigned int LogCounter = 0;  // counter
 unsigned int dataToWrite = 0;
@@ -158,12 +386,12 @@ char serialBuffer[size_serialBuffer];
 // print ok of fail
 bool printResult(bool isOk, bool ln = false) {
   if (isOk) {
-    Serial.print(textOk);
+    SerialPrint(textOk);
   } else {
-    Serial.print(textFailed);
+    SerialPrint(textFailed);
   }
   if (ln) {
-    Serial.println();
+    SerialPrintln();
   }
   return isOk;
 }
@@ -209,28 +437,28 @@ float MQ2_calc_res(float rawAdc) {
 
 // Print firmware version
 void printVersion() {
-  Serial.print(F("FluxyLogger "));
+  SerialPrint(F("FluxyLogger "));
 #if MQ2SENSOR_PRESENT
-  Serial.print(F("NASO "));
+  SerialPrint(F("NASO "));
 #endif
 
-  Serial.println(VERSION);
-  Serial.print(F("Build time: "));
-  Serial.print(F(__DATE__));
-  Serial.print(F(" "));
-  Serial.println(F(__TIME__));
+  SerialPrintln((float)VERSION);
+  SerialPrint(F("Build time: "));
+  SerialPrint(F(__DATE__));
+  SerialPrint(F(" "));
+  SerialPrintln(F(__TIME__));
 }
 
 // Function to list files on the SD card
 void listFiles() {
-  //size log files: 2023-11-22_20.18.33.txt
+  // size log files: 2023-11-22_20.18.33.txt
   char printBuffer[25];
   SdFile file;
   SdFile dir;
   if (!dir.open("/", O_RDONLY)) {
     return;
   }
-  Serial.println("Files:");
+  SerialPrintln("Files:");
   // Open the first file in the directory
   dir.rewind();
   // Loop through all files in the directory
@@ -240,22 +468,22 @@ void listFiles() {
     // Check if the entry is not a directory
     if (!file.isDir() && strlen(printBuffer) > 0) {
       // Print the file name
-      Serial.print(printBuffer);
-      Serial.print("\t");
+      SerialPrint(printBuffer);
+      SerialPrint("\t");
       // Print the file size
-      Serial.println((unsigned long)file.fileSize());
+      SerialPrintln((int)file.fileSize());
     }
     file.close();
   }
-  Serial.println();
+  SerialPrintln();
   dir.close();
 }
 
 // Function to handle file download requests
 void downloadFile() {
   // Prompt user to type a filename or 'e' to exit
-  Serial.println(F("Type Filename or e to exit"));
-
+  SerialPrintln(F("Type Filename or e to exit"));
+  char data;
   // Infinite loop to handle user input
   while (1) {
     // Read user input from Serial
@@ -271,20 +499,31 @@ void downloadFile() {
       File file = SD.open(serialBuffer);
       if (file) {
         // Notify start of transmission
-        Serial.println(F("Start transmission:"));
+        SerialPrintln(F("Start transmission:"));
         // Read and transmit file contents
         while (file.available()) {
+#if BLE_ENABLED
+          data = file.read();
+          if (BLEconnected) {
+            myCharacteristic.writeValue(String(data));
+          } else {
+            Serial.write(file.read());
+          }
+
+#else
           Serial.write(file.read());
+
+#endif
         }
 
         // Notify end of transmission and filename
-        Serial.print(F("End transmission:"));
-        Serial.println(serialBuffer);
+        SerialPrint(F("End transmission:"));
+        SerialPrintln(serialBuffer);
         file.close();
         return;
       } else {
         // Notify if file opening failed
-        Serial.println(F("error opening file."));
+        SerialPrintln(F("error opening file."));
         return;
       }
     }
@@ -329,27 +568,26 @@ float DL_analogReadAndFilter(int analogPin) {
   // Return the average value excluding the min and max values
   return (float)sum / (NUM_READS - 2);
 }
-/*
+
 void LOGPRINT(char *str) {
   if (logfileOpened > 0) {
     failed = logfile.print(str) ? false : true;
     dataToWrite++;
   }
   if (echoToSerial) {
-    Serial.print(str);
+    SerialPrint(str);
   }
 }
-*/
+
 void LOGPRINT(const char *str) {
   if (logfileOpened > 0) {
     failed = logfile.print(str) ? false : true;
     dataToWrite++;
   }
   if (echoToSerial) {
-    Serial.print(str);
+    SerialPrint(str);
   }
 }
-
 
 void LOGPRINT(const __FlashStringHelper *str) {
   if (logfileOpened > 0) {
@@ -357,7 +595,7 @@ void LOGPRINT(const __FlashStringHelper *str) {
     dataToWrite++;
   }
   if (echoToSerial) {
-    Serial.print(str);
+    SerialPrint(str);
   }
 }
 
@@ -367,27 +605,27 @@ void LOGPRINTLN(const __FlashStringHelper *str) {
     dataToWrite++;
   }
   if (echoToSerial) {
-    Serial.println(str);
+    SerialPrintln(str);
   }
 }
-/*
+
 void LOGPRINTLN(char *str) {
   if (logfileOpened > 0) {
     failed = logfile.print(str) ? false : true;
     dataToWrite++;
   }
   if (echoToSerial) {
-    Serial.println(str);
+    SerialPrintln(str);
   }
 }
-*/
+
 void LOGPRINTLN(const char *str) {
   if (logfileOpened > 0) {
     failed = logfile.print(str) ? false : true;
     dataToWrite++;
   }
   if (echoToSerial) {
-    Serial.println(str);
+    SerialPrintln(str);
   }
 }
 
@@ -399,13 +637,13 @@ void LOGPRINT(float val, uint8_t precision = 2) {
     if (logfileOpened > 0)
       logfile.print('-');
     if (echoToSerial)
-      Serial.print('-');
+      SerialPrint('-');
     val = -val;
   }
   val = round(val * pow(10, precision));
   val = val / pow(10, precision);
   if (echoToSerial) {
-    Serial.print(int(val));  // prints the int part
+    SerialPrint(int(val));  // prints the int part
   }
   if (logfileOpened > 0) {
     failed = logfile.print(int(val), DEC) ? 0 : 1;
@@ -426,7 +664,7 @@ void LOGPRINT(float val, uint8_t precision = 2) {
       if (logfileOpened > 0)
         logfile.print('.');
       if (echoToSerial)
-        Serial.print('.');
+        SerialPrint('.');
       unsigned long frac1 = frac;
       while (frac1 /= 10)
         padding--;
@@ -434,13 +672,13 @@ void LOGPRINT(float val, uint8_t precision = 2) {
         if (logfileOpened > 0)
           logfile.print('0');
         if (echoToSerial)
-          Serial.print('0');
+          SerialPrint('0');
       }
       if (logfileOpened > 0) {
         failed = logfile.print(frac, DEC) ? 0 : 1;
       }
       if (echoToSerial)
-        Serial.print(frac, DEC);
+        SerialPrint(frac, DEC);
     }
   }
 }
@@ -451,7 +689,7 @@ void LOGPRINT(unsigned long str) {
     dataToWrite++;
   }
   if (echoToSerial) {
-    Serial.print(str);
+    SerialPrint(str);
   }
 }
 
@@ -463,10 +701,10 @@ int InputIntFromSerial(unsigned int defaultValue = 0) {
   readSerial(true);
   if (strlen(serialBuffer) > 0) {
     /*
-    Serial.print("read:");
-    Serial.println(serialBuffer);
-    Serial.print("atoi:");
-    Serial.println(atoi(serialBuffer));
+    SerialPrint("read:");
+    SerialPrintln(serialBuffer);
+    SerialPrint("atoi:");
+    SerialPrintln(atoi(serialBuffer));
     */
     return atoi(serialBuffer);
   } else {
@@ -581,14 +819,14 @@ void DL_openLogFile() {
     }
 
     if (!logfileOpened) {
-      Serial.print(F("Couldnt create:"));
-      Serial.println(filename);
+      SerialPrint(F("Couldnt create:"));
+      SerialPrintln(filename);
     } else {
-      Serial.print(F("Log to:"));
-      Serial.println(filename);
+      SerialPrint(F("Log to:"));
+      SerialPrintln(filename);
     }
   } else {
-    Serial.println(F("Log:serial"));
+    SerialPrintln(F("Log:serial"));
   }
 
   LOGPRINT(F("\"date Y-m-d m:s\""));
@@ -660,7 +898,7 @@ bool CONF_is_valid_char(char character) {
   return false;
 }
 
-//log_interval_s
+// log_interval_s
 #define MAX_INI_KEY_LENGTH 20
 #define MAX_INI_VALUE_LENGTH 5
 char lineBuffer[MAX_INI_KEY_LENGTH + MAX_INI_VALUE_LENGTH + 2];  // Buffer for the line
@@ -693,7 +931,7 @@ int CONF_getConfValueInt(char *filename, char *key, int defaultValue = 0) {
     // cerca una linea valida-----<
     //----riempo la descrizione---->
     do {
-      //Serial.println(character);
+      // SerialPrintln(character);
       if (i >= MAX_INI_KEY_LENGTH - 2) {
         myFile.close();
         return defaultValue;
@@ -706,7 +944,7 @@ int CONF_getConfValueInt(char *filename, char *key, int defaultValue = 0) {
       }
     } while (CONF_is_valid_char(character));
     description[i] = '\0';
-    //Serial.println(description);
+    // SerialPrintln(description);
     //----riempo la descrizione----<
     //-------elimino gli spazi------->
     if (character == ' ') {
@@ -738,7 +976,7 @@ int CONF_getConfValueInt(char *filename, char *key, int defaultValue = 0) {
             myFile.close();
             return defaultValue;
           }
-          // Serial.println(character);
+          // SerialPrintln(character);
           if (isdigit(character)) {
             value[i++] = character;
           } else if (character != '\n' && character != '\r') {
@@ -766,12 +1004,11 @@ int CONF_getConfValueInt(char *filename, char *key, int defaultValue = 0) {
   return ret;
 }
 
-
 bool CreateINIConf(int NewInterval_s, int NewzeroGasValue = 0) {
   SD.remove(CONF_FILE);
   settingFile = SD.open(CONF_FILE, FILE_WRITE);
-  Serial.print(F("create "));
-  Serial.println(CONF_FILE);
+  SerialPrint(F("create "));
+  SerialPrintln(CONF_FILE);
   if (settingFile) {
     // create new file config.ini------>
     settingFile.print(F("log_interval_s="));
@@ -793,8 +1030,8 @@ bool CreateINIConf(int NewInterval_s, int NewzeroGasValue = 0) {
 // initialize CONFIG.INI
 void DL_initConf() {
   if (sdPresent) {
-    Serial.print(CONF_FILE);
-    Serial.print(' ');
+    SerialPrint(CONF_FILE);
+    SerialPrint(' ');
     if (!SD.exists(CONF_FILE)) {
       printResult(false, true);
 #if MQ2SENSOR_PRESENT
@@ -809,17 +1046,17 @@ void DL_initConf() {
     log_interval_s = CONF_getConfValueInt(CONF_FILE, (char *)"log_interval_s", LOG_INTERVAL_s);
 #if MQ2SENSOR_PRESENT
     zeroGasValue = CONF_getConfValueInt(CONF_FILE, (char *)"zerogas", (int)ZEROGAS_default);
-    Serial.print(F("zerogas="));
-    Serial.println(zeroGasValue);
+    SerialPrint(F("zerogas="));
+    SerialPrintln(zeroGasValue);
 #endif
     // read from CONFIG.INI-------<
-    Serial.print(F("Interval(s)="));
-    Serial.println(log_interval_s);
+    SerialPrint(F("Interval(s)="));
+    SerialPrintln(log_interval_s);
   }
   if (log_interval_s == 0) {
     log_interval_s = LOG_INTERVAL_s;
-    Serial.print(F("Force to "));
-    Serial.println(LOG_INTERVAL_s);
+    SerialPrint(F("Force to "));
+    SerialPrintln(LOG_INTERVAL_s);
   }
 }
 
@@ -828,6 +1065,17 @@ static int readSerial(bool wait) {
   static bool ready = false;  // Flag to indicate if a complete line is ready
   static int cnt = 0;         // Counter for the number of characters read
   do {
+#if BLE_ENABLED
+    if (BLEconnected) {
+      String commandTmp = readBluetouth();
+      if (commandTmp != "") {
+        strcpy(serialBuffer, commandTmp.c_str());
+        return 1;
+      }
+    }
+#endif
+
+
     // Loop while there is data available on Serial
     while (Serial.available() > 0) {
       // Check if a complete line is ready
@@ -867,6 +1115,16 @@ void switchCommandMode() {
 
 // parse command from serial
 static int parse_serial_command() {
+/*
+#if BLE_ENABLED
+  if (BLEconnected) {
+    String commandTmp = readBluetouth();
+    if (commandTmp != "") {
+      execute_command((char *)commandTmp.c_str());
+    }
+  }
+#endif
+*/
   if (readSerial(false)) {
     execute_command(serialBuffer);
     return 1;
@@ -892,6 +1150,8 @@ bool SwithLogs(bool logStart) {
   }
   return true;
 }
+
+
 // manage commands
 void execute_command(char *command) {
   unsigned int i;
@@ -901,21 +1161,21 @@ void execute_command(char *command) {
     return;
   }
   if (strcmp(command, "?") == 0) {
-    Serial.println();
-    Serial.println(F("commands:"));
-    Serial.println(F("v:firmware version"));
-    Serial.println(F("logs:read data"));
-    Serial.println(F("date:display device clock"));
-    Serial.println(F("reset:reset device"));
-    Serial.println(F("settime:set device clock"));
-    Serial.println(F("setconfig:set config"));
-    //Serial.println(F("echo start/stop: start/stop display values"));
-    //Serial.println(F("log start/stop: start/stop log"));
-    Serial.println(F("plotter start/stop: start/stop plotter mode"));
+    SerialPrintln();
+    SerialPrintln(F("commands:"));
+    SerialPrintln(F("v:firmware version"));
+    SerialPrintln(F("logs:read data"));
+    SerialPrintln(F("date:display device clock"));
+    SerialPrintln(F("reset:reset device"));
+    SerialPrintln(F("settime:set device clock"));
+    SerialPrintln(F("setconfig:set config"));
+    // SerialPrintln(F("echo start/stop: start/stop display values"));
+    // SerialPrintln(F("log start/stop: start/stop log"));
+    SerialPrintln(F("plotter start/stop: start/stop plotter mode"));
 #if MQ2SENSOR_PRESENT
-    Serial.println(F("autocalib:auto calibration"));
+    SerialPrintln(F("autocalib:auto calibration"));
 #endif
-    Serial.println();
+    SerialPrintln();
 
     return;
   }
@@ -982,22 +1242,22 @@ void execute_command(char *command) {
     command[i] = '\0';
 
     // Print delete command and filename
-    Serial.print(F("del "));
-    Serial.println(command);
+    SerialPrint(F("del "));
+    SerialPrintln(command);
 
     // Delete the file and report status
     if (SD.remove(command)) {
-      Serial.println(F("file deleted"));
+      SerialPrintln(F("file deleted"));
     } else {
-      Serial.print(F("error remove "));
-      Serial.println(command);
+      SerialPrint(F("error remove "));
+      SerialPrintln(command);
     }
     return;
   }
 
-  Serial.print(command);
-  Serial.print(' ');
-  Serial.println(textNotFound);
+  SerialPrint(command);
+  SerialPrint(' ');
+  SerialPrintln(textNotFound);
 }
 
 #if MQ2SENSOR_PRESENT
@@ -1007,7 +1267,7 @@ void Mq2Calibration() {
   int S0Sensor = 0;
   int S0Sensor_old = 0;
   int NumConsecutive = 0;
-  Serial.println(F("Zerogas calibration"));
+  SerialPrintln(F("Zerogas calibration"));
 #if LCD_I2C_ENABLED
   lcd.setCursor(0, 0);
   lcd.print(F("Calibration"));
@@ -1034,8 +1294,8 @@ void Mq2Calibration() {
     }
     digitalWrite(LED_1, LOW);
     digitalWrite(LED_2, LOW);
-    Serial.print(F("Value:"));
-    Serial.println(S0Sensor);
+    SerialPrint(F("Value:"));
+    SerialPrintln(S0Sensor);
 #if LCD_I2C_ENABLED
     lcd.setCursor(0, 10);
     lcd.print(S0Sensor);
@@ -1043,7 +1303,7 @@ void Mq2Calibration() {
 
     if (NumConsecutive > 10) {
       zeroGasValue = S0Sensor + 1;
-      Serial.println(F("completed"));
+      SerialPrintln(F("completed"));
       CreateINIConf((unsigned int)log_interval_s, zeroGasValue);
       return;
     }
@@ -1058,23 +1318,23 @@ void SetConfig() {
   unsigned int zerogas;
   DL_closeLogFile();
   delay(500);
-  Serial.print(F("\nInterval(s):"));
-  Serial.print('(');
-  Serial.print(log_interval_s);
-  Serial.print(')');
+  SerialPrint(F("\nInterval(s):"));
+  SerialPrint('(');
+  SerialPrint(log_interval_s);
+  SerialPrint(')');
   interval = InputIntFromSerial((unsigned int)log_interval_s);
-  Serial.println();
+  SerialPrintln();
   if (interval <= 0) {
     interval = log_interval_s;
   }
 #if MQ2SENSOR_PRESENT
   zerogas = zeroGasValue;
-  Serial.print(F("Zerogas:"));
-  Serial.print('(');
-  Serial.print(zeroGasValue);
-  Serial.print(')');
+  SerialPrint(F("Zerogas:"));
+  SerialPrint('(');
+  SerialPrint(zeroGasValue);
+  SerialPrint(')');
   zerogas = InputIntFromSerial((unsigned int)zeroGasValue);
-  Serial.println();
+  SerialPrintln();
   if (zerogas <= 0 || zerogas > 1023) {
     zerogas = zeroGasValue;
   }
@@ -1085,7 +1345,7 @@ void SetConfig() {
     delay(500);
     reset();  // reset arduino
   } else {
-    Serial.println(textFailed);
+    SerialPrintln(textFailed);
   }
 }
 // Set date and time
@@ -1094,25 +1354,25 @@ void SetDateTime() {
   delay(500);
   SerialFlushAndClear();
   int year, month, day, hours, minutes, seconds;
-  Serial.println(F("\nClock:"));
-  Serial.print(F("Year:"));
+  SerialPrintln(F("\nClock:"));
+  SerialPrint(F("Year:"));
   year = InputIntFromSerial();
-  Serial.println(year);
-  Serial.print(F("Month:"));
+  SerialPrintln(year);
+  SerialPrint(F("Month:"));
   month = InputIntFromSerial();
-  Serial.println(month);
-  Serial.print(F("Day:"));
+  SerialPrintln(month);
+  SerialPrint(F("Day:"));
   day = InputIntFromSerial();
-  Serial.println(day);
-  Serial.print(F("Hours:"));
+  SerialPrintln(day);
+  SerialPrint(F("Hours:"));
   hours = InputIntFromSerial();
-  Serial.println(hours);
-  Serial.print(F("Minutes:"));
+  SerialPrintln(hours);
+  SerialPrint(F("Minutes:"));
   minutes = InputIntFromSerial();
-  Serial.println(minutes);
-  Serial.print(F("Seconds:"));
+  SerialPrintln(minutes);
+  SerialPrint(F("Seconds:"));
   seconds = InputIntFromSerial();
-  Serial.println(seconds);
+  SerialPrintln(seconds);
   RTC.adjust(DateTime(year, month, day, hours, minutes, seconds));
   delay(500);
   reset();
@@ -1131,7 +1391,6 @@ void reset() {
 #endif
 }
 // Reset Arduino
-
 
 //  asm volatile("  jmp 0");
 
@@ -1177,10 +1436,10 @@ void manageBlinking(unsigned long timeOn, unsigned long timeOff) {
 // print date and time to Serial
 void printDateTime() {
   if (RTC.isrunning()) {
-    Serial.print(F("Device clock:"));
-    Serial.println(DL_strNow());
+    SerialPrint(F("Device clock:"));
+    SerialPrintln(DL_strNow());
   } else {
-    Serial.println(textFailed);
+    SerialPrintln(textFailed);
   }
 }
 // manages the flashing time depending on the ppm
@@ -1210,13 +1469,13 @@ void GestLcd() {
   if (currentMillis > ledTimer + 1000) {
     val = digitalRead(BTN_1);
     if (oldval == val) {
-      //Serial.println(val);
+      // SerialPrintln(val);
       if (val) {
         lcd.setBacklight(1);
-        //        Serial.println("lcd on");
+        //        SerialPrintln("lcd on");
       } else {
         lcd.setBacklight(0);
-        //        Serial.println("lcd off");
+        //        SerialPrintln("lcd off");
       }
     }
     oldval = val;
@@ -1226,7 +1485,7 @@ void GestLcd() {
 #endif
 // Setup
 void setup() {
-  #if LCD_I2C_ENABLED
+#if LCD_I2C_ENABLED
   lcd.init();
   lcd.clear();
   lcd.setBacklight(1);
@@ -1235,7 +1494,7 @@ void setup() {
   lcd.print(VERSION);
   delay(1000);
   lcd.setBacklight(0);
-  #endif
+#endif
   //--init serial------------------------------>
   Serial.begin(BOUDRATE);  //  boud
   //--init serial------------------------------<
@@ -1247,15 +1506,15 @@ void setup() {
   pinMode(CHIP_SD, OUTPUT);
   delay(200);
 #if SGP30_PRESENT
-  Serial.print(F("init SGP30 "));
+  SerialPrint(F("init SGP30 "));
   if (!SGP.begin()) {
-    Serial.println(F("failed"));
+    SerialPrintln(F("failed"));
   } else {
-    Serial.println(ok);
+    SerialPrintln(ok);
   }
 #endif
 
-  Serial.print(F("init SD "));
+  SerialPrint(F("init SD "));
   if (!SD.begin(CHIP_SD)) {
     sdPresent = false;
     printResult(false, true);
@@ -1275,19 +1534,19 @@ void setup() {
   DL_initConf();
   // initialize the SD card -------------------<
   SerialFlushAndClear();
-// connect to RTC --------------------------->
+  // connect to RTC --------------------------->
   Wire.begin();
   if (RTC.begin()) {
-    Serial.println(F("RTC present"));
+    SerialPrintln(F("RTC present"));
     rtcPresent = true;
     if (!RTC.isrunning()) {
-      Serial.println(F("Clock not running"));
+      SerialPrintln(F("Clock not running"));
       RTC.adjust(DateTime(F(__DATE__), F(__TIME__)));
     }
     printDateTime();
   } else {
     rtcPresent = false;
-    Serial.println(F("RTC Failed"));
+    SerialPrintln(F("RTC Failed"));
     failed = true;
   }
   digitalWrite(LED_2, LOW);
@@ -1297,15 +1556,15 @@ void setup() {
 
 #if SGP40_PRESENT
   if (sgp40Sensor.begin() == true) {
-    Serial.println(F("SGP40 detected"));
+    SerialPrintln(F("SGP40 detected"));
   }
 #endif
 #if BMP280_PRESENT
   if (!bme0.begin()) {
-    Serial.println(F("\nBMP280 sensor not present"));
+    SerialPrintln(F("\nBMP280 sensor not present"));
     BMP280Present = false;
   } else {
-    Serial.println(F("\nBMP280 sensor present"));
+    SerialPrintln(F("\nBMP280 sensor present"));
     BMP280Present = true;
   }
 #endif
@@ -1316,8 +1575,7 @@ void setup() {
   //-----------init analog input-----------------------------------------<
   // pinMode(LED_BUILTIN, OUTPUT);
 
-  //return;
-
+  // return;
 
 #if OLED_PRESENT
 
@@ -1336,20 +1594,37 @@ void setup() {
   lcd.setCursor(0, 1);
   if (failed) {
     lcd.print(textFailed);
-
   } else {
     lcd.print("SD OK");
     lcd.setCursor(0, 0);
     lcd.print(DL_strNow());
   }
-  //lcd.print(""+S0Sensor);
+  // lcd.print(""+S0Sensor);
 #endif
-
-
+#if BLE_ENABLED
+  initBluetouth();
+#endif
   timeStartLog = millis() + (1000 * MQ2_PREHEAT_TIME_S);
 }
-
-
+bool On1Seconds = false;
+bool On10Seconds = false;
+void updateTimers() {
+  static unsigned long last_on_10_Seconds = 0;
+  static unsigned long last_on_1_Seconds = 0;
+  On1Seconds = false;
+  On10Seconds = false;
+  //----- Time ----->
+  currentMillis = millis();
+  if (currentMillis - last_on_10_Seconds > 10000) {
+    last_on_10_Seconds = currentMillis;
+    On10Seconds = true;
+  }
+  if (currentMillis - last_on_1_Seconds > 1000) {
+    last_on_1_Seconds = currentMillis;
+    On1Seconds = true;
+  }
+  //----- Time ----->
+}
 
 /**
    Loop.
@@ -1367,8 +1642,13 @@ void loop() {
   // commands:
   parse_serial_command();
 
-
-
+  updateTimers();
+  if (On1Seconds) {
+#if BLE_ENABLED
+    //    Serial.println("gestBluetouth");
+    gestBluetouth();
+#endif
+  }
 
 #if HUMIDITY_PRESENT
   float humidity = 0;
@@ -1419,7 +1699,7 @@ void loop() {
       delay(100);
       digitalWrite(LED_2, LOW);
       if (echoToSerial) {
-        Serial.println(F("Preheating"));
+        SerialPrintln(F("Preheating"));
       }
 #if LCD_I2C_ENABLED
       lcd.setCursor(0, 1);
@@ -1442,14 +1722,14 @@ void loop() {
       adcCount++;
       PPMGas = MQ2_RawToPPM(rawSensorValue);
       if (plotterMode) {
-        Serial.print(F("raw:"));
-        Serial.print(rawSensorValue);
-        Serial.print(F(",ppm:"));
-        Serial.println(PPMGas);
+        SerialPrint(F("raw:"));
+        SerialPrint(rawSensorValue);
+        SerialPrint(F(",ppm:"));
+        SerialPrintln(PPMGas);
       }
 #if LCD_I2C_ENABLED
       if (gasDetected >= MINCONSECUTIVE_POSITIVE) {
-        lcd.setCursor(14, 0);  //col row
+        lcd.setCursor(14, 0);  // col row
         lcd.print(gasDetected);
       }
       if (rawSensorValue != rawSensorValueOld || PPMGas != PPMGasOld) {
@@ -1463,8 +1743,7 @@ void loop() {
       lcd.setCursor(0, 1);
       lcd.print("PPM: ");
       lcd.print(PPMGas);
-      if (logfileOpened<=0) 
-      {
+      if (logfileOpened <= 0) {
         lcd.setCursor(14, 1);
         lcd.print('E');
       }
@@ -1487,7 +1766,6 @@ void loop() {
       } else {
         S0Sensor = DL_analogReadAndFilter(S0);
       }
-
 
 #if OLED_PRESENT
       oled.clear();
@@ -1514,7 +1792,7 @@ void loop() {
       PPMGas = MQ2_RawToPPM(S0Sensor);
       LOGPRINT(PPMGas);
       if (PPMGas >= MINPPMPOSITIVE) {
-        //if (gasDetected < MINCONSECUTIVE_POSITIVE) {
+        // if (gasDetected < MINCONSECUTIVE_POSITIVE) {
         gasDetected++;
         //}
       } else {
@@ -1563,16 +1841,16 @@ void loop() {
       // The constants b and c were determined by some Excel wrangling with the solver.
       WindSpeed_MPH = pow(((RV_Wind_Volts - zeroWind_volts) / 0.2300), 2.7265);
       /*
-        Serial.print(F("  TMP volts "));
-        Serial.print(TMP_Therm_ADunits * 0.0048828125);
-        Serial.print(F(" RV volts "));
-        Serial.print((float)RV_Wind_Volts);
-        Serial.print(F("\t  TempC*100 "));
-        Serial.print(TempCtimes100 );
-        Serial.print(F("   ZeroWind volts "));
-        Serial.print(zeroWind_volts);
-        Serial.print(F("   WindSpeed MPH "));
-        Serial.println((float)WindSpeed_MPH);
+        SerialPrint(F("  TMP volts "));
+        SerialPrint(TMP_Therm_ADunits * 0.0048828125);
+        SerialPrint(F(" RV volts "));
+        SerialPrint((float)RV_Wind_Volts);
+        SerialPrint(F("\t  TempC*100 "));
+        SerialPrint(TempCtimes100 );
+        SerialPrint(F("   ZeroWind volts "));
+        SerialPrint(zeroWind_volts);
+        SerialPrint(F("   WindSpeed MPH "));
+        SerialPrintln((float)WindSpeed_MPH);
       */
       LOGPRINT(delimiter);
       float Wind_mts = WindSpeed_MPH * 0.44704;
@@ -1594,7 +1872,7 @@ void loop() {
       LOGPRINT(delimiter);
       LOGPRINT((float)SGP.getTVOC());
       LOGPRINT(delimiter);
-      Serial.print((float)SGP.getCO2());
+      SerialPrint((float)SGP.getCO2());
 #endif
 
 #if LOGVCC
@@ -1607,7 +1885,7 @@ void loop() {
     if (dataToWrite != 0 && currentMillis >= timeTargetFileWrite) {
       if (logfileOpened) {
         logfile.flush();
-        //Serial.println("flush");
+        // SerialPrintln("flush");
       }
       dataToWrite = 0;
       timeTargetFileWrite = currentMillis + SYNC_INTERVAL_ms;
