@@ -156,6 +156,13 @@
         button:disabled {
             background-color: grey;
         }
+
+        #fullscreen-btn {
+            padding: 0px;
+            border: 0px;
+            background-color: transparent;
+            color: #ffffff;
+        }
     </style>
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
@@ -163,16 +170,18 @@
 
 <body onload="TranslateHtml() ">
     <nav id="buttons">
-        <button id="loggerviewer" style="float:right" data-i18n='auto'
+        <button onclick="toggleFullScreen()" id="fullscreen-btn" style="float:right"
+            data-i18n='auto'>&#x26F6;</button><button id="loggerviewer" style="float:right" data-i18n='auto'
             onclick="window.location='loggerviewer.htm'">Logger viewer</button><button data-i18n='auto'
             id="connect">Connect</button><select name="baudrate" id="baudrate-select">
             <option value="9600">9600</option>
             <option selected value="19200">19200</option>
             <option value="57600">57600</option>
             <option value="115200">115200</option>
-        </select><button style="display:none" data-i18n='auto' id="connectBLE">Connect BLE</button><button id="disconnect"
-            data-i18n="auto" style="display:none;background-color: rgb(128, 0, 0);">Disconnect</button><button id="logs"
-            data-i18n='auto' disabled>View stored logs</button>
+        </select><button style="display:none" data-i18n='auto' id="connectBLE">Connect BLE</button><button
+            id="disconnect" data-i18n="auto"
+            style="display:none;background-color: rgb(128, 0, 0);">Disconnect</button><button id="logs" data-i18n='auto'
+            disabled>View stored logs</button>
         <button id="settime" data-i18n='auto' disabled>Send date and time</button><button id="setinterval" disabled
             data-i18n="auto">Set Interval</button>
         <button id="plotterstart" data-i18n='auto'>Real time on</button>
@@ -208,16 +217,22 @@
         //PLOTTER START
         document.getElementById('plotterstart').addEventListener('click', async () => {
             inListFile = false;
+            console.log("inListFile = false");
+
             EnterTextToSerial("plotter start");
         });
         //PLOTTER STOP
         document.getElementById('plotterstop').addEventListener('click', async () => {
             inListFile = false;
+            console.log("inListFile = false");
+
             EnterTextToSerial("plotter stop");
         });
         // SET TIME
         document.getElementById('settime').addEventListener('click', async () => {
             inListFile = false;
+            console.log("inListFile = false");
+
             EnterTextToSerial("settime");
             setTimeout(() => {
                 var n = new Date().getFullYear();
@@ -249,6 +264,8 @@
         // DISCONNECT
         document.getElementById('disconnect').addEventListener('click', async () => {
             inListFile = false;
+            console.log("inListFile = false");
+
             if (is_usb) {
                 await device.close();
                 device = null;
@@ -270,6 +287,7 @@
                 }
                 connected_serial = false;
                 connected_usb = false;
+
             }
             catch (e) {
                 window.location.reload();
@@ -285,6 +303,8 @@
         // SEND (ENTER)
         document.getElementById('input').addEventListener('keypress', (event) => {
             inListFile = false;
+            console.log("inListFile = false");
+
             if (event.key === 'Enter') {
                 inviaDati();
             }
@@ -307,27 +327,39 @@
                 try {
                     device = await navigator.usb.requestDevice({ filters: [] });
                     await device.open(); // Apre il dispositivo
-                    if (device.configuration === null)
+                    if (device.configuration === null) {
+                        console.log("selectConfiguration 1");
                         await device.selectConfiguration(1); // Seleziona la configurazione
-                    await device.claimInterface(0); // Richiede l'interfaccia
+                    }
+                    try {
+                        console.log("claimInterface 0");
+                        await device.claimInterface(0); // Richiede l'interfaccia
+
+                    }
+                    catch (e) {
+                        console.log("claimInterface 1");
+                        await device.claimInterface(1); // Richiede l'interfaccia
+
+                    }
                     readLoopRunning = true;
                     readLoop();
                     is_usb = true;
 
                 } catch (e) {
                     UpdateButtonsStatus();
-                    //                    alert(e);
+                    console.log(e);
                     return;
                 }
-
             }
             if (is_usb) {
+                console.log("USB Mode");
                 readLoopRunning = true;
                 connected_usb = true;
                 readLoopUsb();
 
             }
             else {
+                console.log("SERIAL Mode");
                 console.log("Open boudrate:" + getSelectedBaudRate());
                 await port.open({ baudRate: getSelectedBaudRate() });
 
@@ -343,30 +375,7 @@
             readLoop();
             UpdateButtonsStatus();
         });
-        // LOGS
-        document.getElementById('logs').addEventListener('click', async () => {
-            //writer.write("logs\r\n");
-            sendToDevice("logs\r\n");
-            inListFile = true;
-        }
-        );
-        document.getElementById('setinterval').addEventListener('click', async () => {
-            var interval = prompt("Enter interval in seconds:", "");
-            if (interval == null || isNaN(interval) || interval < 1) {
-                alert("Invalid interval");
-            }
-            else {
-                EnterTextToSerial("setconfig");
-                setTimeout(() => {
-                    EnterTextToSerial(interval);
-                    setTimeout(() => {
-                        sendToDevice("\r\n");
-                    }, 2000);
-                }, 2000);
 
-            }
-        }
-        );
         document.querySelector('#connectBLE').addEventListener('click', function () {
             navigator.bluetooth.requestDevice({
                 //filters: [{ name: 'BTService' }],
@@ -416,21 +425,15 @@
                 textContents += value;
                 if (inListFile) {
                     textListFiles += value;
-                    setTimeout(function(){
-                        if(createButtonsForFile(textListFiles))
-                        {
+                    setTimeout(function () {
+                        if (createButtonsForFile(textListFiles)) {
                             //clearInterval(btntimer);
                             //inListFile = false;
-
                         }
-                    },1000);
+                    }, 1000);
                 }
                 else {
                     document.getElementById('output').innerHTML = HighLighting(textContents);
-                    try{
-                     //   clearInterval(btntimer);
-                    }
-                    catch(e){}
                 }
                 if (value.length > 0) {
                     lastch = value[value.length - 1];
@@ -438,12 +441,32 @@
                 UpdateButtonsStatus();
                 outputDiv.scrollTop = outputDiv.scrollHeight;
             }
-            //console.log("received:\"" + value + "\"");
-            //console.log("lastch:\"" + ascii(lastch) + "\"");
-
-
-
         }
+        // LOGS
+        document.getElementById('logs').addEventListener('click', async () => {
+            sendToDevice("logs\r\n");
+            inListFile = true;
+            console.log("inListFile = true");
+        }
+        );
+        document.getElementById('setinterval').addEventListener('click', async () => {
+            var interval = prompt("Enter interval in seconds:", "");
+            if (interval == null || isNaN(interval) || interval < 1) {
+                alert("Invalid interval");
+            }
+            else {
+                EnterTextToSerial("setconfig");
+                setTimeout(() => {
+                    EnterTextToSerial(interval);
+                    setTimeout(() => {
+                        sendToDevice("\r\n");
+                    }, 2000);
+                }, 2000);
+
+            }
+        }
+        );
+
         //-----------------------actions ------------------------------------<
         function isLastLineArduinoPlotterProtocol() {
             // Dividere l'output in righe
@@ -733,12 +756,12 @@
 
 
         function sendToDevice(data) {
-            data=data.trim();
             if (is_BLE) {
                 const valueArray = new TextEncoder().encode(data);
                 myCharacteristic.writeValue(valueArray)
             }
             else {
+
                 if (is_usb) {
                     sebdToUSB(data);
                 }
@@ -901,7 +924,7 @@
         }
 
         function createButtonsForFile(testo) {
-            
+
             testo = testo.trim();
             const inizio = testo.indexOf("Files:");
             let html = "";
@@ -936,6 +959,7 @@
                     alert(e);
                 }
                 inListFile = false;
+                console.log("inListFile = false");
                 filetext = "";
                 return false;
 
@@ -1023,7 +1047,16 @@
             outputDiv.innerHTML = '';
             sendToDevice(filename + "\r\n");
         }
-
+        function toggleFullScreen() {
+            var btn = document.getElementById('fullscreen-btn');
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
         UpdateButtonsStatus();
 
     </script>

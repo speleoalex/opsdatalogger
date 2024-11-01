@@ -120,6 +120,7 @@ i files vengono creati sulla scheda micrp SD con la **data di inizio** della reg
 - date Y-m-d m: data
 - gas adc: valore grezzo del sensore che va da 1 a 1024
 - LPG PPM: parti per milione del gas assumendo che il tracciante sia propano o butano calcolato con il valore di zero gas impostato sul datalogger. In caso di valore di zero gas non corretto questo campo può essere calcolato anche a posteriori utilizzando il datasheet del sensore MQ-2
+- Tenere sempre conto che la colonna "LPG PPM" potrebbe non essere reale perchè è calcolata partendo dal valore di zerogas impostato sul datalogger, considera sempre la colonna "gas adc" tenendo conto che nella fase iniziale c'è una curva dovuta al riscaldamento del dendore
 
 
 

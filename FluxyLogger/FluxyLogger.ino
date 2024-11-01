@@ -6,7 +6,8 @@
    Product link: https://techmakers.eu/
 
    This sketch is designed for the N.A.S.O. datalogger, available as a pre-assembled unit or kit.
-
+  
+  
 
   NOTE:
   Datalogger use 6 pin. Analog 4 and 5 for I2C.
@@ -16,7 +17,7 @@
 
 */
 
-#define VERSION 2.41
+#define VERSION 2.44
 
 #define BOUDRATE 19200  // 9600,57600,19200,115200
 // Sensor presence configuration
@@ -471,7 +472,7 @@ void listFiles() {
       SerialPrint(printBuffer);
       SerialPrint("\t");
       // Print the file size
-      SerialPrintln((int)file.fileSize());
+      SerialPrintln((unsigned long)file.fileSize());
     }
     file.close();
   }
@@ -885,7 +886,7 @@ void DL_openLogFile() {
   LOGPRINT(delimiter);
   LOGPRINT(F("\"VCC\""));
 #endif
-  LOGPRINTLN(F(" "));
+  LOGPRINT(F("\r\n"));
 }
 
 /**

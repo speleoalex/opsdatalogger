@@ -63,13 +63,17 @@
         <span style="display:none" id="MQ2Div">
             <input placeholder="zero gas gas adc" id="zerogasInput" onchange="updateChartWithZerogas();" type="number"
                 min="0" max="1023" value=""><button onclick="ZeroGasAuto();">Auto Calibration</button>
+                Start row:<input value="1" min="1" placeholder="start" id="startfrom" onchange="updateChartWithZerogas();" type="number"
+                min="0" max="1023" value="">
             <button onclick="exportCSV();">Export CSV</button>
         </span>
 
     </nav>
     <canvas id="myChart"></canvas>
     <script>
-        var datasets = [];
+        var DatasetsCSV = [];
+        var DatasetsClean = [];
+        
         var labels = [];
         // Sensor characteristics for calibration  -------->
         var RO_CLEAN_AIR_FACTOR = 9.83;
@@ -77,7 +81,7 @@
         var LPGCurve = [2.3, 0.21, -0.47];
         function IsMQ2Chart() {
             try {
-                if (datasets[0].label == "gas adc" && (datasets[1].label.trim() == "LPG PPM" || datasets[1].label.trim() == "LPG PPB")) {
+                if (DatasetsCSV[0].label == "gas adc" && (DatasetsCSV[1].label.trim() == "LPG PPM" || DatasetsCSV[1].label.trim() == "LPG PPB")) {
                     return true;
                 }
 
@@ -88,10 +92,10 @@
             var MinRaw = 1023;
             var consec = 0;
             var prev;
-            for (var i in datasets[0].data) {
+            for (var i in DatasetsCSV[0].data) {
                 if (i > 0) {
-                    var CurRawValue = parseFloat(datasets[0].data[i]);
-                    if (CurRawValue > 0 && MinRaw > datasets[0].data[i]) {
+                    var CurRawValue = parseFloat(DatasetsCSV[0].data[i]);
+                    if (CurRawValue > 0 && MinRaw > DatasetsCSV[0].data[i]) {
                         if (prev == CurRawValue) {
                             MinRaw = CurRawValue;
                         }
@@ -105,7 +109,9 @@
 
         }
 
-
+        var RO_CLEAN_AIR_FACTOR = 9.83;
+        var RL_VALUE = 5.0;
+        var LPGCurve = [2.3, 0.21, -0.47];
 
 
         function MQ2_RawToPPM(rawValue, zeroGasValue) {
@@ -134,8 +140,7 @@
             // Calculate the ratio of current resistance to zero gas resistance
             rs_ro_ratio = resCurrent / resZero;
             // Calculate and return the gas concentration using the calibration curve
-            //return (pow(10, (((log(rs_ro_ratio) - pcurve[1]) / pcurve[2]) + pcurve[0])));
-            var ret = Math.pow(10, (((Math.log10(rs_ro_ratio) - LPGCurve[1]) / LPGCurve[2]) + LPGCurve[0]));
+            var ret = Math.pow(10, ((Math.log10(rs_ro_ratio) - LPGCurve[1]) / LPGCurve[2] + LPGCurve[0]));
             if (isNaN(ret)) {
                 ret = 0;
             }
@@ -163,17 +168,22 @@
 
         function updateChartWithZerogas() {
             var rawZeroGas = document.getElementById("zerogasInput").value;
+            var startfrom = parseInt(document.getElementById("startfrom").value)-1;            
             console.log("data 0");
-            //            console.log(datasets[0].data[0]);
-            //            console.log(datasets[1].data[0]);
-            for (var i in datasets[0].data) {
-                if (i > 0) {
-                    datasets[1].data[i] = MQ2_RawToPPM(datasets[0].data[i], rawZeroGas);
-                    //                    console.log("i="+i);
-                    //                    console.log(`MQ2_RawToPPM(${datasets[0].data[i]}, ${rawZeroGas})`);
+            //            console.log(DatasetsCSV[0].data[0]);
+            //            console.log(DatasetsCSV[1].data[0]);
+            for (var i in DatasetsCSV[0].data) {
+                if (i >= startfrom) {
+                    DatasetsClean[1].data[i] = DatasetsCSV[1].data[i] ;
+                    DatasetsClean[0].data[i] = DatasetsCSV[0].data[i] ;
+                    DatasetsClean[1].data[i] = MQ2_RawToPPM(DatasetsClean[0].data[i], rawZeroGas);
+                }
+                else{
+                    DatasetsClean[1].data[i] = 0;
+                    DatasetsClean[0].data[i] = 0;
                 }
             }
-            displayChart(labels, datasets);
+            displayChart(labels, DatasetsClean);
         }
         // Sensor characteristics for calibration  --------<
         function saveCSV(csvContent) {
@@ -196,9 +206,9 @@
             var csvContentArray = [];
             var csvData = [];
             console.log(labels);
-            console.log(datasets);
-            for (var i in datasets) {
-                csvContentArray[i] = datasets[i].label;
+            console.log(DatasetsClean);
+            for (var i in DatasetsClean) {
+                csvContentArray[i] = DatasetsClean[i].label;
             }
             csvContent += "\"date Y-m-d m:s\";" + csvContentArray.join(";") + "\r\n";
             console.log(csvContent);
@@ -206,9 +216,9 @@
                 csvData[i_row] = [];
                 csvData[i_row][0] = labels[i_row];
             }
-            for (var i_col in datasets) {
-                for (var i_row in datasets[i_col].data) { //n
-                    csvData[i_row][parseInt(i_col) + 1] = datasets[i_col].data[i_row];
+            for (var i_col in DatasetsClean) {
+                for (var i_row in DatasetsClean[i_col].data) { //n
+                    csvData[i_row][parseInt(i_col) + 1] = DatasetsClean[i_col].data[i_row];
                 }
             }
             console.log("csvData:");
@@ -262,9 +272,12 @@
             parseCSVData(csvdata);
         }
         function handleFiles(files) {
+            document.getElementById("startfrom").value = 1;
             saveToSessionStorage("csv", null);
             labels = [];
-            datasets = [];
+            DatasetsCSV = [];
+            DatasetsClean = [];
+            
             if (window.FileReader) {
                 let reader = new FileReader();
                 reader.onload = function (event) {
@@ -332,26 +345,34 @@
                 i++;
             });
             for (let i = startData; i < results[0].length; i++) {
-                let datasetData = [];
+                let datasetDataCSV = [];
+                let datasetDataCLEAN = [];
+                
                 var i_row = 0;
                 results.slice(indexData).forEach(row => {
                     if (i_row > 0) {
-                        datasetData.push(row[i]);
+                        datasetDataCSV.push(row[i]);
+                        datasetDataCLEAN.push(row[i]);
 
                     }
                     i_row++;
                 });
-                datasets.push({
+                DatasetsCSV.push({
                     label: results[0][i],
-                    data: datasetData,
+                    data: datasetDataCSV,
+                    borderColor: indexRGB(),
+                    borderWidth: 1,
+                    fill: false
+                });
+                DatasetsClean.push({
+                    label: results[0][i],
+                    data: datasetDataCLEAN,
                     borderColor: indexRGB(),
                     borderWidth: 1,
                     fill: false
                 });
             }
-
-            displayChart(labels, datasets);
-
+            displayChart(labels, DatasetsClean);
         }
 
         function randomRGB() {
