@@ -34,6 +34,9 @@ An assembled and ready-to-use version, or in an assembly kit, can be purchased h
 **English:**
 [manuals/FluxyLogger-NASO-en.md](manuals/FluxyLogger-NASO-en.md)
 
+**Virtual Assistant**
+https://www.sparkilla.com/application/NASO4CAVE
+
 -----
 
 Logs are saved on csv files
