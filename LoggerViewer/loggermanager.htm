@@ -165,6 +165,14 @@
         }
     </style>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="icon.png" type="image/png">
+
+    <!-- iOS specific meta tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="MiaApp">
+    <link rel="apple-touch-icon" href="icon.png">
 
 </head>
 
@@ -186,9 +194,12 @@
             data-i18n="auto">Set Interval</button>
         <button id="plotterstart" data-i18n='auto'>Real time on</button>
         <button style="display:none;" id="plotterstop" data-i18n='auto' disabled>Real time off</button>
-
+        <button style="display:none" id="installButton">Install app</button>
     </nav>
     <div id="output"></div>
+    <div style="display:none" id="iosInstructions">
+        Per installare su iOS: tocca l'icona di condivisione e poi "Aggiungi a schermata Home"
+    </div>    
     <footer id="footer">
         <input autocapitalize="none" type="text" id="input" id="sendtext"><button data-i18n='auto'
             id="send">Send</button><br>
@@ -1059,6 +1070,50 @@
         }
         UpdateButtonsStatus();
 
+    </script>
+
+
+    <script>
+        let deferredPrompt;
+
+        // Check if the device is running iOS
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+        // Show appropriate installation instructions based on the device
+        if (isIOS) {
+            document.getElementById('iosInstructions').style.display = 'block';
+        } else {
+            // For non-iOS devices, use the standard installation process
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+                document.getElementById('installButton').style.display = 'inline-block';
+            });
+
+            document.getElementById('installButton').addEventListener('click', (e) => {
+                document.getElementById('installButton').style.display = 'none';
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('User accepted the install prompt');
+                    } else {
+                        console.log('User dismissed the install prompt');
+                    }
+                    deferredPrompt = null;
+                });
+            });
+        }
+
+        // Register service worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('service-worker.js')
+                .then((registration) => {
+                    console.log('Service Worker registered with scope:', registration.scope);
+                })
+                .catch((error) => {
+                    console.log('Service Worker registration failed:', error);
+                });
+        }
     </script>
 </body>
 
