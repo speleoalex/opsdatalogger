@@ -1,0 +1,35 @@
+FluxyLogger NASO: Tracciamento Aereo in Grotte
+
+Benvenuti alla presentazione di FluxyLogger NASO, uno strumento innovativo per seguire l’aria delle grotte.
+Come esperti di circolazione dell’aria nelle grotte sanno, questo è un fenomeno complesso influenzato da vari fattori. In inverno, ad esempio, gli ingressi posti più in alto tendono a soffiare aria, mentre quelli più bassi la aspirano. In estate, questa dinamica si inverte. Con temperature intermedie, la circolazione può addirittura variare durante il corso della giornata. Inoltre, in prossimità degli ingressi, l’aria esterna può creare interferenze dovute a vento, variazioni di pressione o circolazioni turbolente. È importante considerare anche che l’aria nella parte alta della volta di una grotta può avere una circolazione diversa rispetto a quella nella parte bassa.
+
+Proprio per comprendere meglio queste dinamiche e le connessioni tra ingressi e le diramazioni delle grotte, è nata l’esigenza di un sistema semplice ed economico per tracciare lo spostamento dei flussi d’aria all’interno di questi ambienti. Da questa esigenza è nato il progetto FluxyLogger N.A.S.O.
+
+FluxyLogger N.A.S.O. (Novel Aerial Sensing Observer) è un dispositivo che consente di capire se l’aria si sposta da un punto A a un punto B, registrando il passaggio di un tracciante aereo. Questo ci permette di verificare se un ingresso o un’apertura è collegato a un altro, individuando il percorso e il tempo impiegato dall’aria per passare tra i vari punti. Il progetto è stato pensato per essere utilizzato nel modo più semplice possibile, con un basso costo e accessibile a tutti. L’intero progetto è open source con licenza libera, il che significa che è a disposizione di tutti e può essere migliorato ed esteso da chiunque voglia contribuire al suo sviluppo.
+
+Ma come funziona concretamente il FluxyLogger NASO? A livello tecnico, è un datalogger (registratore di dati) basato su Arduino, una scheda elettronica programmabile, a cui sono collegati una scheda SD e un sensore di Gas MQ-2. Il FluxyLogger NASO è quindi un dispositivo che traccia la concentrazione di gas nel tempo e la salva in un grafico. È un datalogger opensource che consente di collegare più sensori a scelta per vari utilizzi, ma in questa configurazione N.A.S.O. è specificamente progettato per tracciare l’aria.
+
+I componenti principali del NASO sono essenzialmente quattro: un sensore di gas, una scheda microSD per la memorizzazione dei dati, un Power Bank per l’alimentazione e un Display per visualizzare informazioni di base.
+
+Ora, la domanda cruciale: come si traccia l’aria con il NASO? Il procedimento è piuttosto semplice. Innanzitutto, è necessario posizionare uno o più dispositivi NASO nel punto in cui si desidera registrare il passaggio dell’aria e collegarli tramite cavo USB a un power bank per l’alimentazione. Successivamente, si rilascia il tracciante nel punto di immissione. Bisogna poi attendere il tempo necessario affinché l’aria, trasportando il tracciante, attraversi il percorso previsto. Una volta trascorso il tempo stimato, si scollega il power bank dal NASO. Infine, per analizzare i dati, si estrae la scheda SD e si apre il file con un foglio di calcolo come Excel, oppure si scaricano i dati tramite software collegando il dispositivo tramite cavo USB.
+
+Cosa possiamo usare come tracciante? Il sensore all’interno del NASO è in grado di rilevare il gas butano o propano, gas comunemente usati come propellente per le bombolette spray. Per questo motivo, si possono utilizzare come tracciante bombolette di deodorante, aria compressa per pulire PC o bombolette di butano per fornelletti a gas.
+
+Per rendere il tutto più concreto, vediamo un esempio reale: la LI571-GROTTA SUPERIORE SORGENTE PRIAMARA. Questa grotta, situata nel Finalese (Liguria), in località Verzi, ha uno sviluppo di oltre 2 km. Le acque che la percorrono provengono dall’inghiottitoio di Pian della Noce, situato sull’altipiano delle Manie. L’esplorazione della Grotta Priamara è iniziata negli anni ’70, con diverse fasi di esplorazione e ostruzione del sifone di sabbia che ne caratterizza una parte. A seguito della riapertura del sifone nel 2022, sono stati effettuati i primi tracciamenti d’aria con il N.A.S.O. per valutare la connessione della Grotta Priamara con piccole cavità di recente scoperta sull’altopiano delle Manie e con l’inghiottitoio di Pian della Noce. Le cavità prese in esame in questa fase includevano l’inghiottitoio di Pian della Noce, Terre Rosse e Terre di Sotto. Ulteriori tracciamenti sono stati eseguiti nel dicembre 2024 per ritestare queste connessioni in condizioni di circolazione aerea potenzialmente alterate dall’ostruzione del sifone di sabbia.
+
+Un ulteriore motivo di indagine è stata la Grotta della Briga, da cui erano state segnalate lievi emissioni d’aria, suggerendo una potenziale connessione con il sistema Priamara. Inoltre, durante scavi a Terre di Sotto, è stato scoperto un piccolo foro da cui sembrava fuoriuscire aria più calda, chiamato “Ancora più sotto”, che suggeriva un ulteriore accesso al sistema.
+
+Analizzando i risultati del tracciamento, possiamo osservare diversi scenari. Un risultato negativo indica l’assenza di passaggio del tracciante rilevato dal NASO. Ad esempio, nel caso del tracciamento da Priamara verso la Grotta della Briga, il risultato è stato negativo, indicando che i NASO posti alla Grotta della Briga non hanno rilevato alcun passaggio di gas. Al contrario, un risultato positivo mostra un picco nella concentrazione di gas rilevata dal sensore nel tempo. Il tracciamento da Priamara a Terre di Sotto ha dato un risultato positivo. I grafici mostrano l’andamento della concentrazione di gas nel tempo per diversi sensori posizionati a Grotta Terre di Sotto e “Ancora più Sotto”, evidenziando un passaggio del tracciante con andamenti e picchi differenti.
+
+I risultati ottenuti grazie a questi tracciamenti hanno permesso di determinare che, a sifone chiuso, l’aria passa per un bypass ancora inesplorato. Inoltre, è stato confermato che l’aria che passa per “Terre di Sotto” arriva da un buco laterale posto a metà della grotta. Infine, il buco denominato “Ancora più Sotto” si è rivelato il più promettente per essere collegato alla Grotta Priamara.
+
+Se siete interessati a procurarvi un NASO, il progetto è a sorgente aperto. È possibile ottenere l’elenco dei componenti e le istruzioni di montaggio alla pagina del progetto: https://github.com/speleoalex/opsdatalogger. Si è scelto volutamente di utilizzare componenti di facile reperibilità e assemblaggio e di ridurre al minimo la componentistica. È comunque possibile utilizzare e collegare ulteriori sensori per misurare anche temperatura, umidità e velocità dell’aria. Per maggiori informazioni e discussioni, è disponibile anche un gruppo Telegram: https://t.me/+u5CoELQNjC1iODZk, e un Virtual Assistant: https://www.sparkilla.com/application/NASO4CAVE.
+
+Vi ringraziamo per l’attenzione.
+
+
+
+
+
+
+

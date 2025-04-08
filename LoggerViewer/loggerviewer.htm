@@ -63,8 +63,8 @@
         <span style="display:none" id="MQ2Div">
             <input placeholder="zero gas gas adc" id="zerogasInput" onchange="updateChartWithZerogas();" type="number"
                 min="0" max="1023" value=""><button onclick="ZeroGasAuto();">Auto Calibration</button>
-                Start row:<input value="1" min="1" placeholder="start" id="startfrom" onchange="updateChartWithZerogas();" type="number"
-                min="0" max="1023" value="">
+            Start row:<input value="1" min="1" placeholder="start" id="startfrom" onchange="updateChartWithZerogas();"
+                type="number" min="0" max="1023" value="">
             <button onclick="exportCSV();">Export CSV</button>
         </span>
 
@@ -73,7 +73,7 @@
     <script>
         var DatasetsCSV = [];
         var DatasetsClean = [];
-        
+
         var labels = [];
         // Sensor characteristics for calibration  -------->
         var RO_CLEAN_AIR_FACTOR = 9.83;
@@ -144,9 +144,9 @@
             if (isNaN(ret)) {
                 ret = 0;
             }
-            return  ret;
+            return ret;
         }
-     
+
         /****************** MQResistanceCalculation ****************************************
         Input:   raw_adc - raw value read from adc, which represents the voltage
         Output:  the calculated sensor resistance
@@ -168,17 +168,18 @@
 
         function updateChartWithZerogas() {
             var rawZeroGas = document.getElementById("zerogasInput").value;
-            var startfrom = parseInt(document.getElementById("startfrom").value)-1;            
+            var startfrom = parseInt(document.getElementById("startfrom").value) - 1;
             console.log("data 0");
             //            console.log(DatasetsCSV[0].data[0]);
             //            console.log(DatasetsCSV[1].data[0]);
-            for (var i in DatasetsCSV[0].data) {
+            var i;
+            for (i in DatasetsCSV[0].data) {
                 if (i >= startfrom) {
-                    DatasetsClean[1].data[i] = DatasetsCSV[1].data[i] ;
-                    DatasetsClean[0].data[i] = DatasetsCSV[0].data[i] ;
+                    DatasetsClean[1].data[i] = DatasetsCSV[1].data[i];
+                    DatasetsClean[0].data[i] = DatasetsCSV[0].data[i];
                     DatasetsClean[1].data[i] = MQ2_RawToPPM(DatasetsClean[0].data[i], rawZeroGas);
                 }
-                else{
+                else {
                     DatasetsClean[1].data[i] = 0;
                     DatasetsClean[0].data[i] = 0;
                 }
@@ -277,7 +278,7 @@
             labels = [];
             DatasetsCSV = [];
             DatasetsClean = [];
-            
+
             if (window.FileReader) {
                 let reader = new FileReader();
                 reader.onload = function (event) {
@@ -347,7 +348,7 @@
             for (let i = startData; i < results[0].length; i++) {
                 let datasetDataCSV = [];
                 let datasetDataCLEAN = [];
-                
+
                 var i_row = 0;
                 results.slice(indexData).forEach(row => {
                     if (i_row > 0) {
@@ -417,21 +418,13 @@
                     datasets: datasets
                 },
                 options: {
-                    /*
                     scales: {
-                        xAxes: [{
-                            scaleLabel: {
-                                display: true,
-                                labelString: "X-axis"
-                            }
-                        }],
-                        yAxes: [{
-                            scaleLabel: {
-                                display: true,
-                                labelString: "Y-axis"
-                            }
-                        }]
-                    }*/
+                        y: {
+                            beginAtZero: true,
+                            min: 0, // Set minimum value for y-axis to 500
+                            
+                        }
+                    }
                 }
             });
         }
