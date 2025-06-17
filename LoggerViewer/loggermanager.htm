@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html>
-
 <head>
     <title>FluxyLogger Terminal</title>
     <style>
@@ -199,7 +198,7 @@
     <div id="output"></div>
     <div style="display:none" id="iosInstructions">
         Per installare su iOS: tocca l'icona di condivisione e poi "Aggiungi a schermata Home"
-    </div>    
+    </div>
     <footer id="footer">
         <input autocapitalize="none" type="text" id="input" id="sendtext"><button data-i18n='auto'
             id="send">Send</button><br>
@@ -352,6 +351,14 @@
                         await device.claimInterface(1); // Richiede l'interfaccia
 
                     }
+                    try {
+
+                        //await setUsbBaudRate(device, 19200);
+                    }
+                    catch (e) {
+                        alert("Error setting baud rate: ", e);
+                    }
+
                     readLoopRunning = true;
                     readLoop();
                     is_usb = true;
@@ -368,6 +375,8 @@
                 connected_usb = true;
                 readLoopUsb();
 
+                // Set baudrate for USB mode
+                console.log("USB Mode - Setting baudrate to: " + getSelectedBaudRate());
             }
             else {
                 console.log("SERIAL Mode");
@@ -421,6 +430,25 @@
                     console.log('Errore di connessione: ', error);
                 });
         });
+
+        // Function to set USB baud rate, assuming a control command is available
+        async function setUsbBaudRate(device, baudRate) {
+            // Replace this with the actual command to set the baud rate for your USB device
+            // Example of sending a control transfer
+            try {
+                await device.controlTransferOut({
+                    requestType: 'vendor',
+                    recipient: 'device',
+                    request: 0x01, // This is just an example
+                    value: baudRate,
+                    index: 0
+                });
+                console.log("Baud rate set to " + baudRate);
+            } catch (e) {
+                console.log("Failed to set baud rate: ", e);
+            }
+        }
+
         var btntimer;
         function handleNotifications(event) {
             let target_value = event.target.value;
@@ -751,7 +779,7 @@
             }
         }
 
-        async function sebdToUSB(data) {
+        async function sendToUSB(data) {
             if (is_usb) {
                 try {
                     const textEncoder = new TextEncoder();
@@ -774,7 +802,7 @@
             else {
 
                 if (is_usb) {
-                    sebdToUSB(data);
+                    sendToUSB(data);
                 }
                 else {
                     writer.write(data);
