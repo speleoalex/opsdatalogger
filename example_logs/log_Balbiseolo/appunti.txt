@@ -1,6 +1,0 @@
-accesi ore 18:00 17/8/2020
-recuperati 19:00 17/8/2020
-
-TM0 4 batterie (stimati 20000 mA) "2023-08-16 17:54:38" - "2023-08-17 10:10:28" (log log_interval_s=30)
-OPS-A Power bank 5200 mA "2023-08-16 17:58:55" - "2023-08-17 16:19:49" (log log_interval_s=10)
-OPS-0 Power bank 25000 mA 3 tacche su 5 "2023-08-16 18:09:09"- "2023-08-17 18:59:00" (log log_interval_s=10)
