@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Comunicazione BLE con Arduino</title>
+</head>
+<body>
+    <button id="btnConnect">Connetti a BLE</button>
+    <button id="btnSend" disabled>Invia Carattere</button>
+    <button id="btnDisconnect" disabled>Disconnetti</button>
+    <input type="text" id="inputChar" placeholder="Inserisci un carattere" maxlength="1">
+    <script>
+        let bleDevice = null;
+        let bleServer = null; // Variabile per il server GATT
+
+        document.querySelector('#btnConnect').addEventListener('click', function() {
+            // Richiesta di connessione BLE
+            navigator.bluetooth.requestDevice({
+                acceptAllDevices: true,
+                optionalServices: ['12345678-1234-1234-1234-123456789abc'] // UUID del servizio BLE
+            })
+            .then(device => {
+                bleDevice = device; // Memorizza il dispositivo BLE
+                console.log('Connessione al dispositivo: ', device.name);
+                // Connessione al GATT server
+                return device.gatt.connect();
+            })
+            .then(server => {
+                bleServer = server; // Memorizza il server GATT
+                document.querySelector('#btnDisconnect').disabled = false; // Abilita il bottone Disconnetti
+                // Ottiene il servizio
+                return server.getPrimaryService('12345678-1234-1234-1234-123456789abc');
+            })
+            .then(service => {
+                // Ottiene la caratteristica
+                return service.getCharacteristic('abcd1234-ab12-cd34-ef56-abcdef123456');
+            })
+            .then(characteristic => {
+                console.log('Caratteristica ottenuta');
+                document.querySelector('#btnSend').disabled = false;
+                document.querySelector('#btnSend').addEventListener('click', function() {
+                    const charInput = document.querySelector('#inputChar').value;
+                    if (charInput.length > 0) {
+                        const valueArray = new TextEncoder().encode(charInput);
+                        characteristic.writeValue(valueArray)
+                        .then(() => {
+                            console.log('Carattere inviato');
+                        })
+                        .catch(error => {
+                            console.error('Errore nell\'invio del carattere:', error);
+                        });
+                    }
+                });
+            })
+            .catch(error => {
+                console.log('Errore di connessione: ', error);
+            });
+        });
+
+        document.querySelector('#btnDisconnect').addEventListener('click', function() {
+            if (bleServer && bleServer.connected) {
+                bleServer.disconnect();
+                console.log('Disconnesso');
+                document.querySelector('#btnSend').disabled = true;
+                document.querySelector('#btnDisconnect').disabled = true;
+            }
+        });
+    </script>
+</body>
+</html>

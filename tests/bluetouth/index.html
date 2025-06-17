@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Comunicazione BLE con Arduino</title>
+</head>
+<body>
+    <button id="btnConnect">Connetti a BLE</button>
+    <button id="btnSend" disabled>Invia Stringa</button>
+    <button id="btnDisconnect" disabled>Disconnetti</button>
+    <input type="text" id="inputString" placeholder="Inserisci una stringa">
+    <p>Dati ricevuti:</p>
+    <textarea id="receivedData" rows="5" cols="30" disabled></textarea>
+    <script>
+        let bleDevice = null;
+        let bleServer = null;
+        let myCharacteristic = null;
+
+        document.querySelector('#btnConnect').addEventListener('click', function() {
+            navigator.bluetooth.requestDevice({
+                filters: [{ name: 'BTService' }],
+                //acceptAllDevices: true,
+                optionalServices: ['12345678-9878-9878-9878-123456789abc'] // UUID del servizio BLE
+            })
+            .then(device => {
+                bleDevice = device;
+                console.log('Connessione al dispositivo: ', device.name);
+                return device.gatt.connect();
+            })
+            .then(server => {
+                bleServer = server;
+                document.querySelector('#btnDisconnect').disabled = false;
+                return server.getPrimaryService('12345678-9878-9878-9878-123456789abc');
+            })
+            .then(service => {
+                return service.getCharacteristic('abcd1234-9878-9878-9878-abcdef123456');
+            })
+            .then(characteristic => {
+                myCharacteristic = characteristic;
+                console.log('Caratteristica ottenuta');
+                document.querySelector('#btnSend').disabled = false;
+
+                // Ascolta le notifiche sulla caratteristica
+                myCharacteristic.startNotifications().then(_ => {
+                    console.log('Notifiche avviate');
+                    myCharacteristic.addEventListener('characteristicvaluechanged', handleNotifications);
+                });
+
+                document.querySelector('#btnSend').addEventListener('click', function() {
+                    const stringInput = document.querySelector('#inputString').value;
+                    if (stringInput) {
+                        const valueArray = new TextEncoder().encode(stringInput);
+                        myCharacteristic.writeValue(valueArray)
+                        .then(() => {
+                            console.log('Stringa inviata');
+                        })
+                        .catch(error => {
+                            console.error('Errore nell\'invio della stringa:', error);
+                        });
+                    }
+                });
+            })
+            .catch(error => {
+                console.log('Errore di connessione: ', error);
+            });
+        });
+
+        document.querySelector('#btnDisconnect').addEventListener('click', function() {
+            if (bleServer && bleServer.connected) {
+                bleServer.disconnect();
+                console.log('Disconnesso');
+                document.querySelector('#btnSend').disabled = true;
+                document.querySelector('#btnDisconnect').disabled = true;
+                myCharacteristic.stopNotifications().then(_ => {
+                    console.log('Notifiche interrotte');
+                    myCharacteristic.removeEventListener('characteristicvaluechanged', handleNotifications);
+                });
+            }
+        });
+
+        function handleNotifications(event) {
+            let value = event.target.value;
+            let decoder = new TextDecoder('utf-8');
+            let receivedData = decoder.decode(value);
+            console.log('Dati ricevuti: ', receivedData);
+            document.querySelector('#receivedData').textContent += receivedData;
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,5 @@
+{
+    "board": "arduino:renesas_uno:unor4wifi",
+    "port": "/dev/ttyACM0",
+    "sketch": "FluxyLogger.ino"
+}

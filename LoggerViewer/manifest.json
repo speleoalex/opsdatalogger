@@ -1,0 +1,14 @@
+{
+    "name": "NASO Datalogger Manager",
+    "short_name": "NASO Manager",
+    "start_url": "/datalogger/loggermanager.htm",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "icons": [
+        {
+            "src": "icon.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        }
+    ]
+}

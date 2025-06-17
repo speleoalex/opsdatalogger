@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bluetooth Buttons</title>
+</head>
+<body>
+
+    <button onclick="CheckBluetouth()">Connect</button>
+    <button onclick="sendChar('a')">Button A</button>
+    <button onclick="sendChar('b')">Button B</button>
+    <button onclick="sendChar('c')">Button C</button>
+    <button onclick="sendChar('d')">Button D</button>
+<div id="log"></div>
+    <script>
+        var service;
+        var server;
+        var characteristic;
+        var device;
+        async function CheckBluetouth() {
+            if (navigator.bluetooth)
+            {
+                console.log("bluetooth support ok");
+            } else
+            {
+                console.log("no bluetooth");
+
+            }
+/*
+{services: [C],
+  namePrefix: "Device"},
+  {name: "Unique Name"}*/
+                
+            const device = await navigator.bluetooth.requestDevice({
+                filters: [{ name: 'BTService' }]
+            });
+            const server = await device.gatt.connect();
+            const service = await server.getPrimaryService('battery_service'); 
+            //const characteristic = await service.getCharacteristic('2A57');180A
+            await characteristic.writeValue("test");
+            
+
+            /*
+            try {
+                let filters = [{
+                      name: 'AutoloadTM'
+                    }];
+                options.filters = filters;
+                //options.allowedBluetoothServiceClassIds= ['180A'];
+                log('Requesting Bluetooth Device...');
+                log('with ' + JSON.stringify(options));
+                device = navigator.bluetooth.requestDevice(options)
+                        .then(device => {
+                            log('> Name:             ' + device.name);
+                            log('> Id:               ' + device.id);
+                            log('> Connected:        ' + device.gatt.connected);
+                        })
+                        .catch(error => {
+                            alert(error);
+                        });
+                server = await device.gatt.connect();
+                service = await server.getPrimaryService('battery_service'); 
+                characteristic = await service.getCharacteristic('180A');
+            } catch (e) {
+                alert(e);
+                alert("this feature is not supported by your system");
+            }
+            */
+
+        }
+        function log(str) {
+            console.log(str);
+            document.getElementById("log").innerHTML+="<br>"+str;
+        }
+
+
+        async function sendChar(char) {
+            try {
+                /*
+                const device = await navigator.bluetooth.requestDevice({
+                    filters: [{ name: 'AutoloadTM' }]
+                });
+                const server = await device.gatt.connect();
+                const service = await server.getPrimaryService('battery_service'); 
+                */
+                //const characteristic = await service.getCharacteristic('2A57');180A
+                
+                await characteristic.writeValue(new TextEncoder().encode(char));
+                console.log(`Sent character: ${char}`);
+            } catch (error) {
+                console.log('Error connecting to Bluetooth device:', error);
+            }
+        }
+    </script>
+</body>
+</html>
