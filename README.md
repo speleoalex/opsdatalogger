@@ -48,4 +48,5 @@ the interval of each measurement can be set via the CONFIG.INI file that is crea
 
 If you find this project useful, consider supporting its development:
 
-[![Donate with PayPal](https://www.paypalobjects.com/en_US/i/btn/btn_donate_LG.gif)](https://www.paypal.com/donate/?business=TKQWLKGENEP7L&no_recurring=0&item_name=Progetto+FluxyLogger+NASO&currency_code=EUR)
+[![Donate with PayPal](manuals/paypal.png)](https://www.paypal.com/donate/?business=TKQWLKGENEP7L&no_recurring=0&item_name=Progetto+FluxyLogger+NASO&currency_code=EUR)
+

@@ -172,3 +172,11 @@ a seconda della curva di rilevamento è possibile dedurre alcune caratteristiche
 ![Testo con passaggio in frana](transit3.png)
 
 
+## Supporta il progetto
+
+Se ritieni utile questo progetto, considera di supportarne lo sviluppo:
+
+[![Donate with PayPal](paypal.png)](https://www.paypal.com/donate/?business=TKQWLKGENEP7L&no_recurring=0&item_name=Progetto+FluxyLogger+NASO&currency_code=EUR)
+
+
+
