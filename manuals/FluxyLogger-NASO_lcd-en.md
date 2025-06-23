@@ -135,3 +135,11 @@ Depending on the detection curve, it is possible to deduce some characteristics 
 
 ## Transit with Passage in Landslide
 ![Text with Passage in Landslide](transit3.png)
+
+
+## Support the Project
+
+If you find this project useful, consider supporting its development:
+
+[![Donate with PayPal](paypal.png)](https://www.paypal.com/donate/?business=TKQWLKGENEP7L&no_recurring=0&item_name=Progetto+FluxyLogger+NASO&currency_code=EUR)
+
