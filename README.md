@@ -6,6 +6,11 @@ It detects very well the butane present in normal air freshener cans.
 An assembled and ready-to-use version, or in an assembly kit, can be purchased here: [https://techmakers.eu/products/new-cave-monitoring-n-a-s-o-datalogger-for-atmospheric-tracer-tracking-assembled](https://techmakers.eu/products/new-cave-monitoring-n-a-s-o-datalogger-for-atmospheric-tracer-tracking-assembled)
 
 
+## Support the Project
+
+If you find this project useful, consider supporting its development:
+
+[![Donate with PayPal](paypal.png)](https://www.paypal.com/donate/?business=TKQWLKGENEP7L&no_recurring=0&item_name=Progetto+FluxyLogger+NASO&currency_code=EUR)
 
 
 
@@ -44,9 +49,4 @@ the interval of each measurement can be set via the CONFIG.INI file that is crea
 
 ![Naso](Naso.png)
 
-## Support the Project
-
-If you find this project useful, consider supporting its development:
-
-[![Donate with PayPal](paypal.png)](https://www.paypal.com/donate/?business=TKQWLKGENEP7L&no_recurring=0&item_name=Progetto+FluxyLogger+NASO&currency_code=EUR)
 
