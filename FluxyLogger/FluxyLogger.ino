@@ -6,8 +6,8 @@
    Product link: https://techmakers.eu/
 
    This sketch is designed for the N.A.S.O. datalogger, available as a pre-assembled unit or kit.
-  
-  
+
+
 
   NOTE:
   Datalogger use 6 pin. Analog 4 and 5 for I2C.
@@ -17,7 +17,7 @@
 
 */
 
-#define VERSION 2.44
+#define VERSION 2.45
 
 #define BOUDRATE 19200  // 9600,57600,19200,115200
 // Sensor presence configuration
@@ -33,13 +33,16 @@
 #define WINDSENSOR_PRESENT 0
 #define MQ2SENSOR_PRESENT 1  // VOC MQ2 analogic
 
+#define BLE_SUPPORT 1
+#define LCD_I2C_ENABLED 1  // LCD
+
+
 #define SGP40_PRESENT 0  // VOC SGP40 i2c
 #define SGP30_PRESENT 0  // VOC SGP30 i2c
 #define OLED_PRESENT 0   // OLED
 #define LOGVCC 0
-#define LCD_I2C_ENABLED 1  // LCD
 #if defined(ARDUINO_UNOWIFIR4)
-#define BLE_ENABLED 1
+#define BLE_ENABLED BLE_SUPPORT
 #else
 #define BLE_ENABLED 0
 #endif
@@ -61,8 +64,7 @@
 #define MAX_ROWS_PER_FILE 10000  // max rows per file
 
 // Log configs
-#define LOG_INTERVAL_s 30       // log interval in seconds
-#define SYNC_INTERVAL_ms 20000  // mills between calls to flush() - to write data to the card
+#define LOG_INTERVAL_s 30  // log interval in seconds
 #define NUM_READS 8
 #define READS_DELAY 30
 #define ZEROGAS_default 115
@@ -103,16 +105,14 @@ LiquidCrystal_I2C lcd(0x27, 16, 2);
 
 SGP40 sgp40Sensor;  // create an object of the SGP40 class
 #endif
+const char NL[] = "\r\n";
+
 
 #if BLE_ENABLED
-
+// BLE-------------------------->
 #include <ArduinoBLE.h>
-#define BLE_NAME "NASO_BT"
-
-//#define BLE_UUID_SERVICE "0000ffe0-0000-1000-8000-00805f9b34fb"
-//#define BLE_UUID_Characteristic "0000ffe1-0000-1000-8000-00805f9b34fb"
-
-#define BLE_UUID_SERVICE "12345678-9878-9878-9878-123456789abc"
+char BLE_NAME[] = "NASO-000000";  // filled with last three hex digit of mac (was NASO_BT)
+#define BLE_UUID_SERVICE "19b10000-e8f2-537e-4f6c-d104768a1214"
 #define BLE_UUID_Characteristic "abcd1234-9878-9878-9878-abcdef123456"
 #define BLE_BUFFERLEN 80
 
@@ -124,10 +124,16 @@ bool BLEconnected = false;
 
 void initBluetouth() {
   if (!BLE.begin()) {
-    Serial.println("Bluetooth® Low Energy module failed!");
-  } else {
-    Serial.println("Bluetooth® Low Energy module enabled");
+    Serial.println(F("BT failed!"));
   }
+  char address[18];
+  strncpy(address, BLE.address().c_str(), 17);
+  address[17] = '\0';
+  for (int k = 9, j = 5; k < 17; ++k) {
+    if (((k + 1) % 3) != 0)
+      BLE_NAME[j++] = address[k];
+  }
+  Serial.println(BLE_NAME);
   BLE.setLocalName(BLE_NAME);
   BLE.setAdvertisedService(btMyService);
   // add the characteristics to the service
@@ -143,39 +149,31 @@ void initBluetouth() {
  *
  */
 void gestBluetouth() {
-  String bufferRead = "";
+//  bufferRead[0] = '\0';
   if (!BLEconnected) {
     // listen for BLE peripherals to connect:
     // if a central is connected to peripheral:
     btController = BLE.central();
     if (btController) {
-      SerialPrintln("BLE Connected to controller: ");
-      // print the controller's MAC address:
-      Serial.println(btController.address());
+      SerialPrintln(F("BT Connected"));
       BLEconnected = true;
     }
   } else {
-    // while the controller is still connected to peripheral:
-    if (btController.connected()) {
-      /*if (myCharacteristic.written()) {
-        bufferRead = myCharacteristic.value();
-      }
-      Serial.print(bufferRead);*/
-    } else {
+    if (!btController.connected()) {
       BLEconnected = false;
-      Serial.println("BLE disconnected");
+      Serial.println(F("BT disconnected"));
     }
   }
 }
 
-String readBluetouth() {
-  String bufferRead = "";
+bool readBluetouth(char *buffer, int maxLen) {
+  buffer[0] = '\0';
   if (!BLEconnected) {
     // listen for BLE peripherals to connect:
     // if a central is connected to peripheral:
     btController = BLE.central();
     if (btController) {
-      Serial.println("BLE Connected to controller: ");
+      SerialPrintln(F("BT Connected"));
       // print the controller's MAC address:
       Serial.println(btController.address());
       BLEconnected = true;
@@ -184,24 +182,26 @@ String readBluetouth() {
     // while the controller is still connected to peripheral:
     if (btController.connected()) {
       if (myCharacteristic.written()) {
-        bufferRead = myCharacteristic.value();
+        strncpy(buffer, myCharacteristic.value().c_str(), maxLen - 1);
+        buffer[maxLen - 1] = '\0';
       }
-      Serial.print(bufferRead);
+      Serial.print(buffer);
     } else {
       BLEconnected = false;
-      Serial.println("BLE disconnected");
+      Serial.println(F("BT disconnected"));
     }
   }
-  return bufferRead;
+  return (strlen(buffer) > 0);
 }
-
+// BLE--------------------------<
 #endif
-//none
+
+
 void SerialPrintln() {
-  SerialPrint("\r\n");
+  SerialPrint(NL);
 }
 
-//const char *
+// const char *
 void SerialPrint(const char *data) {
   Serial.print(data);
 #if BLE_ENABLED
@@ -212,9 +212,9 @@ void SerialPrint(const char *data) {
 }
 void SerialPrintln(const char *data) {
   SerialPrint(data);
-  SerialPrint("\r\n");
+  SerialPrint(NL);
 }
-//char
+// char
 void SerialPrint(char data) {
   Serial.print(data);
 #if BLE_ENABLED
@@ -226,11 +226,19 @@ void SerialPrint(char data) {
 }
 void SerialPrintln(char data) {
   SerialPrint(data);
-  SerialPrint("\r\n");
+  SerialPrint(NL);
 }
+
 #if defined(ARDUINO_UNOWIFIR4)
-//const arduino::__FlashStringHelper *
-void SerialPrint(const arduino::__FlashStringHelper *data) {
+#define _AFSH_ arduino::__FlashStringHelper
+#else
+#define _AFSH_ __FlashStringHelper
+#endif
+
+
+//#if defined(ARDUINO_UNOWIFIR4)
+// const arduino::__FlashStringHelper *
+void SerialPrint(const _AFSH_ *data) {
   Serial.print(data);
 #if BLE_ENABLED
   if (BLEconnected) {
@@ -239,79 +247,71 @@ void SerialPrint(const arduino::__FlashStringHelper *data) {
   }
 #endif
 }
-void SerialPrintln(const arduino::__FlashStringHelper *data) {
+void SerialPrintln(const _AFSH_ *data) {
   SerialPrint(data);
-  SerialPrint("\r\n");
+  SerialPrint(NL);
 }
 
-#else
-void SerialPrint(const __FlashStringHelper *data) {
-  Serial.print(data);
-}
-void SerialPrintln(const __FlashStringHelper *data) {
-  SerialPrint(data);
-  SerialPrint("\r\n");
-}
-#endif
-
-
-
-
-
-
-
-//int
+// int
 void SerialPrint(int data, int format) {
   Serial.print(data, format);
 #if BLE_ENABLED
   if (BLEconnected) {
-    myCharacteristic.writeValue(String(data));
+    char numStr[12];
+    itoa(data, numStr, 10);
+    myCharacteristic.writeValue(numStr);
   }
 #endif
 }
 void SerialPrintln(int data, int format) {
   SerialPrint(data, format);
-  SerialPrint("\r\n");
+  SerialPrint(NL);
 }
-//int
+// int
 void SerialPrint(unsigned long data) {
   Serial.print(data);
 #if BLE_ENABLED
   if (BLEconnected) {
-    myCharacteristic.writeValue(String(data));
+    char numStr[12];
+    ultoa(data, numStr, 10);
+    myCharacteristic.writeValue(numStr);
   }
 #endif
 }
 void SerialPrintln(unsigned long data) {
   SerialPrint(data);
-  SerialPrint("\r\n");
+  SerialPrint(NL);
 }
 void SerialPrint(int data) {
   Serial.print(data);
 #if BLE_ENABLED
   if (BLEconnected) {
-    myCharacteristic.writeValue(String(data));
+    char numStr[12];
+    itoa(data, numStr, 10);
+    myCharacteristic.writeValue(numStr);
   }
 #endif
 }
 void SerialPrintln(int data) {
   SerialPrint(data);
-  SerialPrint("\r\n");
+  SerialPrint(NL);
 }
-//float
+// float
 void SerialPrint(float data) {
   Serial.print(data);
 #if BLE_ENABLED
   if (BLEconnected) {
-    myCharacteristic.writeValue(String(data));
+    char numStr[16];
+    dtostrf(data, 0, 2, numStr);
+    myCharacteristic.writeValue(numStr);
   }
 #endif
 }
 void SerialPrintln(float data) {
   SerialPrint(data);
-  SerialPrint("\r\n");
+  SerialPrint(NL);
 }
-//char *
+// char *
 void SerialPrint(char *data) {
   Serial.print(data);
 #if BLE_ENABLED
@@ -322,11 +322,8 @@ void SerialPrint(char *data) {
 }
 void SerialPrintln(char *data) {
   SerialPrint(data);
-  SerialPrint("\r\n");
+  SerialPrint(NL);
 }
-
-
-
 
 #if BMP280_PRESENT
 #include "sensor_BMP280/farmerkeith_BMP280.h"
@@ -380,7 +377,7 @@ bool failed = false;
 char strDate[20];        //= "0000-00-00 00:00:00";
 char strFileDate[24];    // = "YYYY-MM-DD_HH.mm.ss.txt";
 char delimiter[] = ";";  // CSV delimiter
-int sensorReading[NUM_READS];
+float sensorReading[NUM_READS];
 char serialBuffer[size_serialBuffer];
 // End Global variables --<
 // Functions
@@ -495,7 +492,14 @@ void downloadFile() {
     }
 
     // Check if the filename entered is longer than 4 characters
-    if (strlen(serialBuffer) > 4) {
+    if (strlen(serialBuffer) > 0) {
+      // Remove newline and carriage return characters from filename
+      for (int i = 0; i < strlen(serialBuffer); i++) {
+        if (serialBuffer[i] == '\n' || serialBuffer[i] == '\r') {
+          serialBuffer[i] = '\0';
+          break;
+        }
+      }
       // Attempt to open the file
       File file = SD.open(serialBuffer);
       if (file) {
@@ -504,9 +508,22 @@ void downloadFile() {
         // Read and transmit file contents
         while (file.available()) {
 #if BLE_ENABLED
-          data = file.read();
           if (BLEconnected) {
-            myCharacteristic.writeValue(String(data));
+            // Read data in chunks for BLE transmission
+            char bleBuffer[20]; // BLE characteristic max payload is typically 20 bytes
+            int bytesRead = 0;
+            
+            // Fill buffer with file data
+            while (file.available() && bytesRead < sizeof(bleBuffer) - 1) {
+              bleBuffer[bytesRead] = file.read();
+              Serial.write(bleBuffer[bytesRead]);  
+              bytesRead++;          
+            }
+            bleBuffer[bytesRead] = '\0';
+            // Send buffer via BLE
+            myCharacteristic.writeValue(bleBuffer);
+            // Add small delay to prevent BLE buffer overflow
+            //delay(10);
           } else {
             Serial.write(file.read());
           }
@@ -516,15 +533,16 @@ void downloadFile() {
 
 #endif
         }
-
+        file.close();
+        delay(10);
         // Notify end of transmission and filename
         SerialPrint(F("End transmission:"));
         SerialPrintln(serialBuffer);
-        file.close();
         return;
       } else {
         // Notify if file opening failed
         SerialPrintln(F("error opening file."));
+        execute_command(serialBuffer);
         return;
       }
     }
@@ -541,7 +559,7 @@ float DL_analogReadAndFilter(int analogPin) {
 #if defined(ARDUINO_UNOWIFIR4)
   analogReadResolution(12);  //  0- 4095
 #endif
-  int sum = 0;
+  float sum = 0.0;
   int minValue = 1023.0;  // Initialize minValue with the highest possible analog value
   int maxValue = 0.0;     // Initialize maxValue with the lowest possible analog value
 
@@ -572,7 +590,8 @@ float DL_analogReadAndFilter(int analogPin) {
 
 void LOGPRINT(char *str) {
   if (logfileOpened > 0) {
-    failed = logfile.print(str) ? false : true;
+    failed = logfile.print(str) ? failed : true;
+    logfile.flush();
     dataToWrite++;
   }
   if (echoToSerial) {
@@ -582,7 +601,8 @@ void LOGPRINT(char *str) {
 
 void LOGPRINT(const char *str) {
   if (logfileOpened > 0) {
-    failed = logfile.print(str) ? false : true;
+    failed = logfile.print(str) ? failed : true;
+    logfile.flush();
     dataToWrite++;
   }
   if (echoToSerial) {
@@ -592,7 +612,8 @@ void LOGPRINT(const char *str) {
 
 void LOGPRINT(const __FlashStringHelper *str) {
   if (logfileOpened > 0) {
-    failed = logfile.print(str) ? false : true;
+    failed = logfile.print(str) ? failed : true;
+    logfile.flush();
     dataToWrite++;
   }
   if (echoToSerial) {
@@ -602,7 +623,8 @@ void LOGPRINT(const __FlashStringHelper *str) {
 
 void LOGPRINTLN(const __FlashStringHelper *str) {
   if (logfileOpened > 0) {
-    failed = logfile.println(str) ? false : true;
+    failed = logfile.println(str) ? failed : true;
+    logfile.flush();
     dataToWrite++;
   }
   if (echoToSerial) {
@@ -612,7 +634,8 @@ void LOGPRINTLN(const __FlashStringHelper *str) {
 
 void LOGPRINTLN(char *str) {
   if (logfileOpened > 0) {
-    failed = logfile.print(str) ? false : true;
+    failed = logfile.print(str) ? failed : true;
+    logfile.flush();
     dataToWrite++;
   }
   if (echoToSerial) {
@@ -622,7 +645,8 @@ void LOGPRINTLN(char *str) {
 
 void LOGPRINTLN(const char *str) {
   if (logfileOpened > 0) {
-    failed = logfile.print(str) ? false : true;
+    failed = logfile.print(str) ? failed : true;
+    logfile.flush();
     dataToWrite++;
   }
   if (echoToSerial) {
@@ -635,8 +659,11 @@ void LOGPRINT(float val, uint8_t precision = 2) {
     val = 0;
   }
   if (val < 0.0) {
-    if (logfileOpened > 0)
+    if (logfileOpened > 0) {
       logfile.print('-');
+      logfile.flush();
+      dataToWrite++;
+    }
     if (echoToSerial)
       SerialPrint('-');
     val = -val;
@@ -647,7 +674,8 @@ void LOGPRINT(float val, uint8_t precision = 2) {
     SerialPrint(int(val));  // prints the int part
   }
   if (logfileOpened > 0) {
-    failed = logfile.print(int(val), DEC) ? 0 : 1;
+    failed = logfile.print(int(val), DEC) ? failed : 1;
+    logfile.flush();
     dataToWrite++;
   }
   if (precision > 0) {
@@ -662,21 +690,29 @@ void LOGPRINT(float val, uint8_t precision = 2) {
       frac = (int(val) - val) * mult;
 
     if (frac > 0) {
-      if (logfileOpened > 0)
+      if (logfileOpened > 0) {
         logfile.print('.');
+        logfile.flush();
+        dataToWrite++;
+      }
       if (echoToSerial)
         SerialPrint('.');
       unsigned long frac1 = frac;
       while (frac1 /= 10)
         padding--;
       while (padding--) {
-        if (logfileOpened > 0)
+        if (logfileOpened > 0) {
           logfile.print('0');
+          logfile.flush();
+          dataToWrite++;
+        }
         if (echoToSerial)
           SerialPrint('0');
       }
       if (logfileOpened > 0) {
-        failed = logfile.print(frac, DEC) ? 0 : 1;
+        failed = logfile.print(frac, DEC) ? failed : 1;
+        logfile.flush();
+        dataToWrite++;
       }
       if (echoToSerial)
         SerialPrint(frac, DEC);
@@ -687,6 +723,7 @@ void LOGPRINT(float val, uint8_t precision = 2) {
 void LOGPRINT(unsigned long str) {
   if (logfileOpened > 0) {
     logfile.print(str);
+    logfile.flush();
     dataToWrite++;
   }
   if (echoToSerial) {
@@ -701,21 +738,12 @@ int InputIntFromSerial(unsigned int defaultValue = 0) {
   SerialFlushAndClear();
   readSerial(true);
   if (strlen(serialBuffer) > 0) {
-    /*
-    SerialPrint("read:");
-    SerialPrintln(serialBuffer);
-    SerialPrint("atoi:");
-    SerialPrintln(atoi(serialBuffer));
-    */
     return atoi(serialBuffer);
   } else {
     return defaultValue;
   }
 }
 
-/**
-
-*/
 #if LOGVCC
 
 long DL_readVcc() {
@@ -854,7 +882,7 @@ void DL_openLogFile() {
 
     LOGPRINT(delimiter);
     LOGPRINT(F("\"temp\""));
-    OGPRINT(delimiter);
+    LOGPRINT(delimiter);
 
     LOGPRINT(F("\"pressure\""));
     LOGPRINT(delimiter);
@@ -864,7 +892,7 @@ void DL_openLogFile() {
     LOGPRINT(delimiter);
 
     LOGPRINT(F("\"temp\""));
-    LOGPRINT(F(\"pressure\""));
+    LOGPRINT(F("\"pressure\""));
     LOGPRINT(delimiter);
 #endif
   }
@@ -886,7 +914,7 @@ void DL_openLogFile() {
   LOGPRINT(delimiter);
   LOGPRINT(F("\"VCC\""));
 #endif
-  LOGPRINT(F("\r\n"));
+  LOGPRINT(NL);
 }
 
 /**
@@ -1065,17 +1093,16 @@ void DL_initConf() {
 static int readSerial(bool wait) {
   static bool ready = false;  // Flag to indicate if a complete line is ready
   static int cnt = 0;         // Counter for the number of characters read
+  char c;
   do {
 #if BLE_ENABLED
+    // Check BLE for input when connected
     if (BLEconnected) {
-      String commandTmp = readBluetouth();
-      if (commandTmp != "") {
-        strcpy(serialBuffer, commandTmp.c_str());
+      if (readBluetouth(serialBuffer, size_serialBuffer)) {
         return 1;
       }
     }
 #endif
-
 
     // Loop while there is data available on Serial
     while (Serial.available() > 0) {
@@ -1084,9 +1111,8 @@ static int readSerial(bool wait) {
         ready = false;
         return 1;  // Return 1 to indicate a complete line is ready
       }
-
       // Read a character from Serial
-      char c = Serial.read();
+      c = Serial.read();
       // Check if the character is a newline, carriage return, or printable ASCII character
       if (c == '\n' || c == '\r' || (c >= 20 && c <= 126)) {
         // Store the character in the buffer
@@ -1116,16 +1142,6 @@ void switchCommandMode() {
 
 // parse command from serial
 static int parse_serial_command() {
-/*
-#if BLE_ENABLED
-  if (BLEconnected) {
-    String commandTmp = readBluetouth();
-    if (commandTmp != "") {
-      execute_command((char *)commandTmp.c_str());
-    }
-  }
-#endif
-*/
   if (readSerial(false)) {
     execute_command(serialBuffer);
     return 1;
@@ -1152,7 +1168,6 @@ bool SwithLogs(bool logStart) {
   return true;
 }
 
-
 // manage commands
 void execute_command(char *command) {
   unsigned int i;
@@ -1161,6 +1176,14 @@ void execute_command(char *command) {
   } else {
     return;
   }
+  for (i = 0; i < strlen(command); i++) {
+    if (command[i] == '\n' || command[i] == '\r' || (command[i] <= 20 && command[i] >= 126)) {
+      command[i] = '\0';
+      break;
+    }
+}
+
+
   if (strcmp(command, "?") == 0) {
     SerialPrintln();
     SerialPrintln(F("commands:"));
@@ -1205,16 +1228,18 @@ void execute_command(char *command) {
 
 #if MQ2SENSOR_PRESENT
   if (strcmp(command, "autocalib") == 0) {
+    plotterMode = false;
     Mq2Calibration();
     return;
   }
 #endif
   if (strcmp(command, "ls") == 0) {
+    plotterMode = false;
     listFiles();
     return;
   }
   if (strcmp(command, "logs") == 0) {
-    // Serial.flush();
+    plotterMode = false;
     listFiles();
     downloadFile();
     return;
@@ -1227,10 +1252,12 @@ void execute_command(char *command) {
     return;
   }
   if (strcmp(command, "settime") == 0) {
+    plotterMode = false;
     SetDateTime();
     return;
   }
   if (strcmp(command, "setconfig") == 0) {
+    plotterMode = false;
     SetConfig();
     return;
   }
@@ -1516,11 +1543,22 @@ void setup() {
 #endif
 
   SerialPrint(F("init SD "));
+#if defined(ARDUINO_UNOWIFIR4)
+  // Arduino R4 WiFi: Use slower SPI speed for better SD card stability
+  if (!SD.begin(CHIP_SD, SD_SCK_MHZ(4))) {
+    sdPresent = false;
+    printResult(false, true);
+    failed = true;
+  }
+#else
+  // Arduino UNO R3: Use default SPI speed
   if (!SD.begin(CHIP_SD)) {
     sdPresent = false;
     printResult(false, true);
     failed = true;
-  } else {
+  }
+#endif
+  else {
     printResult(true, true);
     sdPresent = true;
   }
@@ -1572,7 +1610,6 @@ void setup() {
   delay(10);
   currentMillis = millis();
   timeTarget = currentMillis + (log_interval_s * 1000);
-  timeTargetFileWrite = currentMillis + SYNC_INTERVAL_ms;
   //-----------init analog input-----------------------------------------<
   // pinMode(LED_BUILTIN, OUTPUT);
 
@@ -1646,7 +1683,6 @@ void loop() {
   updateTimers();
   if (On1Seconds) {
 #if BLE_ENABLED
-    //    Serial.println("gestBluetouth");
     gestBluetouth();
 #endif
   }
@@ -1873,23 +1909,23 @@ void loop() {
       LOGPRINT(delimiter);
       LOGPRINT((float)SGP.getTVOC());
       LOGPRINT(delimiter);
-      SerialPrint((float)SGP.getCO2());
+      LOGPRINT((float)SGP.getCO2());
 #endif
 
 #if LOGVCC
 
       LOGPRINT(delimiter);
-      LOGPRINT(String(vcc));
+      char vccStr[12];
+      ltoa(vcc, vccStr, 10);
+      LOGPRINT(vccStr);
 #endif
       LOGPRINT(F("\n"));
     }
-    if (dataToWrite != 0 && currentMillis >= timeTargetFileWrite) {
+    if (dataToWrite != 0) {
       if (logfileOpened) {
         logfile.flush();
-        // SerialPrintln("flush");
       }
       dataToWrite = 0;
-      timeTargetFileWrite = currentMillis + SYNC_INTERVAL_ms;
     }
   }
 #if LCD_I2C_ENABLED

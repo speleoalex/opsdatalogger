@@ -4,71 +4,422 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CSV to Chart</title><!-- papaparse.min.js chart.js  -->
+    <title>N.A.S.O. Logger viewer</title><!-- papaparse.min.js chart.js  -->
 
     <script src="loggerviewer.js">
         
     </script>
     <style>
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #6c757d;
+            --background-color: #f8f9fa;
+            --sidebar-bg: #ffffff;
+            --text-color: #333;
+            --border-color: #dee2e6;
+            --input-bg: #fff;
+            --input-border: #ced4da;
+            --button-primary-bg: #007bff;
+            --button-primary-hover: #0056b3;
+            --button-secondary-bg: #6c757d;
+            --button-secondary-hover: #545b62;
+        }
+
         body {
-            font-family: Arial, Helvetica, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
         }
 
-        button {
-            background-color: limegreen;
-            color: black;
-            border: none;
-            padding: 5px 15px;
+        .container {
+            display: flex;
+            width: 100%;
+            height: 100%;
+        }
+
+        .sidebar {
+            width: 320px;
+            flex-shrink: 0;
+            background-color: var(--sidebar-bg);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            transition: width 0.3s ease;
+        }
+
+        .sidebar-header {
+            padding: 1.2rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .sidebar-header h2 {
+            margin: 0;
+            font-size: 1.5rem;
+            color: var(--primary-color);
+        }
+
+        .sidebar-content {
+            padding: 1rem;
+            overflow-y: auto;
+            flex-grow: 1;
+        }
+
+        .control-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .control-section h3 {
+            font-size: 1.1rem;
+            margin-top: 0;
+            margin-bottom: 0.8rem;
+            color: var(--secondary-color);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.4rem;
+        }
+
+        .form-group {
+            margin-bottom: 0.8rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 0.3rem;
+            font-size: 0.9rem;
+        }
+
+        .input-with-button {
+            display: flex;
+        }
+
+        .input-with-button input,
+        .input-with-button select {
+            flex-grow: 1;
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+        }
+
+        .input-with-button button {
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
+            border-left: 0;
+        }
+
+        input[type="number"], input[type="text"], select {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid var(--input-border);
+            border-radius: 4px;
+            background-color: var(--input-bg);
+            font-size: 0.9rem;
+            box-sizing: border-box;
+        }
+
+        input[readonly] {
+            background-color: #e9ecef;
+            cursor: not-allowed;
+        }
+
+        button, .button-primary, .button-secondary {
+            padding: 0.5rem 1rem;
+            border: 1px solid transparent;
+            border-radius: 4px;
             cursor: pointer;
-            margin: 3px;
-            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: background-color 0.2s ease, border-color 0.2s ease;
         }
 
-        #loggerviewer {
-            background-color: orange;
-            float: right;
+        .button-primary {
+            background-color: var(--button-primary-bg);
+            color: white;
         }
 
-        button:disabled {
-            background-color: grey;
+        .button-primary:hover {
+            background-color: var(--button-primary-hover);
+        }
+
+        .button-primary:disabled {
+            background-color: #a0caff;
+            cursor: not-allowed;
+        }
+
+        #exportCsvButton {
+            width: 100%;
+            margin-top: 0.5rem;
+            background-color: var(--secondary-color);
+            color: white;
+        }
+        #exportCsvButton:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .button-secondary {
+            width: 100%;
+            background-color: var(--button-secondary-bg);
+            color: white;
+        }
+        .button-secondary:hover {
+            background-color: var(--button-secondary-hover);
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .checkbox-label input {
+            margin-right: 0.5rem;
+        }
+
+        .sidebar-footer {
+            padding: 1rem;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+
+        .sidebar-footer a {
+            color: var(--secondary-color);
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+
+        .sidebar-footer a:hover {
+            color: var(--primary-color);
+        }
+
+        .main-content {
+            flex-grow: 1;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #chart-container {
+            position: relative;
+            flex-grow: 1;
+            width: 100%;
+            height: 100%;
+        }
+
+        #myChart {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        #placeholder-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: var(--secondary-color);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .button-footer {
+            background: none;
+            border: 1px solid var(--secondary-color);
+            color: var(--secondary-color);
+            flex-grow: 1;
+            margin-right: 1rem;
+        }
+        .button-footer:hover {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+        .donate-link {
+             color: var(--secondary-color);
+             text-decoration: none;
+             font-size: 0.9rem;
+             line-height: 40px; /* Align with button */
+        }
+        .donate-link:hover {
+            color: var(--primary-color);
+        }
+
+        #toggleSidebarBtn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+            color: var(--secondary-color);
+            transition: color 0.2s ease;
+        }
+        #toggleSidebarBtn:hover {
+            color: var(--primary-color);
+        }
+
+        .sidebar.collapsed {
+            width: 44px; /* Larghezza sufficiente per il bottone */
+        }
+
+        .sidebar.collapsed .sidebar-header h2,
+        .sidebar.collapsed .sidebar-content,
+        .sidebar.collapsed .sidebar-footer {
+            display: none;
+        }
+
+        .sidebar.collapsed .sidebar-header {
+            justify-content: center;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                height: auto;
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+                max-height: 35vh; /* Reduced sidebar height on mobile */
+            }
+
+            .main-content {
+                padding: 1rem;
+                flex-grow: 1;
+            }
+
+            .sidebar-header h2 {
+                font-size: 1.3rem;
+            }
         }
     </style>
 </head>
 
 <body>
-    <nav>
-        <input style="display:none" id="logfile" type="file" id="csvFileInput" accept=".csv,.txt"
-            onchange="handleFiles(this.files)" />
-        <button id="loggerviewer" onclick="window.location='loggermanager.htm'">Logger manager</button>
-        <button onclick="document.getElementById('logfile').click();">Open CSV file</button>
-        <div style="display:none" id="MQ2Div">
-            <fieldset>
-            <legend>Calibration</legend>
-            Start row:<input value="1" min="1" placeholder="start" id="startfrom" onchange="updateChartWithZerogas();"
-                type="number" min="0" max="1023" value="">
-            ZeroGas:<input placeholder="zero gas adc" id="zerogasInput" onchange="updateChartWithZerogas();" type="number"
-                min="0" max="1023" value=""><button onclick="ZeroGasAuto();">Auto</button>
-            <label><input type="checkbox" id="heatingCompensation" onchange="toggleHeatingParams(); updateChartWithZerogas();"> Heating compensation</label>
-            <br>
-            <span id="heatingParams" style="display:none;">
-                Heating time (min): <input type="number" id="heatingTime" value="120" min="1" max="900" onchange="updateChartWithZerogas();">
-                Initial ADC value: <input type="number" id="initialADC" value="" placeholder="Auto" onchange="updateChartWithZerogas();"><button onclick="HeatingAuto();">Auto</button>
-                Curvature factor: <input type="number" id="curveFactor" value="9" min="1" max="20" step="0.1" onchange="updateChartWithZerogas();">
-            </span>
-            </fieldset>
-            <div style="text-align: right;">
-            <button onclick="exportCSV();">Export CSV</button>
-            </div>
-        </div>
+    <div class="container">
+        <aside class="sidebar">
+            <header class="sidebar-header">
+                <h2 data-i18n="auto">Logger Viewer</h2>
+                <button id="toggleSidebarBtn" data-i18n-title="auto" title="Hide panel">&laquo;</button>
+            </header>
 
-    </nav>
-    <canvas id="myChart"></canvas>
+            <div class="sidebar-content">
+                <section class="control-section">
+                    <h3 data-i18n="auto">File</h3>
+                    <input style="display:none" id="logfile" type="file" accept=".csv,.txt" onchange="handleFiles(this.files)" />
+                    <button class="button-primary" onclick="document.getElementById('logfile').click();" data-i18n="auto">Open CSV File</button>
+                    <button id="exportCsvButton" onclick="exportCSV();" disabled data-i18n="auto">Export CSV</button>
+                </section>
+
+                <div id="controlsWrapper" class="hidden">
+                    <section class="control-section">
+                        <h3 data-i18n="auto">Sensor Calibration</h3>
+                        <div class="form-group">
+                            <label for="startfrom" data-i18n="auto">Starting Row</label>
+                            <input value="1" min="1" id="startfrom" onchange="updateChartWithZerogas();" type="number">
+                        </div>
+                        <div class="form-group">
+                            <label for="zerogasInput" data-i18n="auto">ZeroGas ADC</label>
+                            <div class="input-with-button">
+                                <input data-i18n-placeholder="auto" placeholder="Clean Air ADC Value" id="zerogasInput" onchange="updateChartWithZerogas();" type="number" min="0" max="1023">
+                                <button onclick="ZeroGasAuto();" data-i18n="auto">Auto</button>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="control-section">
+                        <h3 data-i18n="auto">Heating Compensation</h3>
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="heatingCompensation" onchange="toggleHeatingParams(); updateChartWithZerogas();">
+                                <span data-i18n="auto">Enable Compensation</span>
+                            </label>
+                        </div>
+                        <div id="heatingParams" style="display:none;">
+                            <div class="form-group">
+                                <label for="heatingTime" data-i18n="auto">Heating Time (min)</label>
+                                <input type="number" id="heatingTime" value="120" min="1" max="9000" onchange="updateChartWithZerogas();">
+                            </div>
+                            <div class="form-group">
+                                <label for="initialADC" data-i18n="auto">Initial ADC Value</label>
+                                <div class="input-with-button">
+                                    <input type="number" id="initialADC" data-i18n-placeholder="auto" placeholder="Auto" onchange="updateChartWithZerogas();">
+                                    <button onclick="HeatingAuto();" data-i18n="auto">Auto</button>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="curveFactor" data-i18n="auto">Curvature Factor</label>
+                                <input type="number" id="curveFactor" value="9" min="1" max="40" step="0.1" onchange="updateChartWithZerogas();">
+                            </div>
+                            <div class="form-group">
+                                <label for="curveTypeSelect" data-i18n="auto">Curve Type</label>
+                                <div class="input-with-button">
+                                    <select id="curveTypeSelect" onchange="onCurveTypeChange();">
+                                        <option value="auto" data-i18n="auto">Auto-detected</option>
+                                        <option value="exponential" data-i18n="auto">Exponential</option>
+                                        <option value="linear" data-i18n="auto">Linear</option>
+                                        <option value="power" data-i18n="auto">Power-law</option>
+                                    </select>
+                                    <input type="text" id="curveType" data-i18n-placeholder="auto" placeholder="Not analyzed" readonly>
+                                </div>
+                            </div>
+                            <button onclick="WarmupAnalysisAuto();" class="button-secondary" data-i18n="auto">Auto Warmup Analysis</button>
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+            <footer class="sidebar-footer">
+                <button onclick="goToManager()" class="button-footer" data-i18n="auto">Logger Manager</button>
+                <a href="https://www.paypal.com/donate/?business=TKQWLKGENEP7L&no_recurring=0&item_name=Progetto+FluxyLogger+NASO&currency_code=EUR" target="_blank" class="donate-link" data-i18n="auto">Donate</a>
+            </footer>
+        </aside>
+
+        <main class="main-content">
+            <div id="chart-container">
+                <canvas id="myChart"></canvas>
+                <div id="placeholder-message">
+                    <h3 data-i18n="auto">No data to display</h3>
+                    <p data-i18n="auto">To start, open a CSV file using the panel on the left.</p>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
     <script>
+        function getParam(name) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(name);
+        }
+        function goToManager() {
+            if (getParam('popup') === '1') {
+                window.close();
+            } else {
+                window.location.href = 'loggermanager.htm';
+            }
+        }
+
         var DatasetsCSV = [];
         var DatasetsClean = [];
 
         var labels = [];
         var datasetVisibilityState = {};
+        var cachedTimeInterval = null; // Cache for time interval detection
         // Sensor characteristics for calibration  -------->
         var RO_CLEAN_AIR_FACTOR = 9.83;
         var RL_VALUE = 5.0;
@@ -172,8 +523,211 @@
                 if (!document.getElementById('initialADC').value && DatasetsClean.length > 0 && DatasetsClean[0].data.length > 0) {
                     document.getElementById('initialADC').value = Math.round(DatasetsClean[0].data[0]);
                 }
+                // Add warmup indicator when enabling heating compensation
+                if (IsMQ2Chart()) {
+                    var heatingTime = parseFloat(document.getElementById("heatingTime").value) || 120;
+                    
+                    // If curve type is not set and dropdown is on auto, try to detect it quickly
+                    if (!document.getElementById('curveType').value && 
+                        document.getElementById('curveTypeSelect').value === 'auto' && 
+                        DatasetsCSV.length > 0) {
+                        var startfrom = parseInt(document.getElementById("startfrom").value) - 1;
+                        var adcData = DatasetsCSV[0].data.slice(startfrom);
+                        if (adcData.length >= 10) {
+                            var analysisPoints = Math.max(10, Math.min(Math.floor(adcData.length * 0.2), 40));
+                            var curveType = detectCurveType(adcData, analysisPoints);
+                            updateCurveTypeDisplay(curveType.type, curveType.factor);
+                        }
+                    }
+                    
+                    addWarmupIndicator(heatingTime);
+                }
             } else {
                 params.style.display = 'none';
+                // Remove warmup indicator when disabling heating compensation
+                removeWarmupIndicator();
+                // Reset curve type controls
+                document.getElementById('curveTypeSelect').value = "auto";
+                document.getElementById('curveType').value = "";
+            }
+        }
+
+        // Function to detect time interval between samples from the CSV data
+        function detectTimeInterval() {
+            // Return cached value if available
+            if (cachedTimeInterval !== null) {
+                return cachedTimeInterval;
+            }
+            
+            if (labels.length < 2) {
+                console.log("Not enough data points to detect time interval, using default 0.5 minutes");
+                cachedTimeInterval = 0.5; // Default 30 seconds
+                return cachedTimeInterval;
+            }
+            
+            // Try to parse the timestamp format from labels
+            var firstLabel = labels[0];
+            var secondLabel = labels[1];
+            
+            // Check if labels contain time information
+            if (firstLabel && secondLabel) {
+                // Try different timestamp formats
+                var timeInterval = parseTimeInterval(firstLabel, secondLabel);
+                if (timeInterval > 0) {
+                    console.log("Detected time interval: " + timeInterval + " minutes between samples");
+                    cachedTimeInterval = timeInterval;
+                    return cachedTimeInterval;
+                }
+            }
+            
+            // Fallback: assume based on data length and common logging intervals
+            var totalDataPoints = labels.length;
+            if (totalDataPoints > 1440) { // More than 24 hours of minute-by-minute data
+                cachedTimeInterval = 1/60; // 1 second intervals
+            } else if (totalDataPoints > 288) { // More than 24 hours of 5-minute data
+                cachedTimeInterval = 5/60; // 5 second intervals  
+            } else if (totalDataPoints > 144) { // More than 24 hours of 10-minute data
+                cachedTimeInterval = 0.5; // 30 second intervals (default)
+            } else {
+                cachedTimeInterval = 1.0; // 1 minute intervals
+            }
+            
+            console.log("Using fallback time interval: " + cachedTimeInterval + " minutes between samples");
+            return cachedTimeInterval;
+        }
+        
+        // Function to parse time interval from two timestamp labels
+        function parseTimeInterval(label1, label2) {
+            try {
+                // Common formats: "2024-06-25 14:30:15", "14:30:15", "1687694415" (unix timestamp)
+                
+                // Try parsing as Date objects
+                var date1 = new Date(label1);
+                var date2 = new Date(label2);
+                
+                if (!isNaN(date1.getTime()) && !isNaN(date2.getTime())) {
+                    var diffMs = Math.abs(date2.getTime() - date1.getTime());
+                    var diffMinutes = diffMs / (1000 * 60);
+                    return diffMinutes;
+                }
+                
+                // Try parsing as time only "HH:MM:SS"
+                var timeRegex = /(\d{1,2}):(\d{2}):(\d{2})/;
+                var match1 = label1.match(timeRegex);
+                var match2 = label2.match(timeRegex);
+                
+                if (match1 && match2) {
+                    var time1 = parseInt(match1[1]) * 3600 + parseInt(match1[2]) * 60 + parseInt(match1[3]);
+                    var time2 = parseInt(match2[1]) * 3600 + parseInt(match2[2]) * 60 + parseInt(match2[3]);
+                    var diffSeconds = Math.abs(time2 - time1);
+                    
+                    // Handle day rollover
+                    if (diffSeconds > 43200) { // More than 12 hours difference, likely day rollover
+                        diffSeconds = 86400 - diffSeconds;
+                    }
+                    
+                    return diffSeconds / 60; // Convert to minutes
+                }
+                
+                // Try parsing as unix timestamp
+                var timestamp1 = parseInt(label1);
+                var timestamp2 = parseInt(label2);
+                
+                if (!isNaN(timestamp1) && !isNaN(timestamp2)) {
+                    var diffSeconds = Math.abs(timestamp2 - timestamp1);
+                    return diffSeconds / 60; // Convert to minutes
+                }
+                
+            } catch (e) {
+                console.log("Error parsing timestamps: " + e);
+            }
+            
+            return 0; // Could not parse
+        }
+
+        // Function to handle manual curve type selection
+        function onCurveTypeChange() {
+            var selectedType = document.getElementById('curveTypeSelect').value;
+            
+            if (selectedType === 'auto') {
+                // Auto mode: detect curve type if data is available
+                if (DatasetsCSV.length > 0 && DatasetsCSV[0].data.length >= 10) {
+                    var startfrom = parseInt(document.getElementById("startfrom").value) - 1;
+                    var adcData = DatasetsCSV[0].data.slice(startfrom);
+                    var analysisPoints = Math.max(10, Math.min(Math.floor(adcData.length * 0.2), 40));
+                    var curveType = detectCurveType(adcData, analysisPoints);
+                    
+                    updateCurveTypeDisplay(curveType.type, curveType.factor);
+                    
+                    // Update curvature factor based on detected type
+                    var suggestedCurveFactor = getCurvatureFactorForType(curveType.type, curveType.factor);
+                    document.getElementById('curveFactor').value = suggestedCurveFactor;
+                } else {
+                    document.getElementById('curveType').value = "Nessun dato";
+                }
+            } else {
+                // Manual mode: use selected type
+                updateCurveTypeDisplay(selectedType, null);
+                
+                // Set appropriate curvature factor for manual selection
+                var suggestedCurveFactor = getCurvatureFactorForType(selectedType, 0.7); // Default factor
+                document.getElementById('curveFactor').value = suggestedCurveFactor;
+            }
+            
+            // Update chart with new parameters
+            updateChartWithZerogas();
+        }
+        
+        // Function to update curve type display
+        function updateCurveTypeDisplay(type, factor) {
+            var displayText;
+            switch(type) {
+                case "exponential":
+                    displayText = "Esponenziale";
+                    break;
+                case "linear":
+                    displayText = "Lineare";
+                    break;
+                case "power":
+                    displayText = "Power-law";
+                    break;
+                default:
+                    displayText = "Rilevata";
+            }
+            
+            // Always show current curvature factor from form
+            var currentCurveFactor = document.getElementById('curveFactor').value;
+            if (currentCurveFactor) {
+                displayText += " (" + currentCurveFactor + ")";
+            } else if (factor !== null && factor !== undefined) {
+                displayText += " (" + factor.toFixed(2) + ")";
+            }
+            
+            document.getElementById('curveType').value = displayText;
+        }
+        
+        // Function to get appropriate curvature factor for curve type
+        function getCurvatureFactorForType(type, decayFactor) {
+            switch(type) {
+                case "exponential":
+                    // For exponential curves, higher curvature factors
+                    if (decayFactor < 0.5) return 20;
+                    if (decayFactor < 0.7) return 15;
+                    if (decayFactor < 0.85) return 10;
+                    return 7;
+                    
+                case "linear":
+                    // Linear curves need low curvature factors
+                    return 2;
+                    
+                case "power":
+                    // Power law curves - intermediate curvature
+                    if (decayFactor < 0.6) return 12;
+                    if (decayFactor < 0.8) return 8;
+                    return 5;
+                    
+                default:
+                    return 9; // Default
             }
         }
 
@@ -194,6 +748,499 @@
                 alert("No data available. Please load a CSV file first.");
             }
         }
+
+        // Function to automatically detect sensor warmup time based on initial curve shape
+        function detectWarmupTime() {
+            if (DatasetsCSV.length === 0 || DatasetsCSV[0].data.length < 20) {
+                console.log("Insufficient data for warmup analysis");
+                return null;
+            }
+            
+            var startfrom = parseInt(document.getElementById("startfrom").value) - 1;
+            var adcData = DatasetsCSV[0].data.slice(startfrom);
+            var zeroGasValue = parseFloat(document.getElementById("zerogasInput").value);
+            
+            if (!zeroGasValue || zeroGasValue <= 0) {
+                console.log("Zero gas value required for warmup analysis");
+                return null;
+            }
+            
+            var initialValue = parseFloat(adcData[0]);
+            var targetValue = zeroGasValue;
+            
+            // If already at target, no warmup needed
+            if (Math.abs(initialValue - targetValue) < 2) {
+                return 0;
+            }
+            
+            // Get the curvature factor from UI (this will be used for estimation)
+            var formCurveFactor = parseFloat(document.getElementById("curveFactor").value) || 9;
+            
+            // Analyze initial curve shape using first 20% of data or minimum 10 points
+            var analysisPoints = Math.max(10, Math.min(Math.floor(adcData.length * 0.2), 40));
+            
+            // Detect curve type for classification
+            var curveType = detectCurveType(adcData, analysisPoints);
+            
+            // Use the curvature compensation formula to estimate warmup time
+            var estimatedWarmupTime = estimateWarmupTimeUsingCompensation(
+                initialValue, 
+                targetValue, 
+                formCurveFactor,
+                analysisPoints
+            );
+            
+            console.log("Detected warmup time from curve shape: " + estimatedWarmupTime + " minutes");
+            console.log("Curve type: " + curveType.type + ", using curvature factor: " + formCurveFactor);
+            
+            return estimatedWarmupTime;
+        }
+        
+        // Function to estimate warmup time using the same compensation formula
+        function estimateWarmupTimeUsingCompensation(initialValue, targetValue, curveFactor, observedPoints) {
+            var totalChange = Math.abs(initialValue - targetValue);
+            var timeStep = detectTimeInterval(); // Use detected time interval
+            var observedTime = observedPoints * timeStep;
+            
+            // Find when the compensation formula would bring us close to the target
+            // We want: targetValue = initialValue - ((initialValue - targetValue) * (1 - t)^curveFactor)
+            // Solving for t when the difference is within 1 ADC unit
+            
+            var targetThreshold = 1.0; // Within 1 ADC unit of target
+            var maxTime = 300; // Max 5 hours
+            
+            for (var testTime = observedTime; testTime <= maxTime; testTime += timeStep) {
+                var normalizedTime = testTime / testTime; // This approach needs refinement
+                
+                // Try different total times to see which gives reasonable decay
+                for (var totalTime = testTime; totalTime <= maxTime; totalTime += 5) {
+                    normalizedTime = testTime / totalTime;
+                    var compensatedDifference = totalChange * Math.pow(1 - normalizedTime, curveFactor);
+                    var currentValue = targetValue + compensatedDifference;
+                    
+                    if (Math.abs(currentValue - targetValue) <= targetThreshold) {
+                        return Math.round(totalTime);
+                    }
+                }
+            }
+            
+            // Fallback: estimate based on observed behavior
+            return Math.min(Math.round(observedTime * 3), 180); // Conservative estimate, max 3 hours
+        }
+        
+        // Function to detect the type of curve (exponential, linear, etc.)
+        function detectCurveType(adcData, analysisPoints) {
+            var initialValue = parseFloat(adcData[0]);
+            var changes = [];
+            
+            // Calculate relative changes
+            for (var i = 1; i < analysisPoints; i++) {
+                var currentValue = parseFloat(adcData[i]);
+                var previousValue = parseFloat(adcData[i-1]);
+                var relativeChange = Math.abs(currentValue - previousValue) / Math.abs(initialValue - previousValue + 0.001);
+                changes.push(relativeChange);
+            }
+            
+            // Analyze if changes are decreasing (exponential) or constant (linear)
+            var decayFactor = 0;
+            var linearityScore = 0;
+            
+            for (var i = 1; i < changes.length; i++) {
+                if (changes[i-1] > 0) {
+                    decayFactor += changes[i] / changes[i-1];
+                }
+                linearityScore += Math.abs(changes[i] - changes[0]);
+            }
+            
+            decayFactor = decayFactor / (changes.length - 1);
+            linearityScore = linearityScore / (changes.length - 1);
+            
+            if (decayFactor < 0.8 && linearityScore > 0.1) {
+                return { type: "exponential", factor: decayFactor };
+            } else if (linearityScore < 0.05) {
+                return { type: "linear", factor: 1.0 };
+            } else {
+                return { type: "power", factor: decayFactor };
+            }
+        }
+        
+        // Function to estimate warmup time based on curve shape
+        function estimateWarmupTimeFromShape(initialValue, targetValue, curveType, rates, analysisPoints) {
+            var totalChange = Math.abs(initialValue - targetValue);
+            var observedChange = 0;
+            
+            // Calculate how much change we've observed in the analysis period
+            for (var i = 0; i < rates.length; i++) {
+                observedChange += rates[i] * 0.5; // 0.5 minutes per point
+            }
+            
+            var analysisTimeMinutes = analysisPoints * 0.5;
+            var remainingChange = totalChange - observedChange;
+            
+            if (remainingChange <= 0) {
+                return analysisTimeMinutes;
+            }
+            
+            var estimatedTime;
+            
+            switch (curveType.type) {
+                case "exponential":
+                    // For exponential decay: estimate time constant
+                    var timeConstant = -analysisTimeMinutes / Math.log(curveType.factor);
+                    estimatedTime = timeConstant * Math.log(totalChange / 1.0); // Time to reach within 1 ADC unit
+                    break;
+                    
+                case "linear":
+                    // For linear change: simple proportion
+                    var averageRate = observedChange / analysisTimeMinutes;
+                    estimatedTime = totalChange / (averageRate + 0.001);
+                    break;
+                    
+                case "power":
+                    // For power law decay: estimate based on observed trend
+                    var avgRate = observedChange / analysisTimeMinutes;
+                    var decayRate = avgRate * Math.pow(curveType.factor, analysisTimeMinutes / 10);
+                    estimatedTime = remainingChange / (decayRate + 0.001) + analysisTimeMinutes;
+                    break;
+                    
+                default:
+                    estimatedTime = analysisTimeMinutes * 3; // Conservative estimate
+            }
+            
+            // Clamp to reasonable values
+            estimatedTime = Math.max(10, Math.min(estimatedTime, 300)); // Between 10 minutes and 5 hours
+            
+            return Math.round(estimatedTime);
+        }
+
+        // Function to analyze curve curvature based on initial shape characteristics
+        function analyzeCurvature() {
+            if (DatasetsCSV.length === 0 || DatasetsCSV[0].data.length < 20) {
+                console.log("Insufficient data for curvature analysis");
+                return null;
+            }
+            
+            var startfrom = parseInt(document.getElementById("startfrom").value) - 1;
+            var adcData = DatasetsCSV[0].data.slice(startfrom);
+            var zeroGasValue = parseFloat(document.getElementById("zerogasInput").value);
+            
+            if (!zeroGasValue || zeroGasValue <= 0) {
+                console.log("Zero gas value required for curvature analysis");
+                return 9; // Default value
+            }
+            
+            var initialValue = parseFloat(adcData[0]);
+            var targetValue = zeroGasValue;
+            
+            // Analyze initial curve shape using first portion of data
+            var analysisPoints = Math.max(10, Math.min(Math.floor(adcData.length * 0.3), 60));
+            var curveType = detectCurveType(adcData, analysisPoints);
+            
+            // Calculate curvature factor based on the detected curve type and its characteristics
+            var curvatureFactor;
+            
+            switch (curveType.type) {
+                case "exponential":
+                    // For exponential curves, higher curvature factors
+                    if (curveType.factor < 0.5) {
+                        curvatureFactor = 20; // Very steep exponential
+                    } else if (curveType.factor < 0.7) {
+                        curvatureFactor = 15; // Steep exponential
+                    } else if (curveType.factor < 0.85) {
+                        curvatureFactor = 10; // Moderate exponential
+                    } else {
+                        curvatureFactor = 7; // Mild exponential
+                    }
+                    break;
+                    
+                case "linear":
+                    // Linear curves need low curvature factors
+                    curvatureFactor = 2;
+                    break;
+                    
+                case "power":
+                    // Power law curves - intermediate curvature
+                    if (curveType.factor < 0.6) {
+                        curvatureFactor = 12;
+                    } else if (curveType.factor < 0.8) {
+                        curvatureFactor = 8;
+                    } else {
+                        curvatureFactor = 5;
+                    }
+                    break;
+                    
+                default:
+                    curvatureFactor = 9; // Default
+            }
+            
+            // Fine-tune based on actual curve behavior
+            var initialChangeRate = Math.abs(parseFloat(adcData[1]) - parseFloat(adcData[0]));
+            var midChangeRate = analysisPoints > 5 ? Math.abs(parseFloat(adcData[5]) - parseFloat(adcData[4])) : initialChangeRate;
+            
+            if (analysisPoints > 5 && initialChangeRate > 0) {
+                var rateRatio = midChangeRate / initialChangeRate;
+                if (rateRatio < 0.5) {
+                    curvatureFactor += 3; // Curve is getting steeper, increase factor
+                } else if (rateRatio > 0.9) {
+                    curvatureFactor = Math.max(2, curvatureFactor - 2); // More linear behavior
+                }
+            }
+            
+            // Clamp to valid range
+            curvatureFactor = Math.max(1, Math.min(20, curvatureFactor));
+            
+            console.log("Analyzed curvature from initial shape:");
+            console.log("- Curve type: " + curveType.type);
+            console.log("- Decay factor: " + curveType.factor.toFixed(3));
+            console.log("- Curvature factor: " + curvatureFactor);
+            
+            return curvatureFactor;
+        }
+
+        // Auto function for complete warmup analysis
+        function WarmupAnalysisAuto() {
+            if (DatasetsCSV.length === 0 || DatasetsCSV[0].data.length < 10) {
+                alert("No sufficient data available. Please load a CSV file first.");
+                return;
+            }
+            
+            // Detect warmup time
+            var detectedWarmupTime = detectWarmupTime();
+            if (detectedWarmupTime) {
+                document.getElementById('heatingTime').value = Math.round(detectedWarmupTime);
+                console.log("Auto-detected warmup time: " + detectedWarmupTime + " minutes");
+            }
+            
+            // Analyze curvature
+            var detectedCurvature = analyzeCurvature();
+            if (detectedCurvature) {
+                document.getElementById('curveFactor').value = detectedCurvature;
+                console.log("Auto-detected curvature factor: " + detectedCurvature);
+            }
+            
+            // Auto-detect initial ADC
+            HeatingAuto();
+            
+            // Update curve type display
+            var startfrom = parseInt(document.getElementById("startfrom").value) - 1;
+            var adcData = DatasetsCSV[0].data.slice(startfrom);
+            var analysisPoints = Math.max(10, Math.min(Math.floor(adcData.length * 0.2), 40));
+            var curveType = detectCurveType(adcData, analysisPoints);
+            
+            // Update dropdown to auto and display detected type
+            document.getElementById('curveTypeSelect').value = 'auto';
+            updateCurveTypeDisplay(curveType.type, curveType.factor);
+            
+            // Show results
+            var resultsText = "Analisi automatica della curva completata:\n\n";
+            if (detectedWarmupTime) {
+                resultsText += "🕐 Tempo di riscaldamento stimato: " + Math.round(detectedWarmupTime) + " minuti\n";
+                resultsText += "   (basato sulla forma iniziale della curva)\n\n";
+            }
+            if (detectedCurvature) {
+                resultsText += "📈 Fattore di curvatura: " + detectedCurvature + "\n";
+                resultsText += "   (calcolato dal tipo di decadimento rilevato)\n\n";
+            }
+            
+            var curveTypeText;
+            switch(curveType.type) {
+                case "exponential":
+                    curveTypeText = "Esponenziale (decadimento rapido iniziale)";
+                    break;
+                case "linear":
+                    curveTypeText = "Lineare (decadimento costante)";
+                    break;
+                case "power":
+                    curveTypeText = "Power-law (decadimento variabile)";
+                    break;
+                default:
+                    curveTypeText = "Mista";
+            }
+            resultsText += "🔍 Tipo di curva rilevata: " + curveTypeText;
+            resultsText += "\n\nI parametri sono stati aggiornati automaticamente.";
+            
+            alert(resultsText);
+            
+            // Add visual indicator dataset for warmup end point
+            addWarmupIndicator(detectedWarmupTime);
+            
+            // Update the chart
+            updateChartWithZerogas();
+        }
+
+        // Function to add warmup indicator and theoretical curve to chart data
+        function addWarmupIndicator(warmupTimeMinutes) {
+            if (!warmupTimeMinutes || !IsMQ2Chart()) return;
+            
+            // Remove existing warmup indicators if present
+            for (var i = DatasetsClean.length - 1; i >= 0; i--) {
+                if (DatasetsClean[i].label === "Warmup End" || 
+                    DatasetsClean[i].label.startsWith("Curve:") || 
+                    DatasetsClean[i].label === "Theoretical Warmup") {
+                    DatasetsClean.splice(i, 1);
+                }
+            }
+            
+            var timeInterval = detectTimeInterval(); // Get actual time interval from data
+            var warmupPointIndex = Math.round(warmupTimeMinutes / timeInterval);
+            if (warmupPointIndex >= labels.length) return;
+            
+            var startfrom = parseInt(document.getElementById("startfrom").value) - 1;
+            var zeroGasValue = parseFloat(document.getElementById("zerogasInput").value);
+            var initialADC = parseFloat(document.getElementById("initialADC").value);
+            var curveFactor = parseFloat(document.getElementById("curveFactor").value) || 9;
+            
+            // Generate theoretical warmup curve
+            if (initialADC && zeroGasValue && DatasetsClean[0].data.length > 0) {
+                var theoreticalCurve = generateTheoreticalWarmupCurve(
+                    initialADC, 
+                    zeroGasValue, 
+                    warmupTimeMinutes, 
+                    curveFactor, 
+                    startfrom
+                );
+                
+                console.log("Generated theoretical curve with " + theoreticalCurve.filter(x => x !== null).length + " points");
+                console.log("Curve starts at:", initialADC, "ends at:", zeroGasValue, "duration:", warmupTimeMinutes, "min");
+                
+                DatasetsClean.push({
+                    label: "Theoretical Warmup",
+                    data: theoreticalCurve,
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    borderWidth: 3,
+                    borderDash: [8, 4],
+                    fill: false,
+                    pointRadius: 1,
+                    pointHoverRadius: 4,
+                    tension: 0.1, // Add some smoothing
+                    yAxisID: 'y' // Use left axis (ADC values)
+                });
+            }
+            
+            // Create warmup end indicator dataset with a single point
+            var indicatorData = new Array(labels.length).fill(null);
+            
+            if (warmupPointIndex < DatasetsClean[0].data.length && DatasetsClean[0].data[warmupPointIndex + startfrom]) {
+                indicatorData[warmupPointIndex + startfrom] = DatasetsClean[0].data[warmupPointIndex + startfrom];
+                
+                DatasetsClean.push({
+                    label: "Warmup End",
+                    data: indicatorData,
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    backgroundColor: 'rgba(255, 99, 132, 0.8)',
+                    pointRadius: 8,
+                    pointHoverRadius: 10,
+                    borderWidth: 3,
+                    fill: false,
+                    yAxisID: 'y' // Use left axis (ADC values)
+                });
+            }
+            
+            // Add curve type indicator near the beginning
+            var curveTypeText = document.getElementById('curveType').value;
+            var currentCurveFactor = document.getElementById('curveFactor').value;
+            var selectedCurveType = document.getElementById('curveTypeSelect').value;
+            
+            if (curveTypeText && curveTypeText !== "") {
+                var curveIndicatorIndex = Math.min(5, Math.floor(warmupPointIndex * 0.2)); // Show at 20% of warmup time or point 5
+                var curveIndicatorData = new Array(labels.length).fill(null);
+                
+                if (curveIndicatorIndex < DatasetsClean[0].data.length && DatasetsClean[0].data[curveIndicatorIndex + startfrom]) {
+                    curveIndicatorData[curveIndicatorIndex + startfrom] = DatasetsClean[0].data[curveIndicatorIndex + startfrom];
+                    
+                    // Create label showing current curve type and factor from form
+                    var labelText = "Curve: ";
+                    if (selectedCurveType === 'auto') {
+                        labelText += curveTypeText; // Use detected type with its factor
+                    } else {
+                        // Use manual selection with current factor from form
+                        var manualTypeText;
+                        switch(selectedCurveType) {
+                            case "exponential":
+                                manualTypeText = "Esponenziale";
+                                break;
+                            case "linear":
+                                manualTypeText = "Lineare";
+                                break;
+                            case "power":
+                                manualTypeText = "Power-law";
+                                break;
+                            default:
+                                manualTypeText = selectedCurveType;
+                        }
+                        labelText += manualTypeText + " (" + currentCurveFactor + ")";
+                    }
+                    
+                    DatasetsClean.push({
+                        label: labelText,
+                        data: curveIndicatorData,
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        backgroundColor: 'rgba(54, 162, 235, 0.8)',
+                        pointRadius: 6,
+                        pointHoverRadius: 8,
+                        borderWidth: 2,
+                        fill: false,
+                        yAxisID: 'y' // Use left axis (ADC values)
+                    });
+                }
+            }
+        }
+        
+        // Function to generate theoretical warmup curve based on detected parameters
+        function generateTheoreticalWarmupCurve(initialADC, zeroGasADC, heatingTimeMinutes, curveFactor, startOffset) {
+            var theoreticalData = new Array(labels.length).fill(null);
+            var timeInterval = detectTimeInterval(); // Get actual time interval from data
+            var warmupPoints = Math.round(heatingTimeMinutes / timeInterval); // Convert minutes to data points
+            
+            // Generate curve starting from the startOffset position
+            for (var i = 0; i < labels.length; i++) {
+                if (i < startOffset) {
+                    // Before start: no data
+                    theoreticalData[i] = null;
+                } else {
+                    var pointsFromStart = i - startOffset;
+                    var timeMinutes = pointsFromStart * timeInterval; // Use detected time interval
+                    
+                    if (timeMinutes >= heatingTimeMinutes) {
+                        // After warmup time, maintain zero gas value
+                        theoreticalData[i] = zeroGasADC;
+                    } else {
+                        // During warmup: apply the same compensation formula used in the actual code
+                        var normalizedTime = timeMinutes / heatingTimeMinutes;
+                        var curvatureExponent = curveFactor;
+                        
+                        // Calculate the ADC difference due to heating (same as in applyHeatingCompensation)
+                        var adcHeatingError = (initialADC - zeroGasADC) * Math.pow(1 - normalizedTime, curvatureExponent);
+                        
+                        // The theoretical curve shows what the ADC should look like during warmup
+                        var theoreticalADC = zeroGasADC + adcHeatingError;
+                        theoreticalData[i] = Math.max(theoreticalADC, zeroGasADC);
+                    }
+                }
+            }
+            
+            return theoreticalData;
+        }
+
+        // Function to remove warmup indicator from chart data
+        function removeWarmupIndicator() {
+            // Remove existing warmup indicators if present
+            var removed = false;
+            for (var i = DatasetsClean.length - 1; i >= 0; i--) {
+                if (DatasetsClean[i].label === "Warmup End" || 
+                    DatasetsClean[i].label.startsWith("Curve:") || 
+                    DatasetsClean[i].label === "Theoretical Warmup") {
+                    DatasetsClean.splice(i, 1);
+                    removed = true;
+                }
+            }
+            // Update the chart after removing the indicators
+            if (removed && window.myChart) {
+                displayChart(labels, DatasetsClean);
+            }
+        }
+
         // Function to calculate the percentage of gas concentration
         function MQ2_PPM_gas(resCurrent, resZero) {
             // Calculate the ratio of current resistance to zero gas resistance
@@ -235,6 +1282,20 @@
             var initialADC = parseFloat(document.getElementById("initialADC").value);
             var curveFactor = parseFloat(document.getElementById("curveFactor").value) || 9;
             
+            // Update warmup indicator when heating compensation is enabled and time changes
+            if (heatingEnabled && IsMQ2Chart()) {
+                // Update curve type display to reflect current curvature factor
+                var curveTypeDisplayValue = document.getElementById('curveType').value;
+                if (curveTypeDisplayValue) {
+                    var selectedType = document.getElementById('curveTypeSelect').value;
+                    if (selectedType !== 'auto') {
+                        // For manual selection, update the display to show current factor
+                        updateCurveTypeDisplay(selectedType, null);
+                    }
+                }
+                addWarmupIndicator(heatingTime);
+            }
+            
             console.log("data 0");
             var i;
             for (i in DatasetsCSV[0].data) {
@@ -245,7 +1306,8 @@
                     // Apply heating compensation if enabled
                     if (heatingEnabled) {
                         // Calculate the elapsed time in minutes from the start of the data
-                        var timeFromStart = (i - startfrom) * 0.5; // Assuming 30 seconds between readings
+                        var timeInterval = detectTimeInterval(); // Get actual time interval
+                        var timeFromStart = (i - startfrom) * timeInterval;
                         
                         // If initialADC is not set, use the first ADC value
                         if (!initialADC && i == startfrom) {
@@ -358,6 +1420,7 @@
             labels = [];
             DatasetsCSV = [];
             DatasetsClean = [];
+            cachedTimeInterval = null; // Reset time interval cache for new file
 
             if (window.FileReader) {
                 let reader = new FileReader();
@@ -374,6 +1437,7 @@
 
 
         function parseCSVData(csvdata) {
+            
             var delimiter = ";";
             if (hasDelimiterInFirstLine(csvdata, "\t")) {
                 delimiter = "\t";
@@ -453,6 +1517,10 @@
                     fill: false
                 });
             }
+            console.log ("parseCSVData");
+            console.log (results);
+            console.log (DatasetsClean);
+            console.log (DatasetsCSV);
             displayChart(labels, DatasetsClean);
         }
 
@@ -480,6 +1548,26 @@
         }
 
         function displayChart(labels, datasets) {
+            // Show/hide placeholder and controls based on data
+            const chartContainer = document.getElementById('chart-container');
+            const placeholder = document.getElementById('placeholder-message');
+            const controlsWrapper = document.getElementById('controlsWrapper');
+            const exportButton = document.getElementById('exportCsvButton');
+
+            if (datasets.length > 0) {
+                placeholder.classList.add('hidden');
+                controlsWrapper.classList.remove('hidden');
+                exportButton.disabled = false;
+            } else {
+                placeholder.classList.remove('hidden');
+                controlsWrapper.classList.add('hidden');
+                exportButton.disabled = true;
+                if (window.myChart) {
+                    window.myChart.destroy();
+                }
+                return;
+            }
+
             // Preserve dataset visibility state before destroying the chart
             if (window.myChart instanceof Chart) {
                 // Save the visibility state of each dataset by label
@@ -509,20 +1597,68 @@
                 }
             }
             
-            if (datasets.length > 0 && IsMQ2Chart()) {
-                document.getElementById("MQ2Div").style.display = "block";
-            }
-            else {
-                document.getElementById("MQ2Div").style.display = "none";
-
-            }
-            
             // Configure chart options based on chart type
             let chartOptions;
             if (IsMQ2Chart()) {
+                // Add warmup time indicator if heating compensation is enabled
+                var annotations = {};
+                if (document.getElementById("heatingCompensation") && document.getElementById("heatingCompensation").checked) {
+                    var heatingTime = parseFloat(document.getElementById("heatingTime").value) || 120;
+                    var warmupPointIndex = Math.round(heatingTime / 0.5); // Convert to data point index
+                    
+                    if (warmupPointIndex < labels.length) {
+                        annotations = {
+                            line1: {
+                                type: 'line',
+                                xMin: warmupPointIndex,
+                                xMax: warmupPointIndex,
+                                borderColor: 'rgba(255, 99, 132, 0.8)',
+                                borderWidth: 2,
+                                borderDash: [5, 5],
+                                label: {
+                                    enabled: true,
+                                    content: 'Fine Riscaldamento',
+                                    position: 'start'
+                                }
+                            }
+                        };
+                    }
+                }
+                
                 // Dual y-axis configuration for MQ2 charts
                 chartOptions = {
                     animation: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                filter: function(legendItem, chartData) {
+                                    if (legendItem.text === 'Warmup End' || legendItem.text.startsWith('Curve:') || legendItem.text === 'Theoretical Warmup') {
+                                        return false;
+                                    }
+                                    return true;
+                                }
+                            },
+                            onClick: (e, legendItem, legend) => {
+                                Chart.defaults.plugins.legend.onClick(e, legendItem, legend);
+                                const chart = legend.chart;
+                                if (legendItem.text === 'gas adc') {
+                                    const meta = chart.getDatasetMeta(legendItem.datasetIndex);
+                                    const isHidden = meta.hidden;
+
+                                    chart.data.datasets.forEach((dataset, index) => {
+                                        if (dataset.label === 'Warmup End' || dataset.label.startsWith('Curve:') || dataset.label === 'Theoretical Warmup') {
+                                            const dsmeta = chart.getDatasetMeta(index);
+                                            dsmeta.hidden = isHidden;
+                                        }
+                                    });
+                                    chart.update();
+                                }
+                            }
+                        },
+                        annotation: {
+                            annotations: annotations
+                        }
+                    },
                     scales: {
                         y: {
                             type: 'linear',
@@ -570,6 +1706,154 @@
                 options: chartOptions
             });
         }
+
+        document.getElementById('toggleSidebarBtn').addEventListener('click', function() {
+            const sidebar = document.querySelector('.sidebar');
+            sidebar.classList.toggle('collapsed');
+            
+            if (sidebar.classList.contains('collapsed')) {
+                this.innerHTML = '&raquo;';
+                this.title = _i18n('show panel', 'Aa');
+            } else {
+                this.innerHTML = '&laquo;';
+                this.title = _i18n('hide panel', 'Aa');
+            }
+
+            // Resize chart after transition
+            setTimeout(() => {
+                if (window.myChart) {
+                    window.myChart.resize();
+                }
+            }, 300); // Match CSS transition time
+        });
+        // Internationalization
+        if (typeof (__language) === 'undefined')
+            __language = new Array();
+
+        __language['it'] = {
+            "logger viewer": "Visualizzatore Logger",
+            "hide panel": "Nascondi pannello",
+            "show panel": "Mostra pannello",
+            "file": "File",
+            "open csv file": "Apri File CSV",
+            "export csv": "Esporta CSV",
+            "sensor calibration": "Calibrazione Sensore",
+            "starting row": "Riga iniziale",
+            "zerogas adc": "ZeroGas ADC",
+            "clean air adc value": "Valore ADC aria pulita",
+            "auto": "Auto",
+            "heating compensation": "Compensazione Riscaldamento",
+            "enable compensation": "Abilita compensazione",
+            "heating time (min)": "Tempo riscaldamento (min)",
+            "initial adc value": "Valore ADC iniziale",
+            "curvature factor": "Fattore curvatura",
+            "curve type": "Tipo di curva",
+            "auto-detected": "Auto-rilevata",
+            "exponential": "Esponenziale",
+            "linear": "Lineare",
+            "power-law": "Power-law",
+            "not analyzed": "Non analizzata",
+            "auto warmup analysis": "Analisi Auto Riscaldamento",
+            "logger manager": "Logger Manager",
+            "donate": "Dona",
+            "no data to display": "Nessun dato da visualizzare",
+            "to start, open a csv file using the panel on the left.": "Per iniziare, apri un file CSV utilizzando il pannello a sinistra."
+        };
+
+        function getParam(name) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(name);
+        }
+
+        function _i18n(str, LowerCaseMode, lang) {
+            try {
+                if (lang === undefined) {
+                    lang = navigator.language || navigator.userLanguage;
+                    lang = lang.split("-")[0].toLowerCase();
+                }
+                var l = "en";
+                var strori = str;
+                LowerCaseMode = (typeof (LowerCaseMode) !== 'undefined') ? LowerCaseMode : "";
+                if (LowerCaseMode === "auto") {
+                    str = str.toLowerCase();
+                }
+                let getlang = getParam("lang");
+                lang = (typeof (lang) !== 'undefined') ? lang : l;
+                if (getlang) {
+                    lang = getlang;
+                }
+                console.log("lang=" + lang);
+                var ret = "";
+                if (typeof (__language) === 'undefined' || __language[lang] === undefined || __language[lang][str] === undefined) {
+                    ret = str;
+                } else {
+                    ret = __language[lang][str];
+                }
+
+                if (LowerCaseMode === "auto") {
+                    if (strori[0].search(/[A-Z]/) !== -1 && strori[1].search(/[a-z]/) !== -1) {
+                        LowerCaseMode = "Aa";
+                    } else if (strori[0].search(/[A-Z]/) !== -1 && strori[1].search(/[A-Z]/) !== -1) {
+                        LowerCaseMode = "AA";
+                    } else if (strori[0].search(/[a-z]/) !== -1 && strori[1].search(/[a-z]/) !== -1) {
+                        LowerCaseMode = "aa";
+                    }
+                }
+
+                switch (LowerCaseMode) {
+                    case "Aa":
+                        ret = ret.charAt(0).toUpperCase() + ret.slice(1);
+                        break;
+                    case "AA":
+                        ret = ret.toUpperCase();
+                        break;
+                    case "aa":
+                        ret = ret.toLowerCase();
+                        break;
+                }
+                return ret;
+            } catch (e) {
+                console.log(e);
+                return str;
+            }
+        }
+
+        function TranslateHtml() {
+            document.querySelectorAll("[data-i18n='auto']").forEach(function (element) {
+                var contents = element.childNodes;
+                if (contents.length > 0) {
+                    if (contents[0].nodeType === Node.TEXT_NODE) {
+                        element.innerHTML = _i18n(element.innerHTML, "auto");
+                        console.log(element.innerHTML);
+                        for (let i = 1; i < contents.length; i++) {
+                            element.appendChild(contents[i].cloneNode(true));
+                        }
+                    }
+                }
+            });
+            
+            // Handle placeholders
+            document.querySelectorAll("[data-i18n-placeholder='auto']").forEach(function (element) {
+                if (element.placeholder) {
+                    element.placeholder = _i18n(element.placeholder, "auto");
+                }
+            });
+            
+            // Handle titles
+            document.querySelectorAll("[data-i18n-title='auto']").forEach(function (element) {
+                if (element.title) {
+                    element.title = _i18n(element.title, "auto");
+                }
+            });
+            
+            // Handle option texts
+            document.querySelectorAll("option[data-i18n='auto']").forEach(function (element) {
+                element.textContent = _i18n(element.textContent, "auto");
+            });
+        }
+
+        // Initialize internationalization
+        TranslateHtml();
     </script>
 
 </body>

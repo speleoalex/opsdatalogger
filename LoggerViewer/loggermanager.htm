@@ -1,499 +1,1228 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-    <title>FluxyLogger Terminal</title>
-    <style>
-        footer {
-            min-height: 50px;
-            /* Adjust as needed */
-            /* Styles for your footer */
-        }
-
-        table {
-            border-collapse: collapse;
-            border: 1px solid #ffffff;
-            width: 100%;
-        }
-
-        table td {
-            border: 1px solid #dadada;
-            color: #ffff00;
-            padding: 5px;
-        }
-
-        table td:first-child {
-            border-left: 0px solid #dadada;
-        }
-
-        thead td {
-            color: #ffffff !important;
-        }
-
-        body {
-            font-family: monospace;
-            background-color: black;
-            color: limegreen;
-            margin: 10px;
-            display: flex;
-            /* or grid */
-            flex-direction: column;
-            /* not needed for grid */
-            height: 100vh;
-            margin: 0;
-            /* Remove default margin */
-        }
-
-        td.plotter {
-            width: 50%;
-            padding: 10px;
-        }
-
-        th.plotter {
-            font-size: 20px
-        }
-
-        .plotter {
-            font-size: 30px;
-            text-align: center;
-            text-transform: uppercase;
-            font-family: Arial, Helvetica, sans-serif !important;
-        }
-
-        #buttons {
-            padding: 5px;
-
-            background-color: #202020;
-            /*height: 40px;*/
-        }
-
-        #footer {
-            padding: 5px;
-            ;
-            /*  height: 40px;
-            margin-top: 5px;*/
-        }
-
-        .ok {
-            color: greenyellow !important;
-
-        }
-
-        .fail {
-            color: red !important;
-
-        }
-
-        .command {
-            color: #8888ff !important;
-
-        }
-
-        .preheating {
-            color: orange !important;
-
-        }
-
-        #output {
-            height: 60vh;
-            /* Adjust this value as needed */
-            border: 1px solid limegreen;
-            background-color: #202020;
-            color: #fafafa;
-            overflow-y: auto;
-            white-space: pre-wrap;
-            padding: 5px;
-            margin: 5px;
-            flex-grow: 1;
-            /* Flexbox: Allow this element to grow to fill space */
-            /* Grid: Define rows and assign output to a row that takes up remaining space */
-            overflow-y: auto;
-            /* Scroll inside output if needed */
-        }
-
-        #input {
-            width: calc(100% - 80px);
-            color: limegreen;
-            background-color: #202020;
-            border: 1px solid limegreen;
-            padding: 5px;
-            display: inline-block;
-        }
-
-        #send {
-            display: inline-block;
-            width: 58px;
-            padding: 5px;
-            margin-left: 5px;
-            border: 1px solid limegreen
-        }
-
-        .delete {
-            background-color: red;
-            margin-left: 2px;
-            ;
-        }
-
-        .continue {
-            background-color: rgb(136, 92, 255);
-        }
-
-        button,
-        select {
-            background-color: limegreen;
-            color: black;
-            border: none;
-            padding: 5px 15px;
-            cursor: pointer;
-            margin: 3px;
-            border-radius: 6px;
-        }
-
-        #loggerviewer {
-            background-color: orange;
-        }
-
-        button:disabled {
-            background-color: grey;
-        }
-
-        #fullscreen-btn {
-            padding: 0px;
-            border: 0px;
-            background-color: transparent;
-            color: #ffffff;
-        }
-    </style>
+    <title>Logger Manager</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="icon.png" type="image/png">
-
-    <!-- iOS specific meta tags -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
-    <meta name="apple-mobile-web-app-title" content="MiaApp">
+    <meta name="apple-mobile-web-app-title" content="Logger Manager">
     <link rel="apple-touch-icon" href="icon.png">
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #6c757d;
+            --danger-color: #dc3545;
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --background-color: #f8f9fa;
+            --text-color: #333;
+            --text-light: #f8f9fa;
+            --border-color: #dee2e6;
+            --console-bg: #212529;
+            --console-text: #f8f9fa;
+            --sidebar-bg: #ffffff;
+        }
 
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            width: 100%;
+            height: 100%;
+        }
+
+        .sidebar {
+            width: 320px;
+            flex-shrink: 0;
+            background-color: var(--sidebar-bg);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            transition: width 0.3s ease;
+        }
+
+        .sidebar-header {
+            padding: 1.2rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .sidebar-header h2 {
+            margin: 0;
+            font-size: 1.2rem;
+            color: var(--primary-color);
+            flex-grow: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            height: 100%;
+            display: flex;
+            align-items: center;
+        }
+
+        .sidebar-content {
+            padding: 1rem;
+            overflow-y: auto;
+            flex-grow: 1;
+        }
+
+        .sidebar-footer {
+            padding: 1rem;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+
+        .main-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: var(--console-bg);
+        }
+
+        .control-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .control-section h3 {
+            font-size: 1.1rem;
+            margin-top: 0;
+            margin-bottom: 0.8rem;
+            color: var(--secondary-color);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.4rem;
+        }
+
+        .form-group {
+            margin-bottom: 0.8rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 0.3rem;
+            font-size: 0.9rem;
+        }
+
+        select,
+        input[type="text"] {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 0.9rem;
+            box-sizing: border-box;
+        }
+
+        button,
+        .button-primary,
+        .button-secondary,
+        .button-danger,
+        .button-success,
+        .button-warning {
+            width: 100%;
+            padding: 0.5rem 1rem;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-top: 0.5rem;
+            transition: all 0.2s ease;
+        }
+
+        .button-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .button-primary:hover {
+            background-color: #0056b3;
+        }
+
+        .button-secondary {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+
+        .button-secondary:hover {
+            background-color: #545b62;
+        }
+
+        .button-danger {
+            background-color: var(--danger-color);
+            color: white;
+        }
+
+        .button-danger:hover {
+            background-color: #b02a37;
+        }
+
+        .button-success {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .button-success:hover {
+            background-color: #1e7e34;
+        }
+
+        .button-warning {
+            background-color: var(--warning-color);
+            color: #212529;
+        }
+
+        .button-warning:hover {
+            background-color: #e0a800;
+        }
+
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .connection-status {
+            padding: 0.5rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+            font-weight: 500;
+            text-align: center;
+        }
+
+        .status-disconnected {
+            background-color: var(--danger-color);
+            color: white;
+        }
+
+        .status-connecting {
+            background-color: var(--warning-color);
+            color: #212529;
+        }
+
+        .status-connected {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        #output {
+            flex-grow: 1;
+            padding: 1rem;
+            color: var(--console-text);
+            font-family: monospace;
+            white-space: pre-wrap;
+            overflow-y: auto;
+            font-size: 0.9rem;
+        }
+
+        .console-footer {
+            display: flex;
+            padding: 0.5rem;
+            background-color: #343a40;
+            border-top: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+
+        #input {
+            flex-grow: 1;
+            background-color: var(--console-bg);
+            color: var(--console-text);
+            border: 1px solid var(--secondary-color);
+            border-right: none;
+            border-radius: 4px 0 0 4px;
+        }
+
+        #send {
+            width: auto;
+            border-radius: 0 4px 4px 0;
+            margin-top: 0;
+        }
+
+        .donate-link {
+            color: var(--secondary-color);
+            text-decoration: none;
+            font-size: 0.9rem;
+            border-color: var(--warning-color);
+            line-height: 40px;
+        }
+
+        .donate-link:hover {
+            color: var(--primary-color);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .terminal-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+            color: var(--console-text);
+        }
+
+        .terminal-table th,
+        .terminal-table td {
+            border: 1px solid var(--border-color);
+            padding: 0.5rem;
+            text-align: left;
+        }
+
+        .terminal-table thead {
+            background-color: #343a40;
+        }
+
+        .terminal-table th {
+            font-weight: bold;
+        }
+
+        .terminal-table tr:nth-child(even) {
+            background-color: #2c3034;
+        }
+
+        .terminal-table tr:hover {
+            background-color: #3a3f44;
+        }
+
+        .terminal-table button {
+            width: auto;
+            margin: 2px;
+            padding: 0.2rem 0.5rem;
+            font-size: 0.8rem;
+        }
+
+        .ok {
+            color: #28a745 !important;
+            font-weight: bold;
+        }
+
+        .fail {
+            color: var(--danger-color) !important;
+            font-weight: bold;
+        }
+
+        .log {
+            color: #e0a800 !important;
+            font-weight: bold;
+        }
+
+        .command {
+            color: #17a2b8 !important;
+        }
+
+        .preheating {
+            color: #fd7e14 !important;
+        }
+
+        .plotter-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: stretch;
+            width: 100%;
+            height: 100%;
+            gap: 0;
+            padding: 0;
+            box-sizing: border-box;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+
+        .plotter-item {
+            text-align: center;
+            min-width: 150px;
+            flex-shrink: 1;
+            flex-basis: 0;
+            flex-grow: 1;
+            padding: 0.5rem;
+            border: 1px solid var(--border-color);
+            margin: -1px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .plotter-value {
+            font-size: clamp(2.5rem, 12vw, 6rem);
+            font-weight: bold;
+            color: var(--console-text);
+            line-height: 1.1;
+            word-break: break-all;
+        }
+
+        .plotter-header {
+            font-size: 1.5rem;
+            color: var(--secondary-color);
+            text-transform: uppercase;
+        }
+
+        .button-footer {
+            background: none;
+            border: 1px solid var(--secondary-color);
+            color: var(--secondary-color);
+            flex-grow: 1;
+            margin-right: 1rem;
+        }
+
+        .button-footer:hover {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+
+        #toggleSidebarBtn {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            line-height: 1;
+            color: var(--secondary-color);
+            transition: color 0.2s ease;
+            flex-shrink: 0;
+            width: auto;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #toggleSidebarBtn:hover {
+            color: var(--primary-color);
+        }
+
+        .sidebar.collapsed {
+            width: 44px;
+        }
+
+        .sidebar.collapsed .sidebar-header h2,
+        .sidebar.collapsed .sidebar-content,
+        .sidebar.collapsed .sidebar-footer {
+            display: none;
+        }
+
+        .sidebar.collapsed .sidebar-header {
+            justify-content: center;
+        }
+
+        @media (max-width: 768px) {
+            .button-group {
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: space-between;
+            }
+
+            .button-group button {
+                flex-grow: 1;
+                margin: 2px;
+            }
+
+            .container {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                height: auto;
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+                max-height: 75vh;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .sidebar-content {
+                max-height: calc(75vh - 80px);
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .main-content {
+                flex-grow: 1;
+                min-height: 0;
+                height: 55vh;
+            }
+
+            #output {
+                flex-grow: 1;
+                flex-shrink: 1;
+                min-height: 0;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .console-footer {
+                flex-shrink: 0;
+                position: sticky;
+                bottom: 0;
+                z-index: 10;
+            }
+
+            .sidebar-header {
+                flex-shrink: 0;
+                padding: 0.8rem;
+            }
+
+            .sidebar-footer {
+                flex-shrink: 0;
+                padding: 0.8rem;
+            }
+
+            .control-section {
+                margin-bottom: 1rem;
+            }
+
+            .control-section h3 {
+                margin-bottom: 0.5rem;
+                font-size: 1rem;
+            }
+
+            button,
+            .button-primary,
+            .button-secondary,
+            .button-danger {
+                padding: 0.6rem 1rem;
+                font-size: 0.9rem;
+                margin-top: 0.3rem;
+            }
+
+            .real-time-controls {
+                margin-top: 0.5rem;
+            }
+
+
+            button,
+            .button-primary,
+            .button-secondary,
+            .button-danger,
+            .button-success,
+            .button-warning {
+                width: auto;
+
+            }
+
+            .nomobile{
+                display:none;
+
+            }
+        }
+    </style>
 </head>
 
-<body onload="TranslateHtml() ">
-    <nav id="buttons">
-        <button onclick="toggleFullScreen()" id="fullscreen-btn" style="float:right"
-            data-i18n='auto'>&#x26F6;</button><button id="loggerviewer" style="float:right" data-i18n='auto'
-            onclick="window.location='loggerviewer.htm'">Logger viewer</button><button data-i18n='auto'
-            id="connect">Connect</button><select name="baudrate" id="baudrate-select">
-            <option value="9600">9600</option>
-            <option selected value="19200">19200</option>
-            <option value="57600">57600</option>
-            <option value="115200">115200</option>
-        </select><button style="display:none" data-i18n='auto' id="connectBLE">Connect BLE</button><button
-            id="disconnect" data-i18n="auto"
-            style="display:none;background-color: rgb(128, 0, 0);">Disconnect</button><button id="logs" data-i18n='auto'
-            disabled>View stored logs</button>
-        <button id="settime" data-i18n='auto' disabled>Send date and time</button><button id="setinterval" disabled
-            data-i18n="auto">Set Interval</button>
-        <button id="plotterstart" data-i18n='auto'>Real time on</button>
-        <button style="display:none;" id="plotterstop" data-i18n='auto' disabled>Real time off</button>
-        <button style="display:none" id="installButton">Install app</button>
-    </nav>
-    <div id="output"></div>
-    <div style="display:none" id="iosInstructions">
-        Per installare su iOS: tocca l'icona di condivisione e poi "Aggiungi a schermata Home"
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <header class="sidebar-header">
+                <h2>Logger Manager</h2>
+                <button id="toggleSidebarBtn" title="Toggle panel">&laquo;</button>
+            </header>
+            <div class="sidebar-content">
+                <div id="connectionStatus" class="connection-status status-disconnected" data-i18n="auto">Disconnected</div>
+
+                <section class="control-section connection-section">
+                    <h3 class="nomobile">Connection</h3>
+                    <div class="form-group">
+                        <label for="baudrate-select">Baud Rate</label>
+                        <select name="baudrate" id="baudrate-select">
+                            <option value="9600">9600</option>
+                            <option selected value="19200">19200</option>
+                            <option value="57600">57600</option>
+                            <option value="115200">115200</option>
+                        </select>
+                    </div>
+                    <button data-i18n='auto' id="connect" class="button-primary">Connect to Serial/USB</button>
+                    <button style="display:none" data-i18n='auto' id="connectBLE" class="button-primary">Connect to BLE</button>
+                    <button id="disconnect" data-i18n="auto" style="display:none;"
+                        class="button-danger" data-i18n='auto' >Disconnect</button>
+                </section>
+
+                <section id="device-controls" class="control-section device-controls hidden">
+                    <h3 class="nomobile" >Device Controls</h3>
+                    <div class="button-group">
+                        <button id="logs" data-i18n='auto'>Read Logs</button>
+                        <button id="settime" data-i18n='auto'>Sync Now</button>
+                        <button id="setinterval" data-i18n="auto">Set Interval</button>
+                        <button id="autocalib" data-i18n="auto">Zerogas Calibration</button>
+                        <button id="plotterstart" data-i18n='auto'>Start Real-Time</button>
+                        <button style="display:none;" id="plotterstop" data-i18n='auto' class="button-warning">Stop Real-Time</button>
+                    </div>
+                </section>
+                <button style="display:none" id="installButton" class="button-secondary">Install App</button>
+            </div>
+            <footer class="sidebar-footer">
+                <button data-i18n='auto' onclick="openViewerHtml();" class="button-footer">Go to Viewer</button>
+                <a href="https://www.paypal.com/donate/?business=TKQWLKGENEP7L&no_recurring=0&item_name=Progetto+FluxyLogger+NASO&currency_code=EUR"
+                    target="_blank" class="donate-link">Donate</a>
+            </footer>
+        </aside>
+
+        <main class="main-content">
+            <div id="output"></div>
+            <div id="iosInstructions"
+                style="display:none; flex-shrink: 0; padding: 1rem; text-align: center; background-color: #343a40; color: var(--text-light);">
+                To install on iOS: tap the share icon and then "Add to Home Screen"
+            </div>
+            <footer class="console-footer">
+                <input autocapitalize="none" type="text" id="input" placeholder="Enter a command...">
+                <button data-i18n='auto' id="send">Send</button>
+            </footer>
+        </main>
     </div>
-    <footer id="footer">
-        <input autocapitalize="none" type="text" id="input" id="sendtext"><button data-i18n='auto'
-            id="send">Send</button><br>
-    </footer>
+
     <script>
+        // Enhanced Communication Manager
+
+        function getParam(name) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(name);
+        }
+        var debugOn = false;
+        if (getParam('debug') === '1') {
+            debugOn = true;;
+        }
+
+
+        var forceUSBcom = false;
+
+        class CommunicationManager {
+            constructor() {
+                this.connectionType = null; // 'serial', 'usb', 'ble'
+                this.isConnected = false;
+                this.isConnecting = false;
+
+                // Connection objects
+                this.serialPort = null;
+                this.serialReader = null;
+                this.serialWriter = null;
+
+                this.usbDevice = null;
+                this.usbReadLoopRunning = false;
+
+                this.bleDevice = null;
+                this.bleServer = null;
+                this.bleCharacteristic = null;
+
+                // Communication state
+                this.dataBuffer = '';
+                this.lastCharacter = '';
+
+                // Constants
+                this.BLE_SERVICE_UUID = '19b10000-e8f2-537e-4f6c-d104768a1214';
+                this.BLE_CHARACTERISTIC_UUID = 'abcd1234-9878-9878-9878-abcdef123456';
+                this.USB_ENDPOINT_IN = 2;
+                this.USB_ENDPOINT_OUT = 2;
+                this.USB_PACKET_SIZE = 64;
+
+                // Event callbacks
+                this.onDataReceived = null;
+                this.onConnectionChange = null;
+                this.onError = null;
+
+                this.setupEventHandlers();
+            }
+
+            setupEventHandlers() {
+                // Handle USB disconnection
+                navigator.usb?.addEventListener('disconnect', (event) => {
+                    if (event.device === this.usbDevice) {
+                        this.handleDisconnection('USB device disconnected');
+                    }
+                });
+
+                // Handle BLE disconnection
+                this.handleBLEDisconnection = () => {
+                    if (this.connectionType === 'ble') {
+                        this.handleDisconnection('BLE device disconnected');
+                    }
+                };
+            }
+
+            updateConnectionStatus(status, type = null) {
+                this.isConnected = status === 'connected';
+                this.isConnecting = status === 'connecting';
+                this.connectionType = status === 'connected' ? type : null;
+
+                if (this.onConnectionChange) {
+                    this.onConnectionChange(status, type);
+                }
+            }
+
+            handleDisconnection(reason) {
+                ConsoleLog('Disconnection detected:', reason);
+                this.cleanup();
+                this.updateConnectionStatus('disconnected');
+
+                if (this.onError) {
+                    this.onError('Connection lost: ' + reason);
+                }
+            }
+
+            async connectSerial(baudRate = 19200) {
+                try {
+                    this.updateConnectionStatus('connecting', 'serial');
+
+                    if (!navigator.serial) {
+                        throw new Error('Web Serial API not supported');
+                    }
+
+                    this.serialPort = await navigator.serial.requestPort();
+                    await this.serialPort.open({ baudRate });
+
+                    const decoder = new TextDecoderStream();
+                    const inputDone = this.serialPort.readable.pipeTo(decoder.writable);
+                    this.serialReader = decoder.readable.getReader();
+
+                    const encoder = new TextEncoderStream();
+                    const outputDone = encoder.readable.pipeTo(this.serialPort.writable);
+                    this.serialWriter = encoder.writable.getWriter();
+
+                    // Handle pipeline promises
+                    inputDone.catch(error => ConsoleLog("Input stream error:", error));
+                    outputDone.catch(error => ConsoleLog("Output stream error:", error));
+
+                    ConsoleLog("About to start serial read loop...");
+                    ConsoleLog("Serial reader available:", !!this.serialReader);
+                    ConsoleLog("Connection type:", this.connectionType);
+
+                    setTimeout(() => {
+                        ConsoleLog("Starting serial read loop with delay...");
+                        ConsoleLog("Serial reader still available:", !!this.serialReader);
+                        ConsoleLog("Connection type still:", this.connectionType);
+                        this.startSerialReadLoop().catch(error => {
+                            ConsoleLog("Serial read loop failed to start:", error);
+                        });
+                    }, 1000);
+                    this.updateConnectionStatus('connected', 'serial');
+
+                    return true;
+                } catch (error) {
+                    this.updateConnectionStatus('disconnected');
+                    throw new Error('Serial connection failed: ' + error.message);
+                }
+            }
+
+            async connectUSB() {
+                try {
+                    this.updateConnectionStatus('connecting', 'usb');
+
+                    if (!navigator.usb) {
+                        throw new Error('WebUSB API not supported');
+                    }
+
+                    this.usbDevice = await navigator.usb.requestDevice({ filters: [] });
+                    await this.usbDevice.open();
+
+                    if (this.usbDevice.configuration === null) {
+                        await this.usbDevice.selectConfiguration(1);
+                    }
+
+                    // Try to claim interfaces in order, Arduino UNO R4 WIFI often uses interface 2
+                    let interfaceClaimed = false;
+                    const interfacesToTry = [0, 1, 2, 3, 4, 5];
+
+                    for (const interfaceNumber of interfacesToTry) {
+                        try {
+                            await this.usbDevice.claimInterface(interfaceNumber);
+                            ConsoleLog(`Successfully claimed interface ${interfaceNumber}`);
+
+                            // Initialize CDC-ACM for Arduino compatibility
+                            try {
+                                await this.usbDevice.controlTransferOut({
+                                    requestType: 'class',
+                                    recipient: 'interface',
+                                    request: 0x22, // CDC_SET_CONTROL_LINE_STATE
+                                    value: 0x01, // DTR
+                                    index: interfaceNumber
+                                });
+                                ConsoleLog(`CDC-ACM initialized for interface ${interfaceNumber}`);
+                            } catch (cdcError) {
+                                ConsoleLog(`CDC-ACM init failed for interface ${interfaceNumber}:`, cdcError.message);
+                            }
+
+                            interfaceClaimed = true;
+                            break;
+                        } catch (e) {
+                            ConsoleLog(`Failed to claim interface ${interfaceNumber}:`, e.message);
+                            continue;
+                        }
+                    }
+
+                    if (!interfaceClaimed) {
+                        throw new Error('Could not claim any USB interface. Device may be in use by another application.');
+                    }
+
+                    this.startUSBReadLoop().catch(error => {
+                        ConsoleLog("USB read loop failed to start:", error);
+                    });
+                    this.updateConnectionStatus('connected', 'usb');
+
+                    return true;
+                } catch (error) {
+                    this.updateConnectionStatus('disconnected');
+                    throw new Error('USB connection failed: ' + error.message);
+                }
+            }
+
+            async connectBLE() {
+                try {
+                    this.updateConnectionStatus('connecting', 'ble');
+
+                    if (!navigator.bluetooth) {
+                        throw new Error('Web Bluetooth API not supported');
+                    }
+
+                    this.bleDevice = await navigator.bluetooth.requestDevice({
+                        acceptAllDevices: true,
+                        optionalServices: [this.BLE_SERVICE_UUID]
+                    });
+
+                    this.bleDevice.addEventListener('gattserverdisconnected', this.handleBLEDisconnection);
+
+                    this.bleServer = await this.bleDevice.gatt.connect();
+                    const service = await this.bleServer.getPrimaryService(this.BLE_SERVICE_UUID);
+                    this.bleCharacteristic = await service.getCharacteristic(this.BLE_CHARACTERISTIC_UUID);
+
+                    await this.bleCharacteristic.startNotifications();
+                    this.bleCharacteristic.addEventListener('characteristicvaluechanged', this.handleBLEData.bind(this));
+
+                    this.updateConnectionStatus('connected', 'ble');
+
+                    return true;
+                } catch (error) {
+                    this.updateConnectionStatus('disconnected');
+                    throw new Error('BLE connection failed: ' + error.message);
+                }
+            }
+
+            async disconnect() {
+                try {
+                    this.cleanup();
+                    this.updateConnectionStatus('disconnected');
+                    return true;
+                } catch (error) {
+                    throw new Error('Disconnection failed: ' + error.message);
+                }
+            }
+
+            cleanup() {
+                // Serial cleanup
+                if (this.serialReader) {
+                    try {
+                        this.serialReader.cancel();
+                        this.serialReader.releaseLock();
+                    } catch (e) { }
+                    this.serialReader = null;
+                }
+
+                if (this.serialWriter) {
+                    try {
+                        this.serialWriter.close();
+                        this.serialWriter.releaseLock();
+                    } catch (e) { }
+                    this.serialWriter = null;
+                }
+
+                if (this.serialPort) {
+                    try {
+                        this.serialPort.close();
+                    } catch (e) { }
+                    this.serialPort = null;
+                }
+
+                // USB cleanup
+                this.usbReadLoopRunning = false;
+                if (this.usbDevice) {
+                    this.cleanupUSB();
+                }
+
+                // BLE cleanup
+                if (this.bleDevice) {
+                    this.bleDevice.removeEventListener('gattserverdisconnected', this.handleBLEDisconnection);
+                    if (this.bleDevice.gatt && this.bleDevice.gatt.connected) {
+                        this.bleDevice.gatt.disconnect();
+                    }
+                    this.bleDevice = null;
+                }
+                this.bleServer = null;
+                this.bleCharacteristic = null;
+
+                this.connectionType = null;
+            }
+
+            async cleanupUSB() {
+                try {
+                    // Try to release all claimed interfaces
+                    const interfacesToTry = [0, 1, 2, 3, 4, 5];
+                    for (const interfaceNumber of interfacesToTry) {
+                        try {
+                            await this.usbDevice.releaseInterface(interfaceNumber);
+                            ConsoleLog(`Released interface ${interfaceNumber}`);
+                        } catch (e) {
+                            // Interface wasn't claimed, continue
+                        }
+                    }
+                    this.usbDevice.close();
+                } catch (e) {
+                    ConsoleLog('USB cleanup error:', e);
+                }
+                this.usbDevice = null;
+            }
+
+            async startSerialReadLoop() {
+                ConsoleLog("Starting serial read loop...", {
+                    serialReader: !!this.serialReader,
+                    connectionType: this.connectionType
+                });
+
+                try {
+                    while (this.serialReader && this.connectionType === 'serial') {
+                        ConsoleLog("Serial read loop iteration...");
+                        const { value, done } = await this.serialReader.read();
+
+                        if (done) {
+                            ConsoleLog("Serial read loop done");
+                            break;
+                        }
+
+                        ConsoleLog("Serial data received in loop:", value);
+                        this.processReceivedData(value);
+                    }
+                    ConsoleLog("Serial read loop exited normally");
+                } catch (error) {
+                    ConsoleLog("Serial read loop error:", error);
+                    if (this.connectionType === 'serial') {
+                        this.handleDisconnection('Serial read error: ' + error.message);
+                    }
+                }
+            }
+
+            async startUSBReadLoop() {
+                this.usbReadLoopRunning = true;
+                ConsoleLog('Starting USB read loop...');
+                let inLoop = false;
+                try {
+                    while (this.usbReadLoopRunning /*&& this.usbDevice && this.connectionType === 'usb'*/) {
+                        if (!inLoop) {
+                            ConsoleLog('USB read loop started.');
+                            inLoop = true;
+                        }
+                        try {
+                            // Use endpoint 2 and 64 bytes like the working v1 version
+                            const result = await this.usbDevice.transferIn(2, 64);
+                            const decoder = new TextDecoder();
+                            var value = decoder.decode(result.data);
+
+
+
+                            if (value && value.length > 0) {
+                                ConsoleLog('USB data received:', value);
+                                this.processReceivedData(value);
+                            }
+                        } catch (e) {
+                            ConsoleLog('USB transfer error:', e.message);
+                            // Wait a bit before retrying
+                            await new Promise(resolve => setTimeout(resolve, 100));
+                        }
+                    }
+                } catch (error) {
+                    ConsoleLog('USB read loop error:', error);
+                    if (this.connectionType === 'usb') {
+                        this.handleDisconnection('USB read error: ' + error.message);
+                    }
+                }
+            }
+
+            handleBLEData(event) {
+                const decoder = new TextDecoder('utf-8');
+                const value = decoder.decode(event.target.value);
+                this.processReceivedData(value);
+            }
+
+            processReceivedData(data) {
+                ConsoleLog("Processing received data:", data);
+                if (data.length > 0) {
+                    this.lastCharacter = data[data.length - 1];
+                }
+
+                if (this.onDataReceived) {
+                    this.onDataReceived(data);
+                }
+            }
+
+            async sendData(data) {
+                if (!this.isConnected) {
+                    throw new Error('No active connection');
+                }
+
+                ConsoleLog("Sending data via", this.connectionType, ":", data);
+
+                try {
+                    switch (this.connectionType) {
+                        case 'serial':
+                            if (this.serialWriter) {
+                                await this.serialWriter.write(data);
+                                ConsoleLog("Serial data sent successfully");
+                            } else {
+                                throw new Error('Serial writer not available');
+                            }
+                            break;
+
+                        case 'usb':
+                            if (this.usbDevice) {
+                                const encoder = new TextEncoder();
+                                const encodedData = encoder.encode(data);
+
+                                try {
+                                    // Use endpoint 2 like the working v1 version
+                                    await this.usbDevice.transferOut(2, encodedData);
+                                    ConsoleLog(`USB data sent successfully via endpoint 2`);
+                                } catch (error) {
+                                    throw new Error('USB send failed: ' + error.message);
+                                }
+                            } else {
+                                throw new Error('USB device not available');
+                            }
+                            break;
+
+                        case 'ble':
+                            if (this.bleCharacteristic) {
+                                const encoder = new TextEncoder();
+                                const encodedData = encoder.encode(data);
+                                await this.bleCharacteristic.writeValue(encodedData);
+                                ConsoleLog("BLE data sent successfully");
+                            } else {
+                                throw new Error('BLE characteristic not available');
+                            }
+                            break;
+
+                        default:
+                            throw new Error('Unknown connection type');
+                    }
+                    return true;
+                } catch (error) {
+                    ConsoleLog("Send data error:", error);
+                    throw new Error('Send failed: ' + error.message);
+                }
+            }
+
+            getConnectionInfo() {
+                return {
+                    isConnected: this.isConnected,
+                    isConnecting: this.isConnecting,
+                    type: this.connectionType,
+                    device: this.connectionType === 'serial' ? this.serialPort :
+                        this.connectionType === 'usb' ? this.usbDevice :
+                            this.connectionType === 'ble' ? this.bleDevice : null
+                };
+            }
+        }
+
+        // Application state
         var openViewer = false;
-        var port, reader, writer, inDownload;
         var inDownload = false;
         var inListFile = false;
-        var is_usb = false;
-        var is_BLE = false;
-        var connected_serial = false;
-        var connected_usb = false;
-        var connected_BLE = false;
-        var lastch = "";
         var filetext = "";
         var sizeDownload = 0;
         var textContents = "";
         var textListFiles = "";
-        //BLE
-        var UID_SERVICE = '12345678-9878-9878-9878-123456789abc';
-        var UID_Characteristic = 'abcd1234-9878-9878-9878-abcdef123456';
 
+        // Initialize communication manager
+        const commManager = new CommunicationManager();
 
-        //-----------------------actions ------------------------------------------>
-        //PLOTTER START
+        // Setup communication manager callbacks
+        commManager.onDataReceived = (data) => {
+            ConsoleLog("onDataReceived callback called with:", data);
+            let outputDiv = document.getElementById('output');
+
+            if (inDownload) {
+                filetext += data;
+                outputDiv.innerHTML = "received " + filetext.length + " of " + sizeDownload + " bytes";
+                findFileContents(filetext);
+            } else {
+                textContents += data;
+                ConsoleLog("textContents now:", textContents);
+                ConsoleLog("inListFile:", inListFile);
+
+                if (inListFile) {
+                    textListFiles += data;
+                    ConsoleLog("textListFiles updated:", textListFiles);
+                    setTimeout(() => {
+                        createButtonsForFile(textListFiles);
+                    }, 1000);
+                } else {
+                    const highlightedText = HighLighting(textContents);
+                    ConsoleLog("HighLighting result:", highlightedText);
+                    const outputDiv = document.getElementById('output');
+                    ConsoleLog("Output div found:", !!outputDiv);
+                    if (outputDiv) {
+                        outputDiv.innerHTML = highlightedText;
+                        ConsoleLog("Output div innerHTML set to:", outputDiv.innerHTML);
+                        ConsoleLog("Output div updated");
+                    } else {
+                        ConsoleLog("Output div not found!");
+                    }
+                }
+
+                UpdateButtonsStatus();
+                const finalOutputDiv = document.getElementById('output');
+                if (finalOutputDiv) {
+                    finalOutputDiv.scrollTop = finalOutputDiv.scrollHeight;
+                }
+            }
+        };
+
+        commManager.onConnectionChange = (status, type) => {
+            const statusElement = document.getElementById('connectionStatus');
+
+            switch (status) {
+                case 'connected':
+                    statusElement.textContent = `Connected via ${type.toUpperCase()}`;
+                    statusElement.className = 'connection-status status-connected';
+                    break;
+                case 'connecting':
+                    statusElement.textContent = `Connecting...`;
+                    statusElement.className = 'connection-status status-connecting';
+                    break;
+                case 'disconnected':
+                    statusElement.textContent = 'Disconnected';
+                    statusElement.className = 'connection-status status-disconnected';
+                    break;
+            }
+
+            UpdateButtonsStatus();
+        };
+
+        commManager.onError = (error) => {            ConsoleLog('Communication error:', error);            document.getElementById('output').innerHTML += '\n<span class="fail">Error: ' + error + '</span>\n';        };
+
+        function ConsoleLog(log, val) {
+            if (typeof (val) == "undefined") {
+                val = "";
+            }
+            console.log(log);
+            if (debugOn) {
+                document.getElementById('output').innerHTML += '\n<span class="log">' + log + val + '</span>\n';
+            }
+        }
+        function openViewerHtml() {
+            if (commManager.isConnected) {
+                window.open("loggerviewer.htm?popup=1");
+            } else {
+                window.location = "loggerviewer.htm";
+            }
+        }
+
+        // Event handlers
         document.getElementById('plotterstart').addEventListener('click', async () => {
             inListFile = false;
-            console.log("inListFile = false");
-
             EnterTextToSerial("plotter start");
         });
-        //PLOTTER STOP
+
         document.getElementById('plotterstop').addEventListener('click', async () => {
             inListFile = false;
-            console.log("inListFile = false");
-
             EnterTextToSerial("plotter stop");
         });
-        // SET TIME
+
         document.getElementById('settime').addEventListener('click', async () => {
             inListFile = false;
-            console.log("inListFile = false");
-
             EnterTextToSerial("settime");
-            setTimeout(() => {
-                var n = new Date().getFullYear();
-                EnterTextToSerial(n);
+
+            const timeCommands = [
+                new Date().getFullYear(),
+                new Date().getMonth() + 1,
+                new Date().getDate(),
+                new Date().getHours(),
+                new Date().getMinutes(),
+                new Date().getSeconds()
+            ];
+
+            for (let i = 0; i < timeCommands.length; i++) {
                 setTimeout(() => {
-                    var n = new Date().getMonth() + 1;
-                    EnterTextToSerial(n);
-                    setTimeout(() => {
-                        var n = new Date().getDate();
-                        EnterTextToSerial(n);
-                        setTimeout(() => {
-                            var n = new Date().getHours();
-                            EnterTextToSerial(n);
-                            setTimeout(() => {
-                                var n = new Date().getMinutes();
-                                EnterTextToSerial(n);
-                                setTimeout(() => {
-                                    var n = new Date().getSeconds();
-                                    EnterTextToSerial(n);
-                                }, 1000);
-                            }, 1000);
-                        }, 1000);
-                    }, 1000);
-                }, 1000);
-            }, 2000);
-        }
-        );
-
-        // DISCONNECT
-        document.getElementById('disconnect').addEventListener('click', async () => {
-            inListFile = false;
-            console.log("inListFile = false");
-
-            if (is_usb) {
-                await device.close();
-                device = null;
-                window.location.reload();
-                document.getElementById('connect').disabled = false;
-                document.getElementById('disconnect').disabled = true;
+                    EnterTextToSerial(timeCommands[i]);
+                }, 2000 + (i * 1000));
             }
-            try {
-                if (reader) {
-                    await reader.cancel();
-                    await reader.releaseLock();
-                }
-                if (writer) {
-                    await writer.close();
-                    await writer.releaseLock();
-                }
-                if (port) {
-                    await port.close();
-                }
-                connected_serial = false;
-                connected_usb = false;
-
-            }
-            catch (e) {
-                window.location.reload();
-            }
-            UpdateButtonsStatus();
-            window.location.reload();
         });
 
-        // SEND (CLICK)
+        document.getElementById('disconnect').addEventListener('click', async () => {
+            try {
+                await commManager.disconnect();
+            } catch (error) {
+                ConsoleLog('Disconnect failed:', error);
+                window.location.reload();
+            }
+        });
+
         document.getElementById('send').addEventListener('click', () => {
             inviaDati();
         });
-        // SEND (ENTER)
+
         document.getElementById('input').addEventListener('keypress', (event) => {
             inListFile = false;
-            console.log("inListFile = false");
-
             if (event.key === 'Enter') {
                 inviaDati();
             }
         });
-        // CONNECT
+
         document.getElementById('connect').addEventListener('click', async () => {
-            if (navigator.serial === undefined && navigator.usb === undefined) {
-                alert("Your browser does not support USB port reading");
-            }
-            if (navigator.serial !== undefined) {
-
-                try {
-                    port = await navigator.serial.requestPort();
-
-                } catch (e) {
-
-                }
-            }
-            else {
-                try {
-                    device = await navigator.usb.requestDevice({ filters: [] });
-                    await device.open(); // Apre il dispositivo
-                    if (device.configuration === null) {
-                        console.log("selectConfiguration 1");
-                        await device.selectConfiguration(1); // Seleziona la configurazione
-                    }
-                    try {
-                        console.log("claimInterface 0");
-                        await device.claimInterface(0); // Richiede l'interfaccia
-
-                    }
-                    catch (e) {
-                        console.log("claimInterface 1");
-                        await device.claimInterface(1); // Richiede l'interfaccia
-
-                    }
-                    try {
-
-                        //await setUsbBaudRate(device, 19200);
-                    }
-                    catch (e) {
-                        alert("Error setting baud rate: ", e);
-                    }
-
-                    readLoopRunning = true;
-                    readLoop();
-                    is_usb = true;
-
-                } catch (e) {
-                    UpdateButtonsStatus();
-                    console.log(e);
-                    return;
-                }
-            }
-            if (is_usb) {
-                console.log("USB Mode");
-                readLoopRunning = true;
-                connected_usb = true;
-                readLoopUsb();
-
-                // Set baudrate for USB mode
-                console.log("USB Mode - Setting baudrate to: " + getSelectedBaudRate());
-            }
-            else {
-                console.log("SERIAL Mode");
-                console.log("Open boudrate:" + getSelectedBaudRate());
-                await port.open({ baudRate: getSelectedBaudRate() });
-
-                const decoder = new TextDecoderStream();
-                const inputDone = port.readable.pipeTo(decoder.writable);
-                reader = decoder.readable.getReader();
-
-                const encoder = new TextEncoderStream();
-                const outputDone = encoder.readable.pipeTo(port.writable);
-                writer = encoder.writable.getWriter();
-                connected_serial = true;
-            }
-            readLoop();
-            UpdateButtonsStatus();
-        });
-
-        document.querySelector('#connectBLE').addEventListener('click', function () {
-            navigator.bluetooth.requestDevice({
-                //filters: [{ name: 'BTService' }],
-                acceptAllDevices: true,
-                optionalServices: [UID_SERVICE] // UUID del servizio BLE
-            })
-                .then(device => {
-                    is_BLE = true;
-                    bleDevice = device;
-                    console.log('Connessione al dispositivo: ', device.name);
-                    return device.gatt.connect();
-                })
-                .then(server => {
-                    bleServer = server;
-                    return server.getPrimaryService(UID_SERVICE);
-                })
-                .then(service => {
-                    return service.getCharacteristic(UID_Characteristic);
-                })
-                .then(characteristic => {
-                    myCharacteristic = characteristic;
-                    console.log('Caratteristica ottenuta');
-                    // Ascolta le notifiche sulla caratteristica
-                    myCharacteristic.startNotifications().then(_ => {
-                        console.log('Notifiche avviate');
-                        myCharacteristic.addEventListener('characteristicvaluechanged', handleNotifications);
-                        connected_BLE = true;
-                        UpdateButtonsStatus();
-                    });
-                })
-                .catch(error => {
-                    console.log('Errore di connessione: ', error);
-                });
-        });
-
-        // Function to set USB baud rate, assuming a control command is available
-        async function setUsbBaudRate(device, baudRate) {
-            // Replace this with the actual command to set the baud rate for your USB device
-            // Example of sending a control transfer
             try {
-                await device.controlTransferOut({
-                    requestType: 'vendor',
-                    recipient: 'device',
-                    request: 0x01, // This is just an example
-                    value: baudRate,
-                    index: 0
-                });
-                console.log("Baud rate set to " + baudRate);
-            } catch (e) {
-                console.log("Failed to set baud rate: ", e);
-            }
-        }
+                const baudRate = getSelectedBaudRate();
 
-        var btntimer;
-        function handleNotifications(event) {
-            let target_value = event.target.value;
-            let decoder = new TextDecoder('utf-8');
-            let value = decoder.decode(target_value);
-            let outputDiv = document.getElementById('output');
-            if (inDownload) {
-                filetext += value
-                outputDiv.innerHTML = "received " + filetext.length + " of " + sizeDownload + " bytes";
-                findFileContents(filetext);
+                // On mobile, Serial API is not available, so force USB
+                const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+                if (!forceUSBcom && !isMobile && navigator.serial) {
+                    await commManager.connectSerial(baudRate);
+                } else if (navigator.usb) {
+                    await commManager.connectUSB();
+                } else {
+                    alert("Your browser does not support Serial or USB communication");
+                }
+            } catch (error) {
+                alert('Connection failed: ' + error.message);
             }
-            else {
-                textContents += value;
-                if (inListFile) {
-                    textListFiles += value;
-                    setTimeout(function () {
-                        if (createButtonsForFile(textListFiles)) {
-                            //clearInterval(btntimer);
-                            //inListFile = false;
-                        }
-                    }, 1000);
-                }
-                else {
-                    document.getElementById('output').innerHTML = HighLighting(textContents);
-                }
-                if (value.length > 0) {
-                    lastch = value[value.length - 1];
-                }
-                UpdateButtonsStatus();
-                outputDiv.scrollTop = outputDiv.scrollHeight;
+        });
+
+        document.getElementById('connectBLE').addEventListener('click', async () => {
+            try {
+                await commManager.connectBLE();
+            } catch (error) {
+                alert('BLE connection failed: ' + error.message);
             }
-        }
-        // LOGS
+        });
+
         document.getElementById('logs').addEventListener('click', async () => {
-            sendToDevice("logs\r\n");
+            await sendToDevice("logs\r\n");
             inListFile = true;
-            console.log("inListFile = true");
-        }
-        );
+        });
+
+        document.getElementById('autocalib').addEventListener('click', async () => {
+            EnterTextToSerial("autocalib\r\n");
+            
+        });
+
+
+
+
+
         document.getElementById('setinterval').addEventListener('click', async () => {
-            var interval = prompt("Enter interval in seconds:", "");
+            const interval = prompt("Enter interval in seconds:", "");
             if (interval == null || isNaN(interval) || interval < 1) {
                 alert("Invalid interval");
-            }
-            else {
+            } else {
                 EnterTextToSerial("setconfig");
                 setTimeout(() => {
                     EnterTextToSerial(interval);
@@ -501,320 +1230,70 @@
                         sendToDevice("\r\n");
                     }, 2000);
                 }, 2000);
-
             }
-        }
-        );
+        });
 
-        //-----------------------actions ------------------------------------<
+        // Utility functions
         function isLastLineArduinoPlotterProtocol() {
-            // Dividere l'output in righe
             const lines = textContents.split('\n');
-
-            // Prendere l'ultima riga non vuota
             let lastLine = lines.reverse().find(line => line.trim() !== '');
-            if (!lastLine) {
-                return false; // Nessuna riga valida trovata
-            }
+            if (!lastLine) return false;
+
             lastLine = lastLine.trim();
-            //console.log(lastLine);
-
-            // Verifica che l'ultima riga segua il formato del protocollo plotter
-            // Il formato è chiave:valore e può avere più coppie separate da virgole
             const pattern = /^(\w+:\d+(\.\d+)?)(,\w+:\d+(\.\d+)?)*$/;
-
-            var res = pattern.test(lastLine);
-            //console.log(res);
-            return res;
+            return pattern.test(lastLine);
         }
 
         function UpdateButtonsStatus() {
+            const deviceControls = document.getElementById('device-controls');
+            const baudRateGroup = document.querySelector('.connection-section .form-group');
+            const info = commManager.getConnectionInfo();
 
-            if (connected_usb || connected_serial || connected_BLE) {
+            if (info.isConnected) {
                 document.getElementById('connect').style.display = "none";
                 document.getElementById('connectBLE').style.display = "none";
-                document.getElementById('baudrate-select').style.display = "none";
-                document.getElementById('disconnect').style.display = "inline-block";
-                document.getElementById('plotterstart').disabled = false;
-                document.getElementById('plotterstop').disabled = false;
-                document.getElementById('logs').disabled = false;
-                document.getElementById('settime').disabled = false;
-                document.getElementById('setinterval').disabled = false;
-
-            }
-            else {
-                if (navigator.bluetooth !== undefined) {
-
-                    document.getElementById('connectBLE').style.display = "inline-block";
-
+                baudRateGroup.style.display = "none";
+                document.getElementById('disconnect').style.display = "block";
+                deviceControls.classList.remove('hidden');
+            } else {
+                if (navigator.bluetooth) {
+                    document.getElementById('connectBLE').style.display = "block";
                 }
-                document.getElementById('connect').style.display = "inline-block";
-                document.getElementById('baudrate-select').style.display = "inline-block";
-                document.getElementById('plotterstart').disabled = true;
-                document.getElementById('plotterstop').disabled = true;
-
+                document.getElementById('connect').style.display = "block";
+                baudRateGroup.style.display = "block";
                 document.getElementById('disconnect').style.display = "none";
-                document.getElementById('logs').disabled = true;
-                document.getElementById('settime').disabled = true;
-                document.getElementById('setinterval').disabled = true;
-
+                deviceControls.classList.add('hidden');
             }
+
             if (isLastLineArduinoPlotterProtocol()) {
                 document.getElementById('plotterstart').style.display = "none";
-                document.getElementById('plotterstop').style.display = "inline-block";;
-            }
-            else {
-                document.getElementById('plotterstart').style.display = "inline-block";
+                document.getElementById('plotterstop').style.display = "block";
+            } else {
+                document.getElementById('plotterstart').style.display = "block";
                 document.getElementById('plotterstop').style.display = "none";
-
             }
         }
-        //--------------------i18n------------------------------------------->
-        if (typeof (__language) === 'undefined')
-            __language = new Array();
-
-        __language['it'] = {
-            "connect": "Connetti",
-            "logger viewer": "Visualizzatore di registrazioni",
-
-            "Confirm delete file?": "Confermi di voler eliminare il file?",
-            "view stored logs": "Vedi logs memorizzati",
-            "download": "Scarica",
-            "delete": "elimina",
-            "disconnect": "Disconnetti",
-            "send": "invia",
-            "chart": "grafico",
-            "exit": "esci",
-            "sensor": "sensore",
-            "preheating": "preriscaldamento",
-            "set interval": "Imposta intervallo",
-            "send date and time": "invia data e ora"
-        };
-        /**
-         * 
-         * @param {type} str
-         * @param {type} LowerCaseMode
-         * @param {type} lang
-         */
-        function _i18n(str, LowerCaseMode, lang) {
-            try {
-                if (lang === undefined) {
-                    lang = navigator.language || navigator.userLanguage;
-                    lang = lang.split("-")[0].toLowerCase();
-                }
-                console.log(lang);
-                var l = "en";
-                var strori = str;
-                LowerCaseMode = (typeof (LowerCaseMode) !== 'undefined') ? LowerCaseMode : "";
-                if (LowerCaseMode === "auto") {
-                    str = str.toLowerCase();
-                }
-                lang = (typeof (lang) !== 'undefined') ? lang : l;
-                var ret = "";
-                if (typeof (__language) === 'undefined' || __language[lang] === undefined || __language[lang][str] === undefined) {
-                    ret = str;
-                }
-                else {
-                    ret = __language[lang][str];
-                }
-
-                if (LowerCaseMode === "auto") {
-
-
-                    if (strori[0].search(/[A-Z]/) !== -1 && strori[1].search(/[a-z]/) !== -1) {
-                        LowerCaseMode = "Aa";
-                    }
-                    else if (strori[0].search(/[A-Z]/) !== -1 && strori[1].search(/[A-Z]/) !== -1) {
-                        LowerCaseMode = "AA";
-                    }
-                    else if (strori[0].search(/[a-z]/) !== -1 && strori[1].search(/[a-z]/) !== -1) {
-                        LowerCaseMode = "aa";
-                    }
-                }
-                //------------------------------------------------------------------------->
-                switch (LowerCaseMode) {
-                    case "Aa":
-                        ret = ret.charAt(0).toUpperCase() + ret.slice(1);
-                        break;
-                    case "AA":
-                        ret = ret.toUpperCase();
-                        break;
-                    case "aa":
-                        ret = ret.toLowerCase();
-                        break;
-                }
-                //-------------------------------------------------------------------------<
-                //console.log(ret);
-                return ret;
-            }
-            catch (e) {
-                console.log(e);
-                return str;
-            }
-        }
-        function TranslateHtml() {
-            document.querySelectorAll("[data-i18n='auto']").forEach(function (element) {
-                var contents = element.childNodes;
-                if (contents.length > 0) {
-                    if (contents[0].nodeType === Node.TEXT_NODE) {
-                        element.innerHTML = _i18n(element.innerHTML, "auto");
-                        for (let i = 1; i < contents.length; i++) {
-                            element.appendChild(contents[i].cloneNode(true));
-                        }
-                    }
-                }
-            });
-
-        }
-        //--------------------i18n--------------------------------------<
 
         function getSelectedBaudRate() {
-            var select = document.getElementById("baudrate-select");
-            var selectedBaudRate = select.options[select.selectedIndex].value;
-            return selectedBaudRate;
+            const select = document.getElementById("baudrate-select");
+            return parseInt(select.options[select.selectedIndex].value);
         }
 
-
-        function ascii(a) { return a.charCodeAt(0); }
-
-        //read loop usb
-        async function readLoopUsb() {
-            while (readLoopRunning && device) {
-                let outputDiv = document.getElementById('output');
-                try {
-                    const result = await device.transferIn(2, 64); // Modifica il numero endpoint e la lunghezza in base al tuo dispositivo
-                    const decoder = new TextDecoder();
-                    var value = decoder.decode(result.data);
-                    if (inDownload) {
-                        filetext += value
-                        outputDiv.innerHTML = "received " + filetext.length + " of " + sizeDownload + " bytes";
-                        findFileContents(filetext);
-                    }
-                    else {
-
-                        //work arround --->
-                        if (false && lastch == "\r" && value[0] == "\n") {
-                            textContents += value.replace("\n", "");
-                        }
-                        else {
-                            textContents += value;
-                        }
-                        //work arround ---<
-
-                        if (inListFile) {
-                            textListFiles += value;
-                            createButtonsForFile(textListFiles);
-                        }
-                        else {
-                            document.getElementById('output').innerHTML = HighLighting(textContents);
-                        }
-                        if (value.length > 0) {
-                            lastch = value[value.length - 1];
-                        }
-
-                        UpdateButtonsStatus();
-                        outputDiv.scrollTop = outputDiv.scrollHeight;
-
-                    }
-                } catch (e) {
-                    alert('Errore di lettura:' + e);
-                    break;
-                }
-
+        async function sendToDevice(data) {
+            ConsoleLog("sendToDevice called with:", data);
+            try {
+                await commManager.sendData(data);
+                ConsoleLog("sendToDevice successful");
+                return true;
+            } catch (error) {
+                ConsoleLog('Send failed:', error);
+                return false;
             }
         }
-
-        async function readLoop() {
-            let outputDiv = document.getElementById('output');
-            while (true) {
-                let { value, done } = await reader.read();
-                if (done) {
-                    reader.releaseLock();
-                    console.log("done");
-                    break;
-                }
-                if (inDownload) {
-                    filetext += value
-                    outputDiv.innerHTML = "received " + filetext.length + " of " + sizeDownload + " bytes";
-                    findFileContents(filetext);
-                }
-                else {
-                    //work arround --->
-                    if (false && lastch == "\r" && value[0] == "\n") {
-                        textContents += value.replace("\n", "");
-                    }
-                    else {
-                        textContents += value;
-                    }
-                    //work arround ---<
-
-                    if (inListFile) {
-                        textListFiles += value;
-                        createButtonsForFile(textListFiles);
-                    }
-                    else {
-                        document.getElementById('output').innerHTML = HighLighting(textContents);
-                    }
-                    if (value.length > 0) {
-                        lastch = value[value.length - 1];
-                    }
-                    UpdateButtonsStatus();
-                    outputDiv.scrollTop = outputDiv.scrollHeight;
-                }
-                //console.log("received:\"" + value + "\"");
-                //console.log("lastch:\"" + ascii(lastch) + "\"");
-            }
-        }
-
-
-
-
-        function doDelete(nomeFile) {
-            if (confirm(_i18n("Confirm delete file?"))) {
-                clearOutput();
-                EnterTextToSerial("e");
-                setTimeout(() => {
-                    EnterTextToSerial("rm " + nomeFile.trim());
-                }, 500);
-            }
-        }
-
-        async function sendToUSB(data) {
-            if (is_usb) {
-                try {
-                    const textEncoder = new TextEncoder();
-                    data = textEncoder.encode(data);
-
-                    await device.transferOut(2, data); // Invia i dati al dispositivo
-                    //alert("send "+data)
-                } catch (error) {
-                    alert("Errore di trasferimento: " + error);
-                }
-            }
-        }
-
-
-        function sendToDevice(data) {
-            if (is_BLE) {
-                const valueArray = new TextEncoder().encode(data);
-                myCharacteristic.writeValue(valueArray)
-            }
-            else {
-
-                if (is_usb) {
-                    sendToUSB(data);
-                }
-                else {
-                    writer.write(data);
-                }
-            }
-        }
-
 
         function inviaDati() {
             const text = document.getElementById('input').value + '\r\n';
             sendToDevice(text);
-            // console.log("Send:" + text);
             textContents += text;
             document.getElementById('input').value = '';
             UpdateButtonsStatus();
@@ -826,57 +1305,53 @@
                 document.getElementById('send').click();
             }, 500);
         }
+
         function clearOutput() {
             document.getElementById('output').innerHTML = "";
             textListFiles = "";
             textContents = "";
         }
+
         function downloadFileClick(filename, size, view) {
             inDownload = true;
+            ConsoleLog("downloadFileClick called with:", filename, size, view);
             filetext = "";
             textListFiles = "";
             sizeDownload = size;
-            if (view) {
-                openViewer = true;
-
-            }
-            else {
-                openViewer = false;
-            }
+            openViewer = view;
+            //            inDownload = false; // Reset download state
+            ConsoleLog("Setting inDownload to false, will be set to true when transmission starts");
             sendDownloadFileName(filename);
-
         }
-        function plotterLineToHtmlTable(plotterLine) {
-            console.log("plotterLine=" + plotterLine);
-            // Dividere la linea in coppie chiave-valore
-            const pairs = plotterLine.split(',');
 
-            // Creare le intestazioni e le righe della tabella dai dati
-            let headers = '<tr>';
-            let values = '<tr>';
+        function plotterLineToHtmlTable(plotterLine) {
+            const pairs = plotterLine.split(',');
+            let tableContent = '';
+
             pairs.forEach(pair => {
                 var [key, value] = pair.split(':');
-                if (key == "raw") {
+                if (key.trim().toLowerCase() == "raw") {
                     key = _i18n("sensor");
                 }
-                headers += `<th class="plotter" >${key}</th>`;
-                values += `<td class="plotter">${value}</td>`;
+                tableContent += `<div class="plotter-item">
+                                 <div class="plotter-value">${value.trim()}</div>
+                                 <div class="plotter-header">${key.trim()}</div>
+                               </div>`;
             });
-            headers += '</tr>';
-            values += '</tr>';
 
-            // Costruire la tabella HTML
-            return `<table class="plotter">${headers}${values}</table>`;
+            return `<div class="plotter-container">${tableContent}</div>`;
         }
-        // HighLighting del testo
+
         function HighLighting(testo) {
+            ConsoleLog("HighLighting called with:", testo);
             var startTable = false;
-            testo = testo.replace("\r\n", "\n");
-            testo = testo.replace("\r", "\n");
+            testo = testo.replace("\r\n", "\n").replace("\r", "\n");
             var lines = testo.split("\n");
-            if (isLastLineArduinoPlotterProtocol() && lines.length !== undefined && lines.length > 0) {
-                html = plotterLineToHtmlTable(lines[lines.length - 2]);
-                console.log(html);
+            ConsoleLog("HighLighting lines:", lines);
+
+            if (isLastLineArduinoPlotterProtocol() && lines.length > 0) {
+                ConsoleLog("Arduino plotter protocol detected");
+                const html = plotterLineToHtmlTable(lines[lines.length - 2]);
                 UpdateButtonsStatus();
                 return html;
             }
@@ -888,18 +1363,9 @@
                 if (lines[i].trim().endsWith(" failed") || lines[i].trim() == "failed") {
                     lines[i] = "<span class=\"fail\">" + lines[i].trim() + "</span>";
                 }
-                if (lines[i].trim() == "ls" ||
-                    lines[i].trim() == "setconfig" ||
-                    lines[i].trim() == "date" ||
-                    lines[i].trim() == "plotter stop" ||
-                    lines[i].trim() == "log start" ||
-                    lines[i].trim() == "log stop" ||
-                    lines[i].trim() == "autocalib" ||
-                    lines[i].trim() == "logs"
-                ) {
+                if (["ls", "setconfig", "date", "plotter stop", "log start", "log stop", "autocalib", "logs"].includes(lines[i].trim())) {
                     lines[i] = "<span class=\"command\">" + lines[i].trim() + "</span>";
                 }
-
                 if (lines[i].trim() == "Preheating" || lines[i].trim() == "Prehead") {
                     lines[i] = "<span class=\"preheating\">" + _i18n("preheating") + "</span>";
                 }
@@ -909,12 +1375,11 @@
                 if (lines[i].includes("FluxyLogger ")) {
                     lines[i] = "<h3>" + lines[i].trim() + "</h3>";
                 }
-
                 if (lines[i].includes(';')) {
                     lines[i] = "<tr><td>" + lines[i].trim().replace(/;/g, "</td><td>") + "</td></tr>";
                 }
                 if (lines[i].includes('date Y-m-d m:s')) {
-                    lines[i] = "<table><thead>" + lines[i].replace(/"/g, "") + "</thead>";
+                    lines[i] = "<table class=\"terminal-table\"><thead>" + lines[i].replace(/"/g, "") + "</thead>";
                     startTable = true;
                 }
                 if (!lines[i].includes('<td>') && startTable) {
@@ -925,193 +1390,336 @@
                     lines[i] = "</table>";
                     startTable = false;
                 }
-
-
-
-
             }
-            html = lines.join("\n");
-            //console.log("testo=\"" + testo+"\"");
-            //console.log("html=\"" + html+"\"");
-            return html;
+
+            const result = lines.join("\n");
+            ConsoleLog("HighLighting returning:", result);
+            return result;
         }
+
+        function doDelete(nomeFile) {
+            if (confirm(_i18n("Confirm delete file?"))) {
+                clearOutput();
+                EnterTextToSerial("e");
+                setTimeout(() => {
+                    EnterTextToSerial("rm " + nomeFile.trim());
+                }, 500);
+            }
+        }
+
         function formatDateTime(fileName) {
-            // Controllo del formato del nome del file
             const regex = /^\d{4}-\d{2}-\d{2}_\d{2}\.\d{2}\.\d{2}\.txt$/;
             if (!regex.test(fileName)) {
-                return fileName; // Restituisce il nome del file in caso di formato errato
+                return fileName;
             }
 
             try {
-                // Estrazione di componenti data e ora dal nome del file
                 const datePart = fileName.split('_')[0];
                 const timePart = fileName.split('_')[1].split('.')[0] + '.' + fileName.split('_')[1].split('.')[1] + '.' + fileName.split('_')[1].split('.')[2];
                 const [year, month, day] = datePart.split('-').map(Number);
                 const [hour, minute, second] = timePart.split('.').map(Number);
 
-                // Creazione dell'oggetto Date
                 const date = new Date(year, month - 1, day, hour, minute, second);
-
-                // Formattazione della data e dell'ora secondo le impostazioni locali del browser
                 const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric' };
 
-                // Formattazione della data secondo le impostazioni locali del browser
                 return date.toLocaleString(undefined, options);
             } catch (error) {
-                return ""; // Restituisce il nome del file in caso di errore
+                return "";
             }
         }
 
         function createButtonsForFile(testo) {
-
             testo = testo.trim();
             const inizio = testo.indexOf("Files:");
-            let html = "";
-            if (inizio == -1) {
-                return false;
-            }
+            if (inizio == -1) return false;
+
             const fine = testo.indexOf("Type Filename or e to exit");
             if (inizio !== -1 && fine !== -1) {
                 try {
                     const listaFile = testo.substring(inizio + "Files:".length, fine).trim().split('\n');
                     listaFile.sort();
                     const outputDiv = document.getElementById('output');
-                    outputDiv.innerHTML = ''; // Pulisci il div
+                    outputDiv.innerHTML = '';
+
+                    let tableHTML = `<table class="terminal-table">
+                                       <thead>
+                                           <tr>
+                                               <th>File</th>
+                                               <th>Size</th>
+                                               <th>Date</th>
+                                               <th>Actions</th>
+                                           </tr>
+                                       </thead>
+                                       <tbody>`;
+
                     listaFile.forEach(file => {
-                        const nomeFile = file.split('\t')[0].trim();
+                        try {
+                            const parts = file.split('\t');
+                            const nomeFile = parts[0].trim();
+                            const size = parts[1].trim();
 
-                        if (nomeFile.indexOf(".txt") !== -1 || nomeFile.indexOf(".csv") !== -1) {
-                            const size = file.split('\t')[1].trim();
-
-                            html += "<button onclick=\"downloadFileClick('" + nomeFile + "'," + size + ",false)\">" + nomeFile + "</button>";
-                            html += "<button onclick=\"downloadFileClick('" + nomeFile + "'," + size + ",true)\">" + _i18n("chart", "Aa") + "</button>";
-                            html += "<button class=\"delete\" onclick=\"doDelete('" + nomeFile + "')\">" + _i18n("delete") + "</button>" + size + " bytes\r\n" + formatDateTime(nomeFile) + "\r\n\r\n";
-
+                            if (nomeFile.endsWith(".txt") || nomeFile.endsWith(".csv")) {
+                                tableHTML += `<tr>
+                                            <td>${nomeFile}</td>
+                                            <td>${size} bytes</td>
+                                            <td>${formatDateTime(nomeFile)}</td>
+                                            <td>
+                                                <button style="inline-block" title="${_i18n("download", "Aa")}" onclick="downloadFileClick('${nomeFile}', ${size}, false)">&#128229;</button>
+                                                <button style="inline-block" title="${_i18n("chart", "Aa")}" onclick="downloadFileClick('${nomeFile}', ${size}, true)">&#128201;</button>
+                                                <button style="inline-block" title="${_i18n("delete", "Aa")}"  class="delete" onclick="doDelete('${nomeFile}')">&#10060;</button>
+                                            </td>
+                                        </tr>`;
+                            }
+                        } catch (e) {
+                            ConsoleLog("no file line");
                         }
                     });
-                    html += "<button class=\"continue\" onclick=\"clearOutput();EnterTextToSerial('e');\">Exit</button><br />";
-                    outputDiv.innerHTML = html;
-                    return true;
 
-                }
-                catch (e) {
+                    tableHTML += `</tbody></table>`;
+                    tableHTML += "<button class=\"continue\" onclick=\"clearOutput();EnterTextToSerial('e');\">Exit</button><br />";
+                    outputDiv.innerHTML = tableHTML;
+                    return true;
+                } catch (e) {
                     alert(e);
                 }
                 inListFile = false;
-                console.log("inListFile = false");
                 filetext = "";
                 return false;
-
             }
         }
+
         function saveToSessionStorage(key, value) {
             try {
                 sessionStorage.setItem(key, value);
-                console.log('Dato salvato con successo');
             } catch (e) {
-                console.error('Errore nel salvataggio dei dati', e);
+                ConsoleLog('Storage save error', e);
             }
         }
+
         function readFromSessionStorage(key) {
             try {
-                const value = sessionStorage.getItem(key);
-                if (value === null) {
-                    console.log('Nessun dato trovato per la chiave:', key);
-                    return null;
-                } else {
-                    console.log('Dato trovato:', value);
-                    return value;
-                }
+                return sessionStorage.getItem(key);
             } catch (e) {
-                console.error('Errore nella lettura dei dati', e);
+                ConsoleLog('Storage read error', e);
                 return null;
             }
         }
+
         function findFileContents(testo) {
-            //            const testo = document.getElementById('output').innerHTML;
+            ConsoleLog("findFileContents called with text length:", testo.length);
             const fine = testo.indexOf("End transmission:");
-            if (fine === -1) {
-                return;
-            }
+            ConsoleLog("End transmission found at:", fine);
+            if (fine === -1) return;
+
             const filenameOk = testo.indexOf(".txt");
             const filenameOk2 = testo.indexOf(".csv");
-            if (filenameOk === -1 && filenameOk2 === -1) {
-                return;
-            }
+            ConsoleLog("File extensions found - .txt:", filenameOk, ".csv:", filenameOk2);
+            if (filenameOk === -1 && filenameOk2 === -1) return;
 
             document.getElementById('output').innerHTML = "Start download file:";
-            //console.log(testo);
             const inizio = testo.indexOf("Start transmission:");
+            ConsoleLog("Start transmission found at:", inizio);
             if (inizio !== -1) {
+                ConsoleLog("Setting inDownload = true");
                 const nomeFile = testo.split("End transmission:")[1].trim();
                 const contents = testo.substring(inizio + "Start transmission:".length, fine).trim();
-                document.getElementById('output').innerHTML = "Download starting...";
-                if (openViewer) {
-                    saveToSessionStorage("csv", contents);
-                    if (is_usb) {
-                        window.location = "loggerviewer.htm";
+                ConsoleLog("File name:", nomeFile, "Contents length:", contents.length);
+                ConsoleLog("openViewer:", openViewer);
 
-                    }
-                    else {
-                        window.open("loggerviewer.htm");
-
-                    }
+                if (!nomeFile) {
+                    ConsoleLog("File name is empty! Cannot download.");
+                    return;
                 }
-                else {
+
+                if (contents.length === 0) {
+                    ConsoleLog("File contents are empty! Cannot download.");
+                    return;
+                }
+
+                ConsoleLog("About to check if openViewer...");
+                document.getElementById('output').innerHTML = "Download starting...";
+
+                if (openViewer) {
+                    ConsoleLog("Opening in viewer");
+                    saveToSessionStorage("csv", contents);
+                    openViewerHtml();
+                } else {
+                    ConsoleLog("Downloading file");
                     scaricaFile(nomeFile, contents);
                 }
+
                 document.getElementById('output').innerHTML = "";
                 inDownload = false;
-            }
-            else {
-                console.log("extension not found txt:" + filenameOk + " - csv:" + filenameOk2);
+                ConsoleLog("Download completed, inDownload = false");
             }
         }
+
         function scaricaFile(nomeFile, contents) {
+            ConsoleLog("scaricaFile called with:", nomeFile, "Contents length:", contents.length);
             const elemento = document.createElement('a');
             elemento.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(contents));
             elemento.setAttribute('download', nomeFile);
-            // Nascondi l'elemento per non modificare il layout della pagina
             elemento.style.display = 'none';
-            // Aggiungi l'elemento al corpo del documento
+            ConsoleLog("Created download element:", elemento);
             document.body.appendChild(elemento);
-            // Simula un click sull'elemento
+            ConsoleLog("Added element to body, clicking...");
             elemento.click();
-            // Rimuovi l'elemento dal documento
+            ConsoleLog("Clicked element, removing from body...");
             document.body.removeChild(elemento);
+            ConsoleLog("Download completed successfully");
         }
 
         function sendDownloadFileName(filename) {
+            ConsoleLog("sendDownloadFileName called with:", filename);
             const outputDiv = document.getElementById('output');
             outputDiv.innerHTML = '';
+            ConsoleLog("Sending filename to device:", filename + "\r\n");
             sendToDevice(filename + "\r\n");
         }
-        function toggleFullScreen() {
-            var btn = document.getElementById('fullscreen-btn');
-            if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen();
+
+        document.getElementById('toggleSidebarBtn').addEventListener('click', function () {
+            const sidebar = document.querySelector('.sidebar');
+            sidebar.classList.toggle('collapsed');
+
+            if (sidebar.classList.contains('collapsed')) {
+                this.innerHTML = '&raquo;';
+                this.title = 'Show panel';
             } else {
-                if (document.exitFullscreen) {
-                    document.exitFullscreen();
+                this.innerHTML = '&laquo;';
+                this.title = 'Hide panel';
+            }
+        });
+
+                // Internationalization
+        if (typeof (__language) === 'undefined')
+            __language = new Array();
+
+        __language['it'] = {
+            "logger manager": "Manager del Logger",
+            "toggle panel": "Attiva/disattiva pannello",
+            "hide panel": "Nascondi pannello",
+            "show panel": "Mostra pannello",
+            "disconnected": "Disconnesso",
+            "connection": "Connessione",
+            "connect to serial/usb": "Connetti a Seriale/USB",
+            "connect to ble": "Connetti a BLE",
+            "disconnect": "Disconnetti",
+            "device controls": "Controlli Dispositivo",
+            "read logs": "Leggi Log",
+            "sync now": "Sincronizza Ora",
+            "set interval": "Imposta Intervallo",
+            "zerogas calibration": "Calibrazione Zerogas",
+            "start real-time": "Avvia Real-Time",
+            "stop real-time": "Ferma Real-Time",
+            "install app": "Installa App",
+            "go to viewer": "Vai al Viewer",
+            "donate": "Dona",
+            "to install on ios: tap the share icon and then \"add to home screen\"": "Per installare su iOS: tocca l'icona di condivisione e poi \"Aggiungi a schermata Home\"",
+            "enter a command...": "Inserisci un comando...",
+            "send": "Invia",
+            "connected via": "Connesso via",
+            "connecting...": "Connessione in corso...",
+            "error: ": "Errore: ",
+            "confirm delete file?": "Confermi di voler eliminare il file?",
+            "download": "Scarica",
+            "chart": "Grafico",
+            "delete": "Elimina",
+            "exit": "Esci",
+            "sensor": "Sensore",
+            "preheating": "Preriscaldamento",
+            "invalid interval": "Intervallo non valido",
+            "communication error:": "Errore di comunicazione:",
+            "serial connection failed: ": "Connessione seriale fallita: ",
+            "usb connection failed: ": "Connessione USB fallita: ",
+            "ble connection failed: ": "Connessione BLE fallita: ",
+            "disconnection failed: ": "Disconnessione fallita: ",
+            "no active connection": "Nessuna connessione attiva",
+
+        };
+
+        function _i18n(str, LowerCaseMode, lang) {''
+            try {
+                if (lang === undefined) {
+                    lang = navigator.language || navigator.userLanguage;
+                    lang = lang.split("-")[0].toLowerCase();
                 }
+                var l = "en";
+                var strori = str;
+                LowerCaseMode = (typeof (LowerCaseMode) !== 'undefined') ? LowerCaseMode : "";
+                if (LowerCaseMode === "auto") {
+                    str = str.toLowerCase();
+                }
+                let getlang = getParam("lang");
+                lang = (typeof (lang) !== 'undefined') ? lang : l;
+                if (getlang)
+                {
+                    lang=getlang;
+                }
+                console.log("lang="+lang);
+                var ret = "";
+                if (typeof (__language) === 'undefined' || __language[lang] === undefined || __language[lang][str] === undefined) {
+                    ret = str;
+                } else {
+                    ret = __language[lang][str];
+                }
+
+                if (LowerCaseMode === "auto") {
+                    if (strori[0].search(/[A-Z]/) !== -1 && strori[1].search(/[a-z]/) !== -1) {
+                        LowerCaseMode = "Aa";
+                    } else if (strori[0].search(/[A-Z]/) !== -1 && strori[1].search(/[A-Z]/) !== -1) {
+                        LowerCaseMode = "AA";
+                    } else if (strori[0].search(/[a-z]/) !== -1 && strori[1].search(/[a-z]/) !== -1) {
+                        LowerCaseMode = "aa";
+                    }
+                }
+
+                switch (LowerCaseMode) {
+                    case "Aa":
+                        ret = ret.charAt(0).toUpperCase() + ret.slice(1);
+                        break;
+                    case "AA":
+                        ret = ret.toUpperCase();
+                        break;
+                    case "aa":
+                        ret = ret.toLowerCase();
+                        break;
+                }
+                return ret;
+            } catch (e) {
+                console.log(e);
+                return str;
             }
         }
-        UpdateButtonsStatus();
 
+        function TranslateHtml() {
+            document.querySelectorAll("[data-i18n='auto']").forEach(function (element) {
+                
+                var contents = element.childNodes;
+                if (contents.length > 0) {
+                    if (contents[0].nodeType === Node.TEXT_NODE) {
+                        element.innerHTML = _i18n(element.innerHTML, "auto");
+                        console.log(element.innerHTML);
+                        for (let i = 1; i < contents.length; i++) {
+                            element.appendChild(contents[i].cloneNode(true));
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize the application
+        UpdateButtonsStatus();
+        TranslateHtml();
     </script>
 
-
+    <!-- PWA Installation Script -->
     <script>
         let deferredPrompt;
-
-        // Check if the device is running iOS
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
-        // Show appropriate installation instructions based on the device
         if (isIOS) {
             document.getElementById('iosInstructions').style.display = 'block';
         } else {
-            // For non-iOS devices, use the standard installation process
             window.addEventListener('beforeinstallprompt', (e) => {
                 e.preventDefault();
                 deferredPrompt = e;
@@ -1123,23 +1731,22 @@
                 deferredPrompt.prompt();
                 deferredPrompt.userChoice.then((choiceResult) => {
                     if (choiceResult.outcome === 'accepted') {
-                        console.log('User accepted the install prompt');
+                        ConsoleLog('User accepted the install prompt');
                     } else {
-                        console.log('User dismissed the install prompt');
+                        ConsoleLog('User dismissed the install prompt');
                     }
                     deferredPrompt = null;
                 });
             });
         }
 
-        // Register service worker
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('service-worker.js')
                 .then((registration) => {
-                    console.log('Service Worker registered with scope:', registration.scope);
+                    ConsoleLog('Service Worker registered with scope:', registration.scope);
                 })
                 .catch((error) => {
-                    console.log('Service Worker registration failed:', error);
+                    ConsoleLog('Service Worker registration failed:', error);
                 });
         }
     </script>

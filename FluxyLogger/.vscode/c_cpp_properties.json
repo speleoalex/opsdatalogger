@@ -12,19 +12,19 @@
             ],
             "intelliSenseMode": "gcc-x64",
             "includePath": [
-                "/home/speleoalex/.arduino15/packages/arduino/hardware/renesas_uno/1.1.0/cores/arduino/tinyusb",
-                "/home/speleoalex/.arduino15/packages/arduino/hardware/renesas_uno/1.1.0/cores/arduino/api/deprecated",
-                "/home/speleoalex/.arduino15/packages/arduino/hardware/renesas_uno/1.1.0/cores/arduino/api/deprecated-avr-comp",
-                "/home/speleoalex/.arduino15/packages/arduino/hardware/renesas_uno/1.1.0/cores/arduino",
-                "/home/speleoalex/.arduino15/packages/arduino/hardware/renesas_uno/1.1.0/variants/UNOWIFIR4",
+                "/home/speleoalex/.arduino15/packages/arduino/hardware/renesas_uno/1.4.1/cores/arduino/tinyusb",
+                "/home/speleoalex/.arduino15/packages/arduino/hardware/renesas_uno/1.4.1/cores/arduino/api/deprecated",
+                "/home/speleoalex/.arduino15/packages/arduino/hardware/renesas_uno/1.4.1/cores/arduino/api/deprecated-avr-comp",
+                "/home/speleoalex/.arduino15/packages/arduino/hardware/renesas_uno/1.4.1/cores/arduino",
+                "/home/speleoalex/.arduino15/packages/arduino/hardware/renesas_uno/1.4.1/variants/UNOWIFIR4",
                 "/home/speleoalex/Arduino/libraries/SdFat/src",
-                "/home/speleoalex/.arduino15/packages/arduino/hardware/renesas_uno/1.1.0/libraries/SPI",
-                "/home/speleoalex/.arduino15/packages/arduino/hardware/renesas_uno/1.1.0/libraries/Wire",
+                "/home/speleoalex/.arduino15/packages/arduino/hardware/renesas_uno/1.4.1/libraries/SPI",
+                "/home/speleoalex/.arduino15/packages/arduino/hardware/renesas_uno/1.4.1/libraries/Wire",
                 "/home/speleoalex/Arduino/libraries/RTClib/src",
                 "/home/speleoalex/Arduino/libraries/Adafruit_BusIO",
                 "/home/speleoalex/Arduino/libraries/LiquidCrystal_I2C",
                 "/home/speleoalex/Arduino/libraries/ArduinoBLE/src",
-                "/home/speleoalex/.arduino15/packages/arduino/hardware/renesas_uno/1.1.0/libraries/WiFiS3/src",
+                "/home/speleoalex/.arduino15/packages/arduino/hardware/renesas_uno/1.4.1/libraries/WiFiS3/src",
                 "/home/speleoalex/.arduino15/packages/arduino/tools/arm-none-eabi-gcc/7-2017q4/arm-none-eabi/include/c++/7.2.1",
                 "/home/speleoalex/.arduino15/packages/arduino/tools/arm-none-eabi-gcc/7-2017q4/arm-none-eabi/include/c++/7.2.1/arm-none-eabi",
                 "/home/speleoalex/.arduino15/packages/arduino/tools/arm-none-eabi-gcc/7-2017q4/arm-none-eabi/include/c++/7.2.1/backward",
@@ -33,7 +33,7 @@
                 "/home/speleoalex/.arduino15/packages/arduino/tools/arm-none-eabi-gcc/7-2017q4/arm-none-eabi/include"
             ],
             "forcedInclude": [
-                "/home/speleoalex/.arduino15/packages/arduino/hardware/renesas_uno/1.1.0/cores/arduino/Arduino.h"
+                "/home/speleoalex/.arduino15/packages/arduino/hardware/renesas_uno/1.4.1/cores/arduino/Arduino.h"
             ],
             "cStandard": "c11",
             "cppStandard": "c++17",
