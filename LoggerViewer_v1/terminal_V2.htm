@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Serial/USB Terminal</title>
+    <style>
+        footer {
+            min-height: 50px;
+            /* Adjust as needed */
+            /* Styles for your footer */
+        }
+
+        table {
+            border-collapse: collapse;
+            border: 1px solid #ffffff;
+            width: 100%;
+        }
+
+        table td {
+            border: 1px solid #dadada;
+            color: #ffff00;
+            padding: 5px;
+        }
+
+        table td:first-child {
+            border-left: 0px solid #dadada;
+        }
+
+        thead td {
+            color: #ffffff !important;
+        }
+
+        body {
+            font-family: monospace;
+            background-color: black;
+            color: limegreen;
+            margin: 10px;
+            display: flex;
+            /* or grid */
+            flex-direction: column;
+            /* not needed for grid */
+            height: 100vh;
+            margin: 0;
+            /* Remove default margin */
+        }
+
+        td.plotter {
+            width: 50%;
+            padding: 10px;
+        }
+
+        th.plotter {
+            font-size: 20px
+        }
+
+        .plotter {
+            font-size: 30px;
+            text-align: center;
+            text-transform: uppercase;
+            font-family: Arial, Helvetica, sans-serif !important;
+        }
+
+        #buttons {
+            padding: 5px;
+
+            background-color: #202020;
+            /*height: 40px;*/
+        }
+
+        #footer {
+            padding: 5px;
+            ;
+            /*  height: 40px;
+            margin-top: 5px;*/
+        }
+
+        .ok {
+            color: greenyellow !important;
+
+        }
+
+        .error {
+            color: red !important;
+
+        }
+
+        .command {
+            color: #8888ff !important;
+
+        }
+
+        .received {
+            color: #faaeae !important;
+
+        }
+
+        .alert {
+            color: rgba(242, 255, 0, 0.665) !important;
+
+        }
+
+        #output {
+            height: 60vh;
+            /* Adjust this value as needed */
+            border: 1px solid limegreen;
+            background-color: #202020;
+            color: #fafafa;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            padding: 5px;
+            margin: 5px;
+            flex-grow: 1;
+            /* Flexbox: Allow this element to grow to fill space */
+            /* Grid: Define rows and assign output to a row that takes up remaining space */
+            overflow-y: auto;
+            /* Scroll inside output if needed */
+        }
+
+        #input {
+            width: calc(100% - 80px);
+            color: limegreen;
+            background-color: #202020;
+            border: 1px solid limegreen;
+            padding: 5px;
+            display: inline-block;
+        }
+
+        #send {
+            display: inline-block;
+            width: 58px;
+            padding: 5px;
+            margin-left: 5px;
+            border: 1px solid limegreen
+        }
+
+        .delete {
+            background-color: red;
+            margin-left: 2px;
+            ;
+        }
+
+        .continue {
+            background-color: rgb(136, 92, 255);
+        }
+
+        button,
+        select {
+            background-color: limegreen;
+            color: black;
+            border: none;
+            padding: 5px 15px;
+            cursor: pointer;
+            margin: 3px;
+            border-radius: 6px;
+        }
+
+        #connectBLE {
+            background-color: dodgerblue;
+        }
+
+        #loggerviewer {
+            background-color: orange;
+        }
+
+        #fullscreen-btn {
+            padding: 0px;
+            border: 0px;
+            background-color: transparent;
+            color: #ffffff;
+        }
+
+        button:disabled {
+            background-color: grey;
+        }
+    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+</head>
+
+<body onload="TranslateHtml() ">
+    <nav id="buttons">
+        <button onclick="toggleFullScreen()" id="fullscreen-btn" style="float:right"
+            data-i18n='auto'>&#x26F6;</button><button id="clear" style="float:right"
+            data-i18n='auto'>Clear</button><button data-i18n='auto' id="connect">Connect</button><select name="baudrate"
+            id="baudrate-select">
+            <option value="9600">9600</option>
+            <option selected value="19200">19200</option>
+            <option value="57600">57600</option>
+            <option value="115200">115200</option>
+        </select><button id="disconnect" data-i18n="auto"
+            style="display:none;background-color: rgb(128, 0, 0);">Disconnect</button><button style="display:none"
+            data-i18n='auto' id="connectBLE">Connect BLE</button>
+        Autoscroll:<input id="autoscroll" type="checkbox" checked="checked" />
+    </nav>
+    <div id="output"></div>
+    <footer id="footer">
+        <input autocapitalize="none" type="text" id="input" id="sendtext"><button data-i18n='auto'
+            id="send">Send</button><br>
+    </footer>
+    <script>
+        var forceusb = getParam("forceusb");
+        var openViewer = false;
+        var port, reader, writer, inDownload;
+        var inDownload = false;
+        var inListFile = false;
+        var is_usb = false;
+        var is_BLE = false;
+        let bleDevice = null;
+        let bleServer = null;
+        let myCharacteristic = null;
+
+        var connected_serial = false;
+        var connected_usb = false;
+        var connected_BLE = false;
+        var lastch = "";
+        var filetext = "";
+        var sizeDownload = 0;
+        var textContents = "";
+        var textListFiles = "";
+        var UID_SERVICE = '12345678-9878-9878-9878-123456789abc';
+        var UID_Characteristic = 'abcd1234-9878-9878-9878-abcdef123456';
+
+
+        //-----------------------actions ------------------------------------------>
+        // SEND (CLICK)
+        document.getElementById('clear').addEventListener('click', () => {
+            document.getElementById("output").innerHTML = "";
+            textContents = "";
+        });
+        // DISCONNECT
+        document.getElementById('disconnect').addEventListener('click', async () => {
+            inListFile = false;
+            if (is_usb) {
+                await device.close();
+                device = null;
+                //                window.location.reload();
+                document.getElementById('connect').disabled = false;
+                document.getElementById('disconnect').disabled = true;
+            }
+            if (is_BLE) {
+                try {
+                    if (bleServer && bleServer.connected) {
+                        bleServer.disconnect();
+                        myCharacteristic.stopNotifications().then(_ => {
+                            console.log('Notifiche interrotte');
+                            myCharacteristic.removeEventListener('characteristicvaluechanged', handleNotifications);
+                        });
+                    }
+
+                }
+                catch (e) {
+                    window.location.reload();
+                }
+
+            }
+            try {
+                if (reader) {
+                    await reader.cancel();
+                    await reader.releaseLock();
+                }
+                if (writer) {
+                    await writer.close();
+                    await writer.releaseLock();
+                }
+                if (port) {
+                    await port.close();
+                }
+                connected_serial = false;
+                connected_usb = false;
+                document.getElementById('connect').disabled = false;
+                document.getElementById('disconnect').disabled = true;
+
+            }
+            catch (e) {
+                window.location.reload();
+            }
+            UpdateButtonsStatus();
+            window.location.reload();
+        });
+
+        // SEND (CLICK)
+        document.getElementById('send').addEventListener('click', () => {
+            inviaDati();
+        });
+        // SEND (ENTER)
+        document.getElementById('input').addEventListener('keypress', (event) => {
+            inListFile = false;
+            if (event.key === 'Enter') {
+                inviaDati();
+            }
+        });
+        // CONNECT
+        document.getElementById('connect').addEventListener('click', async () => {
+            if (navigator.serial === undefined && navigator.usb === undefined) {
+                alert("Your browser does not support USB port reading");
+            }
+            if (forceusb != "1" && navigator.serial !== undefined) {
+
+                try {
+                    port = await navigator.serial.requestPort();
+
+                } catch (e) {
+
+                }
+            }
+            else {
+                try {
+                    device = await navigator.usb.requestDevice({ filters: [] });
+                    await device.open(); // Apre il dispositivo
+                    if (device.configuration === null) {
+                        console.log("selectConfiguration 1");
+                        await device.selectConfiguration(1); // Seleziona la configurazione
+                    }
+                    try {
+                        console.log("claimInterface 0");
+                        await device.claimInterface(0); // Richiede l'interfaccia
+
+                    }
+                    catch (e) {
+                        console.log("claimInterface 1");
+                        await device.claimInterface(1); // Richiede l'interfaccia
+
+                    }
+                    readLoopRunning = true;
+                    readLoop();
+                    is_usb = true;
+
+                } catch (e) {
+                    UpdateButtonsStatus();
+                    console.log(e);
+                    return;
+                }
+
+            }
+            if (is_usb) {
+                console.log("USB Mode");
+                readLoopRunning = true;
+                connected_usb = true;
+                readLoopUsb();
+
+            }
+            else {
+                console.log("SERIAL Mode");
+                console.log("Open boudrate:" + getSelectedBaudRate());
+                await port.open({ baudRate: getSelectedBaudRate() });
+
+                const decoder = new TextDecoderStream();
+                const inputDone = port.readable.pipeTo(decoder.writable);
+                reader = decoder.readable.getReader();
+
+                const encoder = new TextEncoderStream();
+                const outputDone = encoder.readable.pipeTo(port.writable);
+                writer = encoder.writable.getWriter();
+                connected_serial = true;
+            }
+            readLoop();
+            UpdateButtonsStatus();
+        });
+
+
+        document.querySelector('#connectBLE').addEventListener('click', function () {
+            navigator.bluetooth.requestDevice({
+                //filters: [{ name: 'BTService' }],
+                acceptAllDevices: true,
+                optionalServices: [UID_SERVICE] // UUID del servizio BLE
+            })
+                .then(device => {
+                    is_BLE = true;
+                    bleDevice = device;
+                    console.log('Connessione al dispositivo: ', device.name);
+                    return device.gatt.connect();
+                })
+                .then(server => {
+                    bleServer = server;
+                    return server.getPrimaryService(UID_SERVICE);
+                })
+                .then(service => {
+                    return service.getCharacteristic(UID_Characteristic);
+                })
+                .then(characteristic => {
+                    myCharacteristic = characteristic;
+                    console.log('Caratteristica ottenuta');
+                    // Ascolta le notifiche sulla caratteristica
+                    myCharacteristic.startNotifications().then(_ => {
+                        console.log('Notifiche avviate');
+                        myCharacteristic.addEventListener('characteristicvaluechanged', handleNotifications);
+                        connected_BLE = true;
+                        UpdateButtonsStatus();
+                    });
+                })
+                .catch(error => {
+                    console.log('Errore di connessione: ', error);
+                });
+        });
+        function handleNotifications(event) {
+            let target_value = event.target.value;
+            let decoder = new TextDecoder('utf-8');
+            let value = decoder.decode(target_value);
+            let outputDiv = document.getElementById('output');
+            textContents += value;
+
+            if (inListFile) {
+                textListFiles += value;
+                createButtonsForFile(textListFiles);
+            }
+            else {
+                document.getElementById('output').innerHTML = HighLighting(textContents);
+            }
+            if (value.length > 0) {
+                lastch = value[value.length - 1];
+            }
+            UpdateButtonsStatus();
+            if (document.getElementById("autoscroll").checked) {
+                outputDiv.scrollTop = outputDiv.scrollHeight;
+
+            }
+
+
+
+
+        }
+        function UpdateButtonsStatus() {
+
+            if (connected_usb || connected_serial || connected_BLE) {
+                document.getElementById('connect').style.display = "none";
+                document.getElementById('baudrate-select').style.display = "none";
+                document.getElementById('disconnect').style.display = "inline-block";
+                document.getElementById('connectBLE').style.display = "none";
+
+            }
+            else {
+                if (navigator.bluetooth !== undefined) {
+
+                    document.getElementById('connectBLE').style.display = "inline-block";
+                }
+                document.getElementById('connect').style.display = "inline-block";
+                document.getElementById('baudrate-select').style.display = "inline-block";
+                document.getElementById('disconnect').style.display = "none";
+
+            }
+        }
+        //-----------------------actions ------------------------------------<
+
+        //--------------------i18n------------------------------------------->
+        if (typeof (__language) === 'undefined')
+            __language = new Array();
+
+        __language['it'] = {
+            "connect": "Connetti",
+            "logger viewer": "Visualizzatore di registrazioni",
+
+            "Confirm delete file?": "Confermi di voler eliminare il file?",
+            "view stored logs": "Vedi logs memorizzati",
+            "download": "Scarica",
+            "delete": "elimina",
+            "disconnect": "Disconnetti",
+            "send": "invia",
+            "chart": "grafico",
+            "exit": "esci",
+            "sensor": "sensore",
+            "Prehead": "preriscaldamento",
+            "set interval": "Imposta intervallo",
+            "send date and time": "invia data e ora"
+        };
+        /**
+         * 
+         * @param {type} str
+         * @param {type} LowerCaseMode
+         * @param {type} lang
+         */
+        function _i18n(str, LowerCaseMode, lang) {
+            try {
+                if (lang === undefined) {
+                    lang = navigator.language || navigator.userLanguage;
+                    lang = lang.split("-")[0].toLowerCase();
+                }
+                console.log(lang);
+                var l = "en";
+                var strori = str;
+                LowerCaseMode = (typeof (LowerCaseMode) !== 'undefined') ? LowerCaseMode : "";
+                if (LowerCaseMode === "auto") {
+                    str = str.toLowerCase();
+                }
+                lang = (typeof (lang) !== 'undefined') ? lang : l;
+                var ret = "";
+                if (typeof (__language) === 'undefined' || __language[lang] === undefined || __language[lang][str] === undefined) {
+                    ret = str;
+                }
+                else {
+                    ret = __language[lang][str];
+                }
+
+                if (LowerCaseMode === "auto") {
+
+
+                    if (strori[0].search(/[A-Z]/) !== -1 && strori[1].search(/[a-z]/) !== -1) {
+                        LowerCaseMode = "Aa";
+                    }
+                    else if (strori[0].search(/[A-Z]/) !== -1 && strori[1].search(/[A-Z]/) !== -1) {
+                        LowerCaseMode = "AA";
+                    }
+                    else if (strori[0].search(/[a-z]/) !== -1 && strori[1].search(/[a-z]/) !== -1) {
+                        LowerCaseMode = "aa";
+                    }
+                }
+                //------------------------------------------------------------------------->
+                switch (LowerCaseMode) {
+                    case "Aa":
+                        ret = ret.charAt(0).toUpperCase() + ret.slice(1);
+                        break;
+                    case "AA":
+                        ret = ret.toUpperCase();
+                        break;
+                    case "aa":
+                        ret = ret.toLowerCase();
+                        break;
+                }
+                //-------------------------------------------------------------------------<
+                //console.log(ret);
+                return ret;
+            }
+            catch (e) {
+                console.log(e);
+                return str;
+            }
+        }
+        function TranslateHtml() {
+            document.querySelectorAll("[data-i18n='auto']").forEach(function (element) {
+                var contents = element.childNodes;
+                if (contents.length > 0) {
+                    if (contents[0].nodeType === Node.TEXT_NODE) {
+                        element.innerHTML = _i18n(element.innerHTML, "auto");
+                        for (let i = 1; i < contents.length; i++) {
+                            element.appendChild(contents[i].cloneNode(true));
+                        }
+                    }
+                }
+            });
+
+        }
+        //--------------------i18n--------------------------------------<
+
+        function getSelectedBaudRate() {
+            var select = document.getElementById("baudrate-select");
+            var selectedBaudRate = select.options[select.selectedIndex].value;
+            return selectedBaudRate;
+        }
+
+
+        function ascii(a) { return a.charCodeAt(0); }
+
+        //read loop usb
+        async function readLoopUsb() {
+            while (readLoopRunning && device) {
+                let outputDiv = document.getElementById('output');
+                try {
+                    const result = await device.transferIn(2, 64); // Modifica il numero endpoint e la lunghezza in base al tuo dispositivo
+                    const decoder = new TextDecoder();
+                    var value = decoder.decode(result.data);
+                    if (inDownload) {
+                        filetext += value
+                        outputDiv.innerHTML = "received " + filetext.length + " of " + sizeDownload + " bytes";
+                        findFileContents(filetext);
+                    }
+                    else {
+
+                        //work arround --->
+                        if (false && lastch == "\r" && value[0] == "\n") {
+                            textContents += value.replace("\n", "");
+                        }
+                        else {
+                            textContents += value;
+                        }
+                        //work arround ---<
+
+                        if (inListFile) {
+                            textListFiles += value;
+                            createButtonsForFile(textListFiles);
+                        }
+                        else {
+                            document.getElementById('output').innerHTML = HighLighting(textContents);
+                        }
+                        if (value.length > 0) {
+                            lastch = value[value.length - 1];
+                        }
+
+                        UpdateButtonsStatus();
+                        if (document.getElementById("autoscroll").checked) {
+                            outputDiv.scrollTop = outputDiv.scrollHeight;
+                        }
+                    }
+                } catch (e) {
+                    alert('Errore di lettura:' + e);
+                    break;
+                }
+
+            }
+        }
+
+        async function readLoop() {
+            let outputDiv = document.getElementById('output');
+            while (true) {
+                let { value, done } = await reader.read();
+                if (done) {
+                    reader.releaseLock();
+                    console.log("done");
+                    break;
+                }
+                if (inDownload) {
+                    filetext += value
+                    outputDiv.innerHTML = "received " + filetext.length + " of " + sizeDownload + " bytes";
+                    findFileContents(filetext);
+                }
+                else {
+                    //work arround --->
+                    if (false && lastch == "\r" && value[0] == "\n") {
+                        textContents += value.replace("\n", "");
+                    }
+                    else {
+                        textContents += value;
+                    }
+                    //work arround ---<
+
+                    if (inListFile) {
+                        textListFiles += value;
+                        createButtonsForFile(textListFiles);
+                    }
+                    else {
+                        document.getElementById('output').innerHTML = HighLighting(textContents);
+                    }
+                    if (value.length > 0) {
+                        lastch = value[value.length - 1];
+                    }
+                    UpdateButtonsStatus();
+                    if (document.getElementById("autoscroll").checked) {
+                        outputDiv.scrollTop = outputDiv.scrollHeight;
+                    }
+                }
+                //console.log("received:\"" + value + "\"");
+                //console.log("lastch:\"" + ascii(lastch) + "\"");
+            }
+        }
+
+
+        async function sebdToUSB(data) {
+            if (is_usb) {
+                try {
+                    const textEncoder = new TextEncoder();
+                    data = textEncoder.encode(data);
+
+                    await device.transferOut(2, data); // Invia i dati al dispositivo
+                    //alert("send "+data)
+                } catch (error) {
+                    alert("Errore di trasferimento: " + error);
+                }
+            }
+        }
+
+
+        function sebdToSerial(data) {
+            if (is_BLE) {
+                const valueArray = new TextEncoder().encode(data);
+                myCharacteristic.writeValue(valueArray)
+            }
+            else {
+
+                if (is_usb) {
+                    sebdToUSB(data);
+                }
+                else {
+                    writer.write(data);
+                }
+            }
+        }
+
+        function getParam(nomeVariabile) {
+            // Ottieni la stringa di query dall'URL
+            const queryString = window.location.search;
+
+            // Crea un oggetto URLSearchParams dalla stringa di query
+            const urlParams = new URLSearchParams(queryString);
+
+            // Restituisci il valore della variabile specificata
+            return urlParams.get(nomeVariabile);
+        }
+
+        function inviaDati() {
+            const text = document.getElementById('input').value + '\r\n';
+            sebdToSerial(text);
+            // console.log("Send:" + text);
+            textContents += text;
+            document.getElementById('input').value = '';
+            UpdateButtonsStatus();
+        }
+
+        function EnterTextToSerial(text) {
+            document.getElementById('input').value = text;
+            setTimeout(() => {
+                document.getElementById('send').click();
+            }, 500);
+        }
+        function clearOutput() {
+            document.getElementById('output').innerHTML = "";
+            textListFiles = "";
+            textContents = "";
+        }
+        function downloadFileClick(filename, size, view) {
+            inDownload = true;
+            textListFiles = "";
+            sizeDownload = size;
+            if (view) {
+                openViewer = true;
+
+            }
+            else {
+                openViewer = false;
+            }
+            sendDownloadFileName(filename);
+
+        }
+        function plotterLineToHtmlTable(plotterLine) {
+            console.log("plotterLine=" + plotterLine);
+            // Dividere la linea in coppie chiave-valore
+            const pairs = plotterLine.split(',');
+
+            // Creare le intestazioni e le righe della tabella dai dati
+            let headers = '<tr>';
+            let values = '<tr>';
+            pairs.forEach(pair => {
+                var [key, value] = pair.split(':');
+                if (key == "raw") {
+                    key = _i18n("sensor");
+                }
+                headers += `<th class="plotter" >${key}</th>`;
+                values += `<td class="plotter">${value}</td>`;
+            });
+            headers += '</tr>';
+            values += '</tr>';
+
+            // Costruire la tabella HTML
+            return `<table class="plotter">${headers}${values}</table>`;
+        }
+        function htmlEntities(str) {
+            return str.replace(/</g, '<').replace(/>/g, '>');
+        }
+
+        // HighLighting del testo
+        function HighLighting(testo) {
+            //Fix newline
+            testo = testo.replace("\r\n", "\n");
+            testo = testo.replace("\r", "\n");
+            var lines = testo.split("\n");
+            for (var i in lines) {
+                var curLine = lines[i].trim();
+                curLine = htmlEntities(curLine);
+                if (curLine.trim().endsWith(":ok") || curLine.trim() == "ok") {
+                    curLine = "<span class=\"ok\">" + curLine.trim() + "</span>";
+                    lines[i] = curLine;
+                    continue;
+                }
+                if (curLine.trim().includes("error:")) {
+                    curLine = "<span class=\"error\">" + curLine.trim() + "</span>";
+                }
+                if (curLine.trim().includes("alert:")) {
+                    curLine = "<span class=\"alert\">" + curLine.trim() + "</span>";
+                }
+                if (curLine.trim().includes("::")) {
+                    curLine = "<span class=\"received\">" + curLine.trim() + "</span>";
+                }
+                lines[i] = curLine;
+            }
+            html = lines.join("\n");
+            return html;
+        }
+        function formatDateTime(fileName) {
+            // Controllo del formato del nome del file
+            const regex = /^\d{4}-\d{2}-\d{2}_\d{2}\.\d{2}\.\d{2}\.txt$/;
+            if (!regex.test(fileName)) {
+                return fileName; // Restituisce il nome del file in caso di formato errato
+            }
+
+            try {
+                // Estrazione di componenti data e ora dal nome del file
+                const datePart = fileName.split('_')[0];
+                const timePart = fileName.split('_')[1].split('.')[0] + '.' + fileName.split('_')[1].split('.')[1] + '.' + fileName.split('_')[1].split('.')[2];
+                const [year, month, day] = datePart.split('-').map(Number);
+                const [hour, minute, second] = timePart.split('.').map(Number);
+
+                // Creazione dell'oggetto Date
+                const date = new Date(year, month - 1, day, hour, minute, second);
+
+                // Formattazione della data e dell'ora secondo le impostazioni locali del browser
+                const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric' };
+
+                // Formattazione della data secondo le impostazioni locali del browser
+                return date.toLocaleString(undefined, options);
+            } catch (error) {
+                return ""; // Restituisce il nome del file in caso di errore
+            }
+        }
+
+
+        function saveToSessionStorage(key, value) {
+            try {
+                sessionStorage.setItem(key, value);
+                console.log('Dato salvato con successo');
+            } catch (e) {
+                console.error('Errore nel salvataggio dei dati', e);
+            }
+        }
+        function readFromSessionStorage(key) {
+            try {
+                const value = sessionStorage.getItem(key);
+                if (value === null) {
+                    console.log('Nessun dato trovato per la chiave:', key);
+                    return null;
+                } else {
+                    console.log('Dato trovato:', value);
+                    return value;
+                }
+            } catch (e) {
+                console.error('Errore nella lettura dei dati', e);
+                return null;
+            }
+        }
+        function findFileContents(testo) {
+            //            const testo = document.getElementById('output').innerHTML;
+            const fine = testo.indexOf("End transmission:");
+            if (fine === -1) {
+                return;
+            }
+            const filenameOk = testo.indexOf(".txt");
+            const filenameOk2 = testo.indexOf(".csv");
+            if (filenameOk === -1 && filenameOk2 === -1) {
+                return;
+            }
+
+            document.getElementById('output').innerHTML = "Start download file:";
+            //console.log(testo);
+            const inizio = testo.indexOf("Start transmission:");
+            if (inizio !== -1) {
+                const nomeFile = testo.split("End transmission:")[1].trim();
+                const contents = testo.substring(inizio + "Start transmission:".length, fine).trim();
+                document.getElementById('output').innerHTML = "Download starting...";
+                if (openViewer) {
+                    saveToSessionStorage("csv", contents);
+                    if (is_usb) {
+                        window.location = "loggerviewer.htm";
+
+                    }
+                    else {
+                        window.open("loggerviewer.htm");
+
+                    }
+                }
+                else {
+                    scaricaFile(nomeFile, contents);
+                }
+                document.getElementById('output').innerHTML = "";
+                inDownload = false;
+            }
+            else {
+                console.log("extension not found txt:" + filenameOk + " - csv:" + filenameOk2);
+            }
+        }
+        function scaricaFile(nomeFile, contents) {
+            const elemento = document.createElement('a');
+            elemento.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(contents));
+            elemento.setAttribute('download', nomeFile);
+            // Nascondi l'elemento per non modificare il layout della pagina
+            elemento.style.display = 'none';
+            // Aggiungi l'elemento al corpo del documento
+            document.body.appendChild(elemento);
+            // Simula un click sull'elemento
+            elemento.click();
+            // Rimuovi l'elemento dal documento
+            document.body.removeChild(elemento);
+        }
+
+        function sendDownloadFileName(filename) {
+            const outputDiv = document.getElementById('output');
+            outputDiv.innerHTML = '';
+            sebdToSerial(filename + "\r\n");
+        }
+        function toggleFullScreen() {
+            var btn = document.getElementById('fullscreen-btn');
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+        UpdateButtonsStatus();
+    </script>
+</body>
+
+</html>

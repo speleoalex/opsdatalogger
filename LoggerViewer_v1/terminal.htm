@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Terminal</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background-color: black;
+            color: limegreen;
+            margin: 10px;
+        }
+
+        #output {
+            height: 300px;
+            border: 1px solid limegreen;
+            background-color: #202020;
+            color: limegreen;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            padding: 5px;
+        }
+
+        #input {
+            width: calc(100% - 80px);
+            color: limegreen;
+            background-color: #202020;
+            border: 1px solid limegreen;
+            padding: 5px;
+            display: inline-block;
+        }
+
+        #send {
+            display: inline-block;
+            width: 58px;
+            padding: 5px;
+            margin-left: 5px;
+            border: 1px solid limegreen
+        }
+
+        button {
+            background-color: limegreen;
+            color: black;
+            border: none;
+            padding: 5px 15px;
+            cursor: pointer;
+        }
+
+        button:disabled {
+            background-color: grey;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Web Serial Terminal</h1>
+    <button id="connect">Connetti a Porta Seriale</button>
+    <button style="" id="disconnect" disabled>Scollega</button>
+    <button id="logs" disabled>Scarica dati</button>
+    <br><br>
+
+    <div id="output"></div>
+    <br>
+    <input type="text" id="input" id="sendtext"><button id="send">Invia</button><br>
+
+
+
+    <script>
+        let port, reader, writer;
+        var is_usb = false;
+        document.getElementById('connect').addEventListener('click', async () => {
+            try {
+                port = await navigator.serial.requestPort();
+
+            } catch (e) {
+
+                try {
+                    device = await navigator.usb.requestDevice({ filters: [] });
+                    await device.open(); // Apre il dispositivo
+                    if (device.configuration === null)
+                        await device.selectConfiguration(1); // Seleziona la configurazione
+                    await device.claimInterface(0); // Richiede l'interfaccia
+                    readLoopRunning = true;
+                    readLoop();
+                    is_usb = true;
+
+                } catch (e) {
+                    alert("Il tuo browser non supporta la lettura della porta USB");
+                    return;
+                }
+            }
+
+            if (is_usb) {
+
+                readLoopRunning = true;
+                readLoopUsb();
+
+            }
+            else {
+                await port.open({ baudRate: 19200 });
+
+                const decoder = new TextDecoderStream();
+                const inputDone = port.readable.pipeTo(decoder.writable);
+                reader = decoder.readable.getReader();
+
+                const encoder = new TextEncoderStream();
+                const outputDone = encoder.readable.pipeTo(port.writable);
+                writer = encoder.writable.getWriter();
+
+                document.getElementById('connect').disabled = true;
+                document.getElementById('disconnect').disabled = false;
+                document.getElementById('logs').disabled = false;
+                readLoop();
+
+            }
+        });
+        document.getElementById('logs').addEventListener('click', async () => {
+            writer.write("logs\n\0");
+        }
+        );
+
+        async function readLoopUsb() {
+            while (readLoopRunning && device) {
+                try {
+                    const result = await device.transferIn(2, 64); // Modifica il numero endpoint e la lunghezza in base al tuo dispositivo
+                    const decoder = new TextDecoder();
+                    var value = decoder.decode(result.data);
+                    outputDiv.textContent += value;//+ '\n';
+                    creaBottoniPerFile(outputDiv.textContent);
+                    findFileContents();
+                    outputDiv.scrollTop = outputDiv.scrollHeight;
+
+                } catch (error) {
+                    alert('Errore di lettura:'+ error);
+                    break;
+                }
+            }
+        }
+
+        async function readLoop() {
+            const outputDiv = document.getElementById('output');
+            while (true) {
+                const { value, done } = await reader.read();
+                if (done) {
+                    reader.releaseLock();
+                    break;
+                }
+                outputDiv.textContent += value;//+ '\n';
+                creaBottoniPerFile(outputDiv.textContent);
+                findFileContents();
+                outputDiv.scrollTop = outputDiv.scrollHeight;
+            }
+        }
+
+        document.getElementById('disconnect').addEventListener('click', async () => {
+            try {
+
+                if (reader) {
+                    await reader.cancel();
+                    await reader.releaseLock();
+                }
+                if (writer) {
+                    await writer.close();
+                    await writer.releaseLock();
+                }
+                if (port) {
+                    await port.close();
+                }
+
+                document.getElementById('connect').disabled = false;
+                document.getElementById('disconnect').disabled = true;
+
+            }
+            catch (e) {
+                window.location.reload();
+            }
+        });
+
+
+        document.getElementById('send').addEventListener('click', () => {
+            inviaDati();
+        });
+
+        function inviaDati() {
+            const text = document.getElementById('input').value + '\n\0';
+            writer.write(text);
+            document.getElementById('input').value = '';
+        }
+
+        document.getElementById('input').addEventListener('keypress', (event) => {
+            if (event.key === 'Enter') {
+                inviaDati();
+            }
+        });
+
+        function creaBottoniPerFile(testo) {
+            const inizio = testo.indexOf("Files:");
+            const fine = testo.indexOf("Type Filename or e to exit");
+            if (inizio !== -1 && fine !== -1) {
+                const listaFile = testo.substring(inizio + "Files:".length, fine).trim().split('\n');
+                const outputDiv = document.getElementById('output');
+                outputDiv.innerHTML = ''; // Pulisci il div
+                listaFile.forEach(file => {
+                    const nomeFile = file.split('\t')[0].trim();
+
+                    if (nomeFile.indexOf(".txt") !== -1 || nomeFile.indexOf(".csv") !== -1) {
+                        const size = file.split('\t')[1].trim();
+                        const bottone = document.createElement('button');
+                        bottone.textContent = nomeFile;
+                        bottone.addEventListener('click', function () {
+                            // Aggiungi qui la logica per gestire il click sul file
+                            sendDownloadFileName(nomeFile);
+                        });
+                        outputDiv.appendChild(bottone);
+                        outputDiv.appendChild(document.createTextNode(" " + size + " bytes\n\n"));
+
+                    }
+                });
+                outputDiv.appendChild(document.createTextNode("Type Filename or e to exit"));
+            }
+        }
+        function findFileContents() {
+            const testo = document.getElementById('output').innerHTML;
+            const inizio = testo.indexOf("Start trasmission:");
+            const fine = testo.indexOf("End trasmission");
+            const filenameOk = testo.indexOf(".txt");
+            const filenameOk2 = testo.indexOf(".csv");
+            if (inizio !== -1 && fine !== -1 && (filenameOk !== -1 || filenameOk2 !== -1)) {
+                const nomeFile = testo.split("End trasmission:")[1].trim();
+                const contents = testo.substring(inizio + "Start trasmission:".length, fine).trim();
+                scaricaFile(nomeFile, contents);
+                document.getElementById('output').innerHTML = "";
+            }
+        }
+        function scaricaFile(nomeFile, contenuto) {
+            const elemento = document.createElement('a');
+            elemento.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(contenuto));
+            elemento.setAttribute('download', nomeFile);
+
+            // Nascondi l'elemento per non modificare il layout della pagina
+            elemento.style.display = 'none';
+
+            // Aggiungi l'elemento al corpo del documento
+            document.body.appendChild(elemento);
+
+            // Simula un click sull'elemento
+            elemento.click();
+
+            // Rimuovi l'elemento dal documento
+            document.body.removeChild(elemento);
+        }
+
+        function sendDownloadFileName(filename) {
+            const outputDiv = document.getElementById('output');
+            outputDiv.innerHTML = '';
+            writer.write(filename + "\n");
+        }
+
+    </script>
+</body>
+
+</html>
