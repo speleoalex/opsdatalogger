@@ -1,0 +1,67 @@
+{
+  "name": "loggerviewer-desktop",
+  "version": "1.0.0",
+  "description": "Desktop application for FluxyLogger data viewing and management",
+  "main": "main.js",
+  "homepage": "https://github.com/speleoalex/opsdatalogger",
+  "author": {
+    "name": "FluxyLogger NASO",
+    "email": "info@fluxylogger.com"
+  },
+  "scripts": {
+    "start": "electron . --no-sandbox",
+    "dev": "electron . --dev --no-sandbox",
+    "build": "electron-builder",
+    "build:linux": "electron-builder --linux",
+    "build:win": "electron-builder --win",
+    "build:mac": "electron-builder --mac"
+  },
+  "keywords": [
+    "logger",
+    "datalogger",
+    "serial",
+    "electron"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
+  },
+  "dependencies": {
+    "serialport": "^12.0.0"
+  },
+  "build": {
+    "appId": "com.fluxylogger.viewer",
+    "productName": "LoggerViewer",
+    "icon": "src/assets/icon.png",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "src/**/*"
+    ],
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Utility",
+      "maintainer": "FluxyLogger NASO <info@fluxylogger.com>"
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "category": "public.app-category.utilities"
+    }
+  }
+}

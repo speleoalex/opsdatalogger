@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>LoggerViewer Desktop</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" href="../assets/icon.png" type="image/png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Tab Navigation */
+        .tab-navigation {
+            display: flex;
+            background-color: #343a40;
+            border-bottom: 2px solid #007bff;
+            flex-shrink: 0;
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 15px 20px;
+            background: none;
+            border: none;
+            color: #f8f9fa;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab-button:hover {
+            background-color: #495057;
+        }
+
+        .tab-button.active {
+            background-color: #212529;
+            border-bottom-color: #007bff;
+            color: #007bff;
+        }
+
+        .tab-button:not(.active) {
+            opacity: 0.7;
+        }
+
+        /* Tab Content */
+        .tab-content {
+            flex: 1;
+            display: none;
+            overflow: hidden;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Make iframes fill the space */
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* Loading indicator */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            font-size: 18px;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <nav class="tab-navigation">
+        <button class="tab-button active" data-tab="manager">
+            📡 Logger Manager
+        </button>
+        <button class="tab-button" data-tab="viewer">
+            📊 Data Viewer
+        </button>
+    </nav>
+
+    <div class="tab-content active" id="manager-tab">
+        <iframe src="loggermanager.html" id="manager-frame"></iframe>
+    </div>
+
+    <div class="tab-content" id="viewer-tab">
+        <iframe src="loggerviewer.html" id="viewer-frame"></iframe>
+    </div>
+
+    <script>
+        // Tab switching functionality
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        // Function to switch tabs
+        function switchTab(tabName) {
+            // Remove active class from all buttons and contents
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            tabContents.forEach(content => content.classList.remove('active'));
+
+            // Add active class to selected tab
+            const selectedButton = document.querySelector(`[data-tab="${tabName}"]`);
+            const selectedContent = document.getElementById(`${tabName}-tab`);
+
+            if (selectedButton && selectedContent) {
+                selectedButton.classList.add('active');
+                selectedContent.classList.add('active');
+            }
+        }
+
+        // Add click event to all tab buttons
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const tabName = button.getAttribute('data-tab');
+                switchTab(tabName);
+            });
+        });
+
+        // Listen for messages from iframe to switch tabs and handle API calls
+        window.addEventListener('message', async (event) => {
+            const data = event.data;
+
+            if (!data || !data.action) return;
+
+            // Handle tab switching
+            if (data.action === 'switchTab') {
+                switchTab(data.tab);
+                return;
+            }
+
+            // Handle File System API calls from iframes
+            if (data.action === 'fs:openFile') {
+                try {
+                    const result = await window.electronAPI.fs.openFile();
+                    // Send result back to the iframe that requested it
+                    event.source.postMessage({
+                        action: 'fs:openFile:response',
+                        requestId: data.requestId,
+                        result: result
+                    }, '*');
+                } catch (error) {
+                    event.source.postMessage({
+                        action: 'fs:openFile:response',
+                        requestId: data.requestId,
+                        error: error.message
+                    }, '*');
+                }
+                return;
+            }
+
+            if (data.action === 'fs:saveFile') {
+                try {
+                    const result = await window.electronAPI.fs.saveFile(data.filename, data.content);
+                    event.source.postMessage({
+                        action: 'fs:saveFile:response',
+                        requestId: data.requestId,
+                        result: result
+                    }, '*');
+                } catch (error) {
+                    event.source.postMessage({
+                        action: 'fs:saveFile:response',
+                        requestId: data.requestId,
+                        error: error.message
+                    }, '*');
+                }
+                return;
+            }
+
+            // Handle Serial API calls from iframes
+            if (data.action === 'serial:list') {
+                try {
+                    const result = await window.electronAPI.serial.list();
+                    event.source.postMessage({
+                        action: 'serial:list:response',
+                        requestId: data.requestId,
+                        result: result
+                    }, '*');
+                } catch (error) {
+                    event.source.postMessage({
+                        action: 'serial:list:response',
+                        requestId: data.requestId,
+                        error: error.message
+                    }, '*');
+                }
+                return;
+            }
+
+            if (data.action === 'serial:connect') {
+                try {
+                    const result = await window.electronAPI.serial.connect(data.portPath, data.baudRate);
+                    event.source.postMessage({
+                        action: 'serial:connect:response',
+                        requestId: data.requestId,
+                        result: result
+                    }, '*');
+                } catch (error) {
+                    event.source.postMessage({
+                        action: 'serial:connect:response',
+                        requestId: data.requestId,
+                        error: error.message
+                    }, '*');
+                }
+                return;
+            }
+
+            if (data.action === 'serial:disconnect') {
+                try {
+                    const result = await window.electronAPI.serial.disconnect();
+                    event.source.postMessage({
+                        action: 'serial:disconnect:response',
+                        requestId: data.requestId,
+                        result: result
+                    }, '*');
+                } catch (error) {
+                    event.source.postMessage({
+                        action: 'serial:disconnect:response',
+                        requestId: data.requestId,
+                        error: error.message
+                    }, '*');
+                }
+                return;
+            }
+
+            if (data.action === 'serial:write') {
+                try {
+                    const result = await window.electronAPI.serial.write(data.data);
+                    event.source.postMessage({
+                        action: 'serial:write:response',
+                        requestId: data.requestId,
+                        result: result
+                    }, '*');
+                } catch (error) {
+                    event.source.postMessage({
+                        action: 'serial:write:response',
+                        requestId: data.requestId,
+                        error: error.message
+                    }, '*');
+                }
+                return;
+            }
+
+            if (data.action === 'serial:isConnected') {
+                try {
+                    const result = await window.electronAPI.serial.isConnected();
+                    event.source.postMessage({
+                        action: 'serial:isConnected:response',
+                        requestId: data.requestId,
+                        result: result
+                    }, '*');
+                } catch (error) {
+                    event.source.postMessage({
+                        action: 'serial:isConnected:response',
+                        requestId: data.requestId,
+                        error: error.message
+                    }, '*');
+                }
+                return;
+            }
+        });
+
+        // Keyboard shortcut: Ctrl+1 for Manager, Ctrl+2 for Viewer
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey) {
+                if (e.key === '1') {
+                    e.preventDefault();
+                    switchTab('manager');
+                } else if (e.key === '2') {
+                    e.preventDefault();
+                    switchTab('viewer');
+                }
+            }
+        });
+
+        // Handle iframe loading
+        const managerFrame = document.getElementById('manager-frame');
+        const viewerFrame = document.getElementById('viewer-frame');
+
+        managerFrame.addEventListener('load', () => {
+            console.log('Manager loaded');
+        });
+
+        viewerFrame.addEventListener('load', () => {
+            console.log('Viewer loaded');
+        });
+
+        // Forward serial events to all iframes
+        if (window.electronAPI && window.electronAPI.serial) {
+            window.electronAPI.serial.onData((data) => {
+                // Forward to both iframes
+                if (managerFrame.contentWindow) {
+                    managerFrame.contentWindow.postMessage({
+                        action: 'serial:data',
+                        data: data
+                    }, '*');
+                }
+                if (viewerFrame.contentWindow) {
+                    viewerFrame.contentWindow.postMessage({
+                        action: 'serial:data',
+                        data: data
+                    }, '*');
+                }
+            });
+
+            window.electronAPI.serial.onError((error) => {
+                if (managerFrame.contentWindow) {
+                    managerFrame.contentWindow.postMessage({
+                        action: 'serial:error',
+                        error: error
+                    }, '*');
+                }
+                if (viewerFrame.contentWindow) {
+                    viewerFrame.contentWindow.postMessage({
+                        action: 'serial:error',
+                        error: error
+                    }, '*');
+                }
+            });
+
+            window.electronAPI.serial.onDisconnected(() => {
+                if (managerFrame.contentWindow) {
+                    managerFrame.contentWindow.postMessage({
+                        action: 'serial:disconnected'
+                    }, '*');
+                }
+                if (viewerFrame.contentWindow) {
+                    viewerFrame.contentWindow.postMessage({
+                        action: 'serial:disconnected'
+                    }, '*');
+                }
+            });
+        }
+    </script>
+</body>
+</html>

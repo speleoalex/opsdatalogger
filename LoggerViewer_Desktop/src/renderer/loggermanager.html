@@ -2,14 +2,9 @@
 <html>
 
 <head>
-    <title>Logger Manager</title>
+    <title>Logger Manager - Desktop</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="manifest" href="manifest.json">
-    <link rel="icon" href="icon.png" type="image/png">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black">
-    <meta name="apple-mobile-web-app-title" content="Logger Manager">
-    <link rel="apple-touch-icon" href="icon.png">
+    <link rel="icon" href="../assets/icon.png" type="image/png">
     <style>
         :root {
             --primary-color: #007bff;
@@ -562,7 +557,6 @@
                         <button style="display:none;" id="plotterstop" data-i18n='auto' class="button-warning">Stop Real-Time</button>
                     </div>
                 </section>
-                <button style="display:none" id="installButton" class="button-secondary">Install App</button>
             </div>
             <footer class="sidebar-footer">
                 <button data-i18n='auto' onclick="openViewerHtml();" class="button-footer">Go to Viewer</button>
@@ -573,10 +567,6 @@
 
         <main class="main-content">
             <div id="output"></div>
-            <div id="iosInstructions"
-                style="display:none; flex-shrink: 0; padding: 1rem; text-align: center; background-color: #343a40; color: var(--text-light);">
-                To install on iOS: tap the share icon and then "Add to Home Screen"
-            </div>
             <footer class="console-footer">
                 <input autocapitalize="none" type="text" id="input" placeholder="Enter a command...">
                 <button data-i18n='auto' id="send">Send</button>
@@ -598,6 +588,9 @@
 
 
         var forceUSBcom = false;
+
+        /* Original CommunicationManager class is commented out for Electron version.
+           The ElectronCommunicationManager from electron-adapter.js will be used instead.
 
         class CommunicationManager {
             constructor() {
@@ -1031,6 +1024,7 @@
                 };
             }
         }
+        */ // End of commented CommunicationManager class
 
         // Application state
         var openViewer = false;
@@ -1041,8 +1035,8 @@
         var textContents = "";
         var textListFiles = "";
 
-        // Initialize communication manager
-        const commManager = new CommunicationManager();
+        // Initialize communication manager (Electron version)
+        const commManager = new ElectronCommunicationManager();
 
         // Setup communication manager callbacks
         commManager.onDataReceived = (data) => {
@@ -1713,44 +1707,10 @@
         TranslateHtml();
     </script>
 
-    <!-- PWA Installation Script -->
-    <script>
-        let deferredPrompt;
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-
-        if (isIOS) {
-            document.getElementById('iosInstructions').style.display = 'block';
-        } else {
-            window.addEventListener('beforeinstallprompt', (e) => {
-                e.preventDefault();
-                deferredPrompt = e;
-                document.getElementById('installButton').style.display = 'inline-block';
-            });
-
-            document.getElementById('installButton').addEventListener('click', (e) => {
-                document.getElementById('installButton').style.display = 'none';
-                deferredPrompt.prompt();
-                deferredPrompt.userChoice.then((choiceResult) => {
-                    if (choiceResult.outcome === 'accepted') {
-                        ConsoleLog('User accepted the install prompt');
-                    } else {
-                        ConsoleLog('User dismissed the install prompt');
-                    }
-                    deferredPrompt = null;
-                });
-            });
-        }
-
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('service-worker.js')
-                .then((registration) => {
-                    ConsoleLog('Service Worker registered with scope:', registration.scope);
-                })
-                .catch((error) => {
-                    ConsoleLog('Service Worker registration failed:', error);
-                });
-        }
-    </script>
+    <!-- Electron Adapter Scripts -->
+    <script src="iframe-bridge.js"></script>
+    <script src="electron-adapter.js"></script>
+    <script src="loader.js"></script>
 </body>
 
 </html>

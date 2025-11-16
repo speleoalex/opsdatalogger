@@ -149,7 +149,7 @@ void initBluetouth() {
  *
  */
 void gestBluetouth() {
-//  bufferRead[0] = '\0';
+  //  bufferRead[0] = '\0';
   if (!BLEconnected) {
     // listen for BLE peripherals to connect:
     // if a central is connected to peripheral:
@@ -510,14 +510,14 @@ void downloadFile() {
 #if BLE_ENABLED
           if (BLEconnected) {
             // Read data in chunks for BLE transmission
-            char bleBuffer[20]; // BLE characteristic max payload is typically 20 bytes
+            char bleBuffer[20];  // BLE characteristic max payload is typically 20 bytes
             int bytesRead = 0;
-            
+
             // Fill buffer with file data
             while (file.available() && bytesRead < sizeof(bleBuffer) - 1) {
               bleBuffer[bytesRead] = file.read();
-              Serial.write(bleBuffer[bytesRead]);  
-              bytesRead++;          
+              Serial.write(bleBuffer[bytesRead]);
+              bytesRead++;
             }
             bleBuffer[bytesRead] = '\0';
             // Send buffer via BLE
@@ -1181,7 +1181,7 @@ void execute_command(char *command) {
       command[i] = '\0';
       break;
     }
-}
+  }
 
 
   if (strcmp(command, "?") == 0) {
