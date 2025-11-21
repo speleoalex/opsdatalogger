@@ -89,11 +89,37 @@
             margin-bottom: 0.8rem;
         }
 
-        .form-group label {
+        .form-group-row {
+            display: flex;
+            gap: 0.8rem;
+            margin-bottom: 0.8rem;
+        }
+
+        .form-group-half {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .form-group label,
+        .form-group-half label {
             display: block;
             font-weight: 500;
             margin-bottom: 0.3rem;
             font-size: 0.9rem;
+        }
+
+        .value-display {
+            display: block;
+            padding: 0.3rem 0;
+            font-size: 0.95rem;
+            color: var(--text-color);
+            min-height: 1.5em;
+        }
+
+        .value-display.highlight {
+            font-weight: bold;
+            font-size: 1.1em;
+            color: var(--primary-color);
         }
 
         .input-with-button {
@@ -186,8 +212,14 @@
             padding: 1rem;
             border-top: 1px solid var(--border-color);
             display: flex;
-            justify-content: space-between;
+            flex-direction: column;
+            gap: 0.5rem;
             flex-shrink: 0;
+        }
+
+        .sidebar-footer-buttons {
+            display: flex;
+            gap: 0.5rem;
         }
 
         .sidebar-footer a {
@@ -205,6 +237,7 @@
             padding: 1.5rem;
             display: flex;
             flex-direction: column;
+            overflow-x: auto;
         }
 
         #chart-container {
@@ -212,6 +245,74 @@
             flex-grow: 1;
             width: 100%;
             height: 100%;
+        }
+
+        #chart-container.fixed-scale {
+            overflow-x: auto;
+            overflow-y: hidden;
+            width: 100%;
+            max-width: 100%;
+        }
+
+        #chart-container.fixed-scale #myChart {
+            display: block;
+        }
+
+        #chart-controls {
+            position: absolute;
+            bottom: -15px;
+            left: -15px;
+            z-index: 10;
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 0.5rem 0.8rem;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            font-size: 0.9rem;
+        }
+
+        #chart-controls .checkbox-label {
+            margin: 0;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        #chart-controls .checkbox-label input {
+            margin-right: 0.4rem;
+            cursor: pointer;
+        }
+
+        .chart-control-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .chart-control-group label {
+            font-size: 0.85rem;
+            white-space: nowrap;
+        }
+
+        .chart-control-group input[type="number"] {
+            width: 80px;
+            padding: 0.3rem 0.5rem;
+            border: 1px solid var(--input-border);
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+
+        .chart-control-group button {
+            padding: 0.3rem 0.8rem;
+            background-color: var(--button-primary-bg);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+
+        .chart-control-group button:hover {
+            background-color: var(--button-primary-hover);
         }
 
         #myChart {
@@ -239,8 +340,7 @@
             background: none;
             border: 1px solid var(--secondary-color);
             color: var(--secondary-color);
-            flex-grow: 1;
-            margin-right: 1rem;
+            flex: 1;
         }
         .button-footer:hover {
             background-color: var(--secondary-color);
@@ -250,7 +350,8 @@
              color: var(--secondary-color);
              text-decoration: none;
              font-size: 0.9rem;
-             line-height: 40px; /* Align with button */
+             text-align: center;
+             display: block;
         }
         .donate-link:hover {
             color: var(--primary-color);
@@ -340,58 +441,115 @@
                                 <button onclick="ZeroGasAuto();" data-i18n="auto">Auto</button>
                             </div>
                         </div>
+                        <div class="form-group-row">
+                            <div class="form-group-half">
+                                <label for="temperatureInput" data-i18n="auto">Temperature (°C)</label>
+                                <input value="10" id="temperatureInput" onchange="updateTempHumidityCompensation();" type="number" min="-20" max="50" step="1">
+                            </div>
+                            <div class="form-group-half">
+                                <label for="humidityInput" data-i18n="auto">Humidity (%RH)</label>
+                                <input value="90" id="humidityInput" onchange="updateTempHumidityCompensation();" type="number" min="30" max="100" step="5">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label data-i18n="auto">Compensation Factor</label>
+                            <span id="compensationFactor" class="value-display">1.55</span>
+                        </div>
                     </section>
 
                     <section class="control-section">
                         <h3 data-i18n="auto">Heating Compensation</h3>
-                        <div class="form-group">
-                            <label class="checkbox-label">
-                                <input type="checkbox" id="heatingCompensation" onchange="toggleHeatingParams(); updateChartWithZerogas();">
-                                <span data-i18n="auto">Enable Compensation</span>
-                            </label>
-                        </div>
-                        <div id="heatingParams" style="display:none;">
                             <div class="form-group">
-                                <label for="heatingTime" data-i18n="auto">Heating Time (min)</label>
-                                <input type="number" id="heatingTime" value="120" min="1" max="9000" onchange="updateChartWithZerogas();">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="heatingCompensation" onchange="toggleHeatingParams(); updateChartWithZerogas();">
+                                    <span data-i18n="auto">Enable Compensation</span>
+                                </label>
                             </div>
-                            <div class="form-group">
-                                <label for="initialADC" data-i18n="auto">Initial ADC Value</label>
-                                <div class="input-with-button">
-                                    <input type="number" id="initialADC" data-i18n-placeholder="auto" placeholder="Auto" onchange="updateChartWithZerogas();">
-                                    <button onclick="HeatingAuto();" data-i18n="auto">Auto</button>
+                            <div id="heatingParams" style="display:none;">
+                                <div class="form-group">
+                                    <label for="heatingTime" data-i18n="auto">Heating Time (min)</label>
+                                    <input type="number" id="heatingTime" value="120" min="1" max="9000" onchange="updateChartWithZerogas();">
                                 </div>
-                            </div>
-                            <div class="form-group">
-                                <label for="curveFactor" data-i18n="auto">Curvature Factor</label>
-                                <input type="number" id="curveFactor" value="9" min="1" max="40" step="0.1" onchange="updateChartWithZerogas();">
-                            </div>
-                            <div class="form-group">
-                                <label for="curveTypeSelect" data-i18n="auto">Curve Type</label>
-                                <div class="input-with-button">
-                                    <select id="curveTypeSelect" onchange="onCurveTypeChange();">
-                                        <option value="auto" data-i18n="auto">Auto-detected</option>
-                                        <option value="exponential" data-i18n="auto">Exponential</option>
-                                        <option value="linear" data-i18n="auto">Linear</option>
-                                        <option value="power" data-i18n="auto">Power-law</option>
-                                    </select>
-                                    <input type="text" id="curveType" data-i18n-placeholder="auto" placeholder="Not analyzed" readonly>
+                                <div class="form-group">
+                                    <label for="initialADC" data-i18n="auto">Initial ADC Value</label>
+                                    <div class="input-with-button">
+                                        <input type="number" id="initialADC" data-i18n-placeholder="auto" placeholder="Auto" onchange="updateChartWithZerogas();">
+                                        <button onclick="HeatingAuto();" data-i18n="auto">Auto</button>
+                                    </div>
                                 </div>
+                                <div class="form-group">
+                                    <label for="curveFactor" data-i18n="auto">Curvature Factor</label>
+                                    <input type="number" id="curveFactor" value="9" min="1" max="40" step="0.1" onchange="updateChartWithZerogas();">
+                                </div>
+                                <div class="form-group">
+                                    <label for="curveTypeSelect" data-i18n="auto">Curve Type</label>
+                                    <div class="input-with-button">
+                                        <select id="curveTypeSelect" onchange="onCurveTypeChange();">
+                                            <option value="auto" data-i18n="auto">Auto-detected</option>
+                                            <option value="exponential" data-i18n="auto">Exponential</option>
+                                            <option value="linear" data-i18n="auto">Linear</option>
+                                            <option value="power" data-i18n="auto">Power-law</option>
+                                        </select>
+                                        <input type="text" id="curveType" data-i18n-placeholder="auto" placeholder="Not analyzed" readonly>
+                                    </div>
+                                </div>
+                                <button onclick="WarmupAnalysisAuto();" class="button-secondary" data-i18n="auto">Auto Warmup Analysis</button>
                             </div>
-                            <button onclick="WarmupAnalysisAuto();" class="button-secondary" data-i18n="auto">Auto Warmup Analysis</button>
+                    </section>
+
+                    <section class="control-section collapsible-section">
+                        <h3 onclick="toggleSection('airFlowSection')" style="cursor: pointer; display: flex; align-items: center; justify-content: space-between;">
+                            <span data-i18n="auto">Air Flow Analysis</span>
+                            <span id="airFlowSection-icon" style="font-size: 0.8em;">▼</span>
+                        </h3>
+                        <div id="airFlowSection" style="display:none;">
+                            <div class="form-group">
+                                <label for="airFlowRate" data-i18n="auto">Air Flow Rate (m³/min)</label>
+                                <input value="0" id="airFlowRate" onchange="updateButaneCalculations();" type="number" min="0" max="10000" step="0.1">
+                            </div>
+                            <div class="form-group">
+                                <label data-i18n="auto">Recording Duration</label>
+                                <span id="recordingDuration" class="value-display">--</span>
+                            </div>
+                            <div class="form-group">
+                                <label data-i18n="auto">Average PPM</label>
+                                <span id="avgPPM" class="value-display">--</span>
+                            </div>
+                            <div class="form-group">
+                                <label data-i18n="auto">Total Butane (kg)</label>
+                                <span id="totalButane" class="value-display highlight">--</span>
+                            </div>
+                            <div class="form-group">
+                                <label data-i18n="auto">Avg Rate (g/min)</label>
+                                <span id="avgButaneRate" class="value-display">--</span>
+                            </div>
                         </div>
                     </section>
                 </div>
             </div>
 
             <footer class="sidebar-footer">
-                <button onclick="goToManager()" class="button-footer" data-i18n="auto">Logger Manager</button>
+                <div class="sidebar-footer-buttons">
+                    <button onclick="goToManager()" class="button-footer" data-i18n="auto">Logger Manager</button>
+                    <button onclick="openNewWindow()" class="button-footer" data-i18n="auto">New Window</button>
+                </div>
                 <a href="https://www.paypal.com/donate/?business=TKQWLKGENEP7L&no_recurring=0&item_name=Progetto+FluxyLogger+NASO&currency_code=EUR" target="_blank" class="donate-link" data-i18n="auto">Donate</a>
             </footer>
         </aside>
 
         <main class="main-content">
             <div id="chart-container">
+                <div id="chart-controls">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="fixedXScale" onchange="toggleFixedXScale();">
+                        <span data-i18n="auto">Fixed X-axis scale (1px/min)</span>
+                    </label>
+                    <div class="chart-control-group">
+                        <label data-i18n="auto">PPM Y-axis max:</label>
+                        <input type="number" id="ppmYMax" min="0" step="10" placeholder="Auto" onchange="updateChartYScale();">
+                        <button onclick="autoScalePPM();" data-i18n="auto">Auto</button>
+                    </div>
+                </div>
                 <canvas id="myChart"></canvas>
                 <div id="placeholder-message">
                     <h3 data-i18n="auto">No data to display</h3>
@@ -414,16 +572,269 @@
             }
         }
 
+        function openNewWindow() {
+            window.open('loggerviewer.htm?popup=1', '_blank', 'width=1200,height=800');
+        }
+
+        function toggleSection(sectionId) {
+            var section = document.getElementById(sectionId);
+            var icon = document.getElementById(sectionId + '-icon');
+            if (section.style.display === 'none') {
+                section.style.display = 'block';
+                icon.textContent = '▲';
+            } else {
+                section.style.display = 'none';
+                icon.textContent = '▼';
+            }
+        }
+
         var DatasetsCSV = [];
         var DatasetsClean = [];
 
         var labels = [];
         var datasetVisibilityState = {};
         var cachedTimeInterval = null; // Cache for time interval detection
+        var currentFileName = ''; // Store the current file name
         // Sensor characteristics for calibration  -------->
-        var RO_CLEAN_AIR_FACTOR = 9.83;
-        var RL_VALUE = 5.0;
+        // MQ-2 calibration for LPG/Butane detection in cave environment
+        // Operating conditions: ~10°C, ~90% RH (different from datasheet standard 20°C/65%RH)
+
+        // RO_CLEAN_AIR_FACTOR: Rs(in clean air) / Ro(1000ppm isobutane)
+        // From MQ-2 datasheet: Sensitivity S ≥ 5 for isobutane
+        var RO_CLEAN_AIR_FACTOR = 5.0;  // Corrected for LPG/Butane (was 9.83 for H2)
+
+        var RL_VALUE = 5.0;  // Load resistance in kOhm (verify with actual hardware)
+
+        // Temperature/Humidity compensation factor
+        // From MQ-2 datasheet Fig.2: at 10°C and 90%RH, Rs/Ro ≈ 1.55 vs standard conditions
+        var TEMP_HUMIDITY_COMPENSATION = 1.55;
+
+        // LPG Curve parameters [A, B] for power law: Rs/Ro = A × PPM^B
+        // Extracted from MQ-2 datasheet Fig.1 for LPG curve
+        // Rs/Ro = 11.43 × PPM^(-0.415)
+        var LPG_CURVE_A = 11.43;
+        var LPG_CURVE_B = -0.415;
+
+        // Legacy curve parameters [x, y, slope] - kept for compatibility
         var LPGCurve = [2.3, 0.21, -0.47];
+
+        // Function to calculate temperature/humidity compensation factor
+        // Based on MQ-2 datasheet Fig.2 - calibrated from actual graph data
+        function calculateTempHumidityFactor(temperature, humidity) {
+            // Reference conditions: 20°C, ~65% RH (Rs/Ro ≈ 1.0)
+            // Formula derived from Fig.2 curve fitting
+
+            // Temperature effect: exponential-like curve
+            // At 20°C → 1.0, at lower temps → higher resistance
+            // Fitted from graph: Rs/Ro(90%) = 1.72 at -10°C, 1.43 at 10°C, 1.25 at 20°C
+            var tempFactor = 1.0 + (20 - temperature) * 0.0185 + Math.pow((20 - temperature) / 30, 2) * 0.15;
+
+            // Humidity effect: linear approximation
+            // At 65% RH → 1.0, at higher humidity → higher resistance
+            // Fitted from graph comparing 60%, 85%, 90% curves
+            // At 10°C: 60%→1.20, 85%→1.05, 90%→1.43 (relative to methane baseline)
+            var humidityFactor = 1.0 + (humidity - 65) * 0.0062;
+
+            // Combined factor
+            var factor = tempFactor * humidityFactor;
+
+            // Clamp between reasonable bounds based on graph extremes
+            factor = Math.max(0.6, Math.min(1.8, factor));
+
+            return factor;
+        }
+
+        // Function to update compensation based on UI inputs
+        function updateTempHumidityCompensation() {
+            var temp = parseFloat(document.getElementById('temperatureInput').value) || 10;
+            var humidity = parseFloat(document.getElementById('humidityInput').value) || 90;
+
+            var newFactor = calculateTempHumidityFactor(temp, humidity);
+            TEMP_HUMIDITY_COMPENSATION = newFactor;
+
+            // Update display
+            document.getElementById('compensationFactor').textContent = newFactor.toFixed(2);
+
+            // Recalculate chart if data is loaded
+            if (DatasetsCSV.length > 0) {
+                updateChartWithZerogas();
+            }
+
+            // Update butane calculations
+            updateButaneCalculations();
+        }
+
+        // Function to calculate butane mass flow from PPM and air flow rate
+        function calculateButaneMass(ppm, airFlowRate, temperature) {
+            // Butane density calculation (temperature dependent)
+            // At 20°C: 2.48 kg/m³ = 2480 g/m³
+            // Ideal gas approximation: density ∝ 1/T
+            var densityButane = 2480 * (293 / (273 + temperature)); // g/m³
+
+            // PPM to g/m³ conversion
+            var concentrationGM3 = (ppm * densityButane) / 1000000;
+
+            // Mass flow rate
+            var gramsPerMin = airFlowRate * concentrationGM3;
+            var kgPerHour = (gramsPerMin * 60) / 1000;
+            var kgPerDay = kgPerHour * 24;
+
+            return {
+                gramsPerMin: gramsPerMin,
+                kgPerHour: kgPerHour,
+                kgPerDay: kgPerDay,
+                concentrationGM3: concentrationGM3
+            };
+        }
+
+        // Function to calculate average PPM from loaded data
+        function calculateAveragePPM() {
+            if (!IsMQ2Chart() || DatasetsClean.length < 2) {
+                return null;
+            }
+
+            // Find LPG PPM dataset
+            var ppmDataset = null;
+            for (var i = 0; i < DatasetsClean.length; i++) {
+                if (DatasetsClean[i].label && DatasetsClean[i].label.trim().toLowerCase().includes('ppm')) {
+                    ppmDataset = DatasetsClean[i];
+                    break;
+                }
+            }
+
+            if (!ppmDataset || !ppmDataset.data || ppmDataset.data.length === 0) {
+                return null;
+            }
+
+            // Calculate average (excluding zeros)
+            var sum = 0;
+            var count = 0;
+            for (var i = 0; i < ppmDataset.data.length; i++) {
+                var value = parseFloat(ppmDataset.data[i]);
+                if (!isNaN(value) && value > 0) {
+                    sum += value;
+                    count++;
+                }
+            }
+
+            return count > 0 ? sum / count : null;
+        }
+
+        // Function to calculate total butane mass by integrating over time
+        function calculateTotalButaneMass() {
+            if (!IsMQ2Chart() || DatasetsClean.length < 2) {
+                return null;
+            }
+
+            var airFlowRate = parseFloat(document.getElementById('airFlowRate').value) || 0;
+            if (airFlowRate <= 0) {
+                return null;
+            }
+
+            var temperature = parseFloat(document.getElementById('temperatureInput').value) || 10;
+            var rawZeroGas = parseFloat(document.getElementById("zerogasInput").value) || 0;
+
+            // Calculate baseline PPM from ZeroGas ADC value
+            var baselinePPM = 0;
+            if (rawZeroGas > 0) {
+                baselinePPM = MQ2_RawToPPM(rawZeroGas, rawZeroGas);
+            }
+
+            // Find LPG PPM dataset
+            var ppmDataset = null;
+            for (var i = 0; i < DatasetsClean.length; i++) {
+                if (DatasetsClean[i].label && DatasetsClean[i].label.trim().toLowerCase().includes('ppm')) {
+                    ppmDataset = DatasetsClean[i];
+                    break;
+                }
+            }
+
+            if (!ppmDataset || !ppmDataset.data || ppmDataset.data.length === 0) {
+                return null;
+            }
+
+            // Detect time interval between samples
+            var timeInterval = detectTimeInterval(); // in minutes
+
+            // Calculate butane density at current temperature
+            var densityButane = 2480 * (293 / (273 + temperature)); // g/m³
+
+            // Integrate PPM over time to get total mass
+            // IMPORTANT: Subtract baseline PPM to get only the additional butane
+            var totalMassGrams = 0;
+            var validSamples = 0;
+
+            for (var i = 0; i < ppmDataset.data.length; i++) {
+                var ppm = parseFloat(ppmDataset.data[i]);
+                if (!isNaN(ppm) && ppm > baselinePPM) {
+                    // Subtract baseline to get only additional butane above background
+                    var netPPM = ppm - baselinePPM;
+
+                    // Concentration in g/m³
+                    var concentrationGM3 = (netPPM * densityButane) / 1000000;
+
+                    // Mass in this time interval (grams)
+                    var massInterval = concentrationGM3 * airFlowRate * timeInterval;
+
+                    totalMassGrams += massInterval;
+                    validSamples++;
+                }
+            }
+
+            var totalKg = totalMassGrams / 1000;
+            var durationMinutes = ppmDataset.data.length * timeInterval;
+
+            return {
+                totalKg: totalKg,
+                durationMinutes: durationMinutes,
+                avgGramsPerMin: validSamples > 0 ? totalMassGrams / durationMinutes : 0,
+                validSamples: validSamples,
+                baselinePPM: baselinePPM
+            };
+        }
+
+        // Function to update butane calculations in UI
+        function updateButaneCalculations() {
+            var airFlowRate = parseFloat(document.getElementById('airFlowRate').value) || 0;
+            var temperature = parseFloat(document.getElementById('temperatureInput').value) || 10;
+
+            // Calculate average PPM from data
+            var avgPPM = calculateAveragePPM();
+
+            if (avgPPM !== null && avgPPM > 0) {
+                document.getElementById('avgPPM').textContent = avgPPM.toFixed(1);
+
+                if (airFlowRate > 0) {
+                    // Calculate total mass over recording period
+                    var totalResult = calculateTotalButaneMass();
+
+                    if (totalResult) {
+                        // Format duration
+                        var hours = Math.floor(totalResult.durationMinutes / 60);
+                        var minutes = Math.round(totalResult.durationMinutes % 60);
+                        var durationText = hours > 0 ? hours + 'h ' + minutes + 'min' : minutes + ' min';
+
+                        document.getElementById('recordingDuration').textContent = durationText;
+                        document.getElementById('totalButane').textContent = totalResult.totalKg.toFixed(3);
+                        document.getElementById('avgButaneRate').textContent = totalResult.avgGramsPerMin.toFixed(2);
+                    } else {
+                        document.getElementById('recordingDuration').textContent = '--';
+                        document.getElementById('totalButane').textContent = '--';
+                        document.getElementById('avgButaneRate').textContent = '--';
+                    }
+                } else {
+                    document.getElementById('recordingDuration').textContent = '--';
+                    document.getElementById('totalButane').textContent = '--';
+                    document.getElementById('avgButaneRate').textContent = '--';
+                }
+            } else {
+                document.getElementById('avgPPM').textContent = '--';
+                document.getElementById('recordingDuration').textContent = '--';
+                document.getElementById('totalButane').textContent = '--';
+                document.getElementById('avgButaneRate').textContent = '--';
+            }
+        }
+
         function IsMQ2Chart() {
             try {
                 if (DatasetsCSV[0].label == "gas adc" && (DatasetsCSV[1].label.trim() == "LPG PPM" || DatasetsCSV[1].label.trim() == "LPG PPB")) {
@@ -453,11 +864,6 @@
             document.getElementById("zerogasInput").onchange();
 
         }
-
-        var RO_CLEAN_AIR_FACTOR = 9.83;
-        var RL_VALUE = 5.0;
-        var LPGCurve = [2.3, 0.21, -0.47];
-
 
         function MQ2_RawToPPM(rawValue, zeroGasValue) {
             // If the zero calibration value is less than or equal to 0, set it to 1 to avoid division by zero
@@ -1241,16 +1647,27 @@
             }
         }
 
-        // Function to calculate the percentage of gas concentration
+        // Function to calculate the gas concentration in PPM
         function MQ2_PPM_gas(resCurrent, resZero) {
+            // Compensate for temperature and humidity (10°C, 90% RH cave conditions)
+            var resCurrentCompensated = resCurrent / TEMP_HUMIDITY_COMPENSATION;
+
             // Calculate the ratio of current resistance to zero gas resistance
-            rs_ro_ratio = resCurrent / resZero;
-            // Calculate and return the gas concentration using the calibration curve
-            var ret = Math.pow(10, ((Math.log10(rs_ro_ratio) - LPGCurve[1]) / LPGCurve[2] + LPGCurve[0]));
-            if (isNaN(ret)) {
-                ret = 0;
+            var rs_ro_ratio = resCurrentCompensated / resZero;
+
+            // Calculate PPM using power law formula from MQ-2 datasheet
+            // Rs/Ro = LPG_CURVE_A × PPM^LPG_CURVE_B
+            // PPM = (Rs/Ro / LPG_CURVE_A)^(1/LPG_CURVE_B)
+            var ppm = Math.pow(rs_ro_ratio / LPG_CURVE_A, 1.0 / LPG_CURVE_B);
+
+            // Legacy calculation (for comparison/fallback)
+            // var ppm_legacy = Math.pow(10, ((Math.log10(rs_ro_ratio) - LPGCurve[1]) / LPGCurve[2] + LPGCurve[0]));
+
+            if (isNaN(ppm) || ppm < 0) {
+                ppm = 0;
             }
-            return ret;
+
+            return ppm;
         }
 
         /****************** MQResistanceCalculation ****************************************
@@ -1327,6 +1744,9 @@
                 }
             }
             displayChart(labels, DatasetsClean);
+
+            // Update butane flow calculations after chart update
+            updateButaneCalculations();
         }
         // Sensor characteristics for calibration  --------<
         function saveCSV(csvContent) {
@@ -1421,6 +1841,7 @@
             DatasetsCSV = [];
             DatasetsClean = [];
             cachedTimeInterval = null; // Reset time interval cache for new file
+            currentFileName = files[0] ? files[0].name : ''; // Save file name
 
             if (window.FileReader) {
                 let reader = new FileReader();
@@ -1547,6 +1968,45 @@
             return rgb[indexColor];
         }
 
+        function toggleFixedXScale() {
+            // Simply redraw the chart with the new scale settings
+            if (DatasetsClean.length > 0) {
+                displayChart(labels, DatasetsClean);
+            }
+        }
+
+        function updateChartYScale() {
+            // Redraw the chart with the new Y scale
+            if (DatasetsClean.length > 0) {
+                displayChart(labels, DatasetsClean);
+            }
+        }
+
+        function autoScalePPM() {
+            // Find the maximum PPM value in the current datasets
+            let maxPPM = 0;
+
+            if (DatasetsClean && DatasetsClean.length > 0) {
+                DatasetsClean.forEach(dataset => {
+                    if (dataset.label && dataset.label.includes('PPM')) {
+                        dataset.data.forEach(value => {
+                            if (value && !isNaN(value) && value > maxPPM) {
+                                maxPPM = value;
+                            }
+                        });
+                    }
+                });
+            }
+
+            // Clear the input to reset to auto mode
+            document.getElementById('ppmYMax').value = '';
+
+            // Redraw chart
+            if (DatasetsClean.length > 0) {
+                displayChart(labels, DatasetsClean);
+            }
+        }
+
         function displayChart(labels, datasets) {
             // Show/hide placeholder and controls based on data
             const chartContainer = document.getElementById('chart-container');
@@ -1597,6 +2057,53 @@
                 }
             }
             
+            // Check if fixed X scale is enabled
+            const fixedXScale = document.getElementById('fixedXScale') && document.getElementById('fixedXScale').checked;
+            const canvas = document.getElementById('myChart');
+            const container = document.getElementById('chart-container');
+
+            // Calculate canvas width for fixed scale (1px per minute)
+            let canvasWidth, canvasHeight;
+            if (fixedXScale && labels.length > 0) {
+                const timeInterval = detectTimeInterval(); // Get time interval in minutes
+                const totalTimeMinutes = labels.length * timeInterval;
+
+                // Calculate extra space needed for Chart.js margins and axes
+                // Left Y-axis: ~80px, Right Y-axis (if present): ~80px, Padding: ~20px each side
+                const leftAxisWidth = 80;
+                const rightAxisWidth = IsMQ2Chart() ? 80 : 0; // Only MQ2 charts have right axis
+                const paddingLeft = 20;
+                const paddingRight = 20;
+                const extraWidth = leftAxisWidth + rightAxisWidth + paddingLeft + paddingRight;
+
+                // Canvas width = desired graph width (1px/min) + extra space for axes and padding
+                // No minimum width - let it be determined by actual data
+                canvasWidth = totalTimeMinutes + extraWidth;
+                canvasHeight = container.clientHeight - 20; // Subtract some padding
+
+                // Add fixed-scale class for scrolling
+                container.classList.add('fixed-scale');
+
+                // Set fixed dimensions
+                canvas.width = canvasWidth;
+                canvas.height = canvasHeight;
+                canvas.style.position = 'static'; // Use static positioning for scroll
+                canvas.style.display = 'block';
+                canvas.style.width = canvasWidth + 'px';
+                canvas.style.height = canvasHeight + 'px';
+                canvas.style.minWidth = canvasWidth + 'px'; // Force minimum width
+            } else {
+                // Reset to normal responsive behavior
+                container.classList.remove('fixed-scale');
+                canvas.removeAttribute('width');
+                canvas.removeAttribute('height');
+                canvas.style.position = 'absolute';
+                canvas.style.display = '';
+                canvas.style.width = '100%';
+                canvas.style.height = '100%';
+                canvas.style.minWidth = '';
+            }
+
             // Configure chart options based on chart type
             let chartOptions;
             if (IsMQ2Chart()) {
@@ -1605,7 +2112,7 @@
                 if (document.getElementById("heatingCompensation") && document.getElementById("heatingCompensation").checked) {
                     var heatingTime = parseFloat(document.getElementById("heatingTime").value) || 120;
                     var warmupPointIndex = Math.round(heatingTime / 0.5); // Convert to data point index
-                    
+
                     if (warmupPointIndex < labels.length) {
                         annotations = {
                             line1: {
@@ -1624,12 +2131,43 @@
                         };
                     }
                 }
-                
+
+                // Calculate total duration for subtitle
+                const timeInterval = detectTimeInterval();
+                const totalTimeMinutes = labels.length * timeInterval;
+                const hours = Math.floor(totalTimeMinutes / 60);
+                const minutes = Math.round(totalTimeMinutes % 60);
+                let durationText = '';
+                if (hours > 0) {
+                    durationText = hours + 'h ' + minutes + 'min';
+                } else {
+                    durationText = minutes + ' min';
+                }
+                let subtitleText = '';
+                if (currentFileName) {
+                    subtitleText = currentFileName + ' - ';
+                }
+                subtitleText += _i18n('Total duration', 'Aa') + ': ' + durationText + ' (' + labels.length + ' ' + _i18n('samples', 'aa') + ')';
+
                 // Dual y-axis configuration for MQ2 charts
                 chartOptions = {
                     animation: false,
+                    responsive: !fixedXScale,
+                    maintainAspectRatio: false,
                     plugins: {
+                        title: {
+                            display: true,
+                            text: subtitleText,
+                            position: 'top',
+                            align: 'start',
+                            font: {
+                                size: 14,
+                                weight: 'normal'
+                            },
+                            color: '#666'
+                        },
                         legend: {
+                            align: 'start',
                             labels: {
                                 filter: function(legendItem, chartData) {
                                     if (legendItem.text === 'Warmup End' || legendItem.text.startsWith('Curve:') || legendItem.text === 'Theoretical Warmup') {
@@ -1664,6 +2202,8 @@
                             type: 'linear',
                             position: 'left',
                             beginAtZero: true,
+                            min: 0,
+                            suggestedMax: 500,
                             title: {
                                 display: true,
                                 text: 'Gas ADC'
@@ -1673,6 +2213,11 @@
                             type: 'linear',
                             position: 'right',
                             beginAtZero: true,
+                            min: 0,
+                            suggestedMax: (function() {
+                                const customMax = document.getElementById('ppmYMax').value;
+                                return customMax && customMax > 0 ? parseFloat(customMax) : 100;
+                            })(),
                             title: {
                                 display: true,
                                 text: 'LPG PPM'
@@ -1684,9 +2229,44 @@
                     }
                 };
             } else {
+                // Calculate total duration for subtitle
+                const timeInterval = detectTimeInterval();
+                const totalTimeMinutes = labels.length * timeInterval;
+                const hours = Math.floor(totalTimeMinutes / 60);
+                const minutes = Math.round(totalTimeMinutes % 60);
+                let durationText = '';
+                if (hours > 0) {
+                    durationText = hours + 'h ' + minutes + 'min';
+                } else {
+                    durationText = minutes + ' min';
+                }
+                let subtitleText = '';
+                if (currentFileName) {
+                    subtitleText = currentFileName + ' - ';
+                }
+                subtitleText += _i18n('Total duration', 'Aa') + ': ' + durationText + ' (' + labels.length + ' ' + _i18n('samples', 'aa') + ')';
+
                 // Single y-axis configuration for other charts
                 chartOptions = {
                     animation: false,
+                    responsive: !fixedXScale,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: subtitleText,
+                            position: 'top',
+                            align: 'start',
+                            font: {
+                                size: 14,
+                                weight: 'normal'
+                            },
+                            color: '#666'
+                        },
+                        legend: {
+                            align: 'start'
+                        }
+                    },
                     scales: {
                         y: {
                             beginAtZero: true,
@@ -1695,8 +2275,8 @@
                     }
                 };
             }
-            
-            let ctx = document.getElementById('myChart').getContext('2d');
+
+            let ctx = canvas.getContext('2d');
             myChart = new Chart(ctx, {
                 type: 'line',
                 data: {
@@ -1737,10 +2317,21 @@
             "file": "File",
             "open csv file": "Apri File CSV",
             "export csv": "Esporta CSV",
+            "fixed x-axis scale (1px/min)": "Scala asse X fissa (1px/min)",
+            "ppm y-axis max:": "PPM asse Y max:",
             "sensor calibration": "Calibrazione Sensore",
             "starting row": "Riga iniziale",
             "zerogas adc": "ZeroGas ADC",
             "clean air adc value": "Valore ADC aria pulita",
+            "temperature (°c)": "Temperatura (°C)",
+            "humidity (%rh)": "Umidità (%RH)",
+            "compensation factor": "Fattore Compensazione",
+            "air flow analysis": "Analisi Flusso d'Aria",
+            "air flow rate (m³/min)": "Portata Aria (m³/min)",
+            "recording duration": "Durata Registrazione",
+            "average ppm": "Media PPM",
+            "total butane (kg)": "Butano Totale (kg)",
+            "avg rate (g/min)": "Flusso Medio (g/min)",
             "auto": "Auto",
             "heating compensation": "Compensazione Riscaldamento",
             "enable compensation": "Abilita compensazione",
@@ -1755,9 +2346,12 @@
             "not analyzed": "Non analizzata",
             "auto warmup analysis": "Analisi Auto Riscaldamento",
             "logger manager": "Logger Manager",
+            "new window": "Nuova Finestra",
             "donate": "Dona",
             "no data to display": "Nessun dato da visualizzare",
-            "to start, open a csv file using the panel on the left.": "Per iniziare, apri un file CSV utilizzando il pannello a sinistra."
+            "to start, open a csv file using the panel on the left.": "Per iniziare, apri un file CSV utilizzando il pannello a sinistra.",
+            "total duration": "Durata totale",
+            "samples": "campioni"
         };
 
         function getParam(name) {

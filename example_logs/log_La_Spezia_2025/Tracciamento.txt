@@ -7,3 +7,10 @@ Co2: 1,09 . peso inizoiale 5,82, peso finale 4,73
 
 322,1 -> 92,2 = 229,9
 320,6-> 90,7 = 229,9
+
+
+l'area che esce è quaranta volte maggiore a quella che entra.
+La dolina aspira con direzione alternata circa 5 m cubi/min
+il Pignone butta circa 14 m cubi/min,
+la fornace butta 173m cubi/min
+Il buchetto della fornace butta 4 m cubi/min

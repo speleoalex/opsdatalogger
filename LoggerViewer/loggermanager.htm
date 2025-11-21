@@ -198,26 +198,30 @@
         }
 
         .connection-status {
-            padding: 0.5rem;
-            border-radius: 4px;
+            padding: 0.4rem 0.8rem;
+            border-left: 4px solid transparent;
             margin-bottom: 1rem;
-            font-weight: 500;
-            text-align: center;
+            font-weight: 600;
+            text-align: left;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background-color: transparent;
         }
 
         .status-disconnected {
-            background-color: var(--danger-color);
-            color: white;
+            border-left-color: var(--danger-color);
+            color: var(--danger-color);
         }
 
         .status-connecting {
-            background-color: var(--warning-color);
-            color: #212529;
+            border-left-color: var(--warning-color);
+            color: var(--warning-color);
         }
 
         .status-connected {
-            background-color: var(--success-color);
-            color: white;
+            border-left-color: var(--success-color);
+            color: var(--success-color);
         }
 
         #output {
