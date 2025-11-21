@@ -1,4 +1,4 @@
-const CACHE_NAME = 'opsdatalogger-v1';
+const CACHE_NAME = 'opsdatalogger-v2';
 const urlsToCache = [
     '/datalogger/',
     '/datalogger/loggermanager.htm',
