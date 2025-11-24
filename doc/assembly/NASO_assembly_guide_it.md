@@ -91,34 +91,22 @@ Prima di alimentare, verificare:
 
 1. **Posizionare Arduino+Shield** nel box
    - Fissare con spugna/gommapiuma per evitare movimenti
-   - Lasciare spazio per circolazione aria verso il sensore
 
 2. **Posizionare il sensore MQ-2**
-   - Il sensore deve essere esposto all'aria
-   - Posizionare vicino a un'apertura per ventilazione
+   - Il sensore deve rimanere esposto all'aria esterna
+   - Farlo uscire dal box attraverso un'apertura
    - Non ostruire la griglia del sensore
-   - Mantenere almeno 2-3 cm di distanza dall'Arduino
 
 3. **Passaggio cavo USB**
-   - Praticare foro nel box per passaggio cavo USB
-   - Applicare silicone attorno al cavo per impermeabilizzazione
-   - Verificare che il cavo non subisca tensioni eccessive
+   - Praticare foro nel box per il cavo USB
+   - Sigillare con silicone per impermeabilizzazione
 
-4. **Fissaggio componenti**
-   - Utilizzare fascette o velcro per fissare i componenti
-   - Evitare pressione sui collegamenti elettrici
-   - Lasciare accessibile lo slot microSD per estrazioni future
+### 6. Ventilazione Sensore
 
-### 6. Fori di Ventilazione
+**IMPORTANTE:** Il sensore MQ-2 deve rimanere esposto all'aria esterna.
 
-**IMPORTANTE:** Il sensore MQ-2 necessita di ricambio d'aria per funzionare correttamente.
-
-1. Praticare 4-6 fori (diametro 5-8 mm) nel box:
-   - 2-3 fori nella parte inferiore (ingresso aria)
-   - 2-3 fori nella parte superiore (uscita aria)
-   - Posizionare i fori in prossimità del sensore
-
-2. Opzionale: applicare retina anti-insetto sui fori
+- Posizionare il sensore in modo che la griglia sia esposta fuori dal box
+- Se necessario, praticare un foro per far uscire il sensore mantenendolo a contatto con l'aria ambiente
 
 ## Caricamento Firmware
 

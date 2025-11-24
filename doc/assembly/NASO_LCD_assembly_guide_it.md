@@ -171,61 +171,29 @@ Prima del montaggio finale, testare l'indirizzo I2C del display:
 
 #### Posizionamento Display
 
-1. **Scelta posizione display:**
-   - Montare il display sulla parete interna trasparente del box
+1. **Montare il display** sulla parete interna trasparente del box
+   - Fissare con biadesivo o viti
    - Posizionare in modo che sia leggibile dall'esterno
-   - Utilizzare biadesivo o viti (con distanziali) per fissaggio
-
-2. **Fissaggio display:**
-   - Pulire superficie con alcool
-   - Applicare biadesivo a doppia faccia sul retro del display
-   - Premere fermamente per 10 secondi
-   - Verificare che il display non si muova
-
-3. **Orientamento:**
-   - Il display deve essere leggibile con box chiuso
    - Lasciare spazio per regolazione contrasto (trimmer blu sul modulo I2C)
 
 #### Posizionamento Arduino e Sensore
 
-1. **Arduino+Shield:**
-   - Posizionare sul fondo del box
-   - Fissare con spugna/gommapiuma per evitare movimenti
-   - Mantenere accessibile lo slot microSD
+1. **Arduino+Shield:** posizionare sul fondo del box e fissare
+2. **Sensore MQ-2:** deve rimanere esposto all'aria esterna, farlo uscire dal box
+3. **Pulsante:** verificare accessibilità dall'esterno
+4. **Cavi:** evitare tensioni sui collegamenti I2C
 
-2. **Sensore MQ-2:**
-   - Posizionare vicino a fori di ventilazione
-   - Non ostruire la griglia del sensore
-   - Mantenere 2-3 cm di distanza dall'Arduino
-   - Non coprire il sensore con altri componenti
+### 9. Ventilazione Sensore
 
-3. **Pulsante retroilluminazione:**
-   - Se montato su box: verificare accessibilità dall'esterno
-   - Se volante: posizionare vicino al display per comodità
+**IMPORTANTE:** Il sensore MQ-2 deve rimanere esposto all'aria esterna.
 
-#### Gestione Cavi
-
-1. Utilizzare fascette per organizzare i cavi
-2. Evitare tensioni sui collegamenti I2C (SDA/SCL sono sensibili)
-3. Tenere separati cavi di alimentazione e cavi dati
-4. Lasciare lunghezza sufficiente per apertura box
-
-### 9. Fori di Ventilazione
-
-**IMPORTANTE:** Come per NASO base, il sensore necessita di ricambio d'aria.
-
-1. Praticare 4-6 fori (diametro 5-8 mm):
-   - 2-3 fori parte inferiore (ingresso aria)
-   - 2-3 fori parte superiore (uscita aria)
-   - Posizionare fori lontano dal display per evitare condensa
-
-2. Applicare retina anti-insetto (opzionale)
+- Posizionare il sensore in modo che la griglia sia esposta fuori dal box
+- Se necessario, praticare un foro per far uscire il sensore mantenendolo a contatto con l'aria ambiente
 
 ### 10. Impermeabilizzazione
 
-1. Passaggio cavo USB: sigillare con silicone
-2. Attorno al pulsante (se montato): applicare guarnizione o silicone
-3. Verificare chiusura ermetica del box
+- Passaggio cavo USB: sigillare con silicone
+- Attorno al pulsante (se montato): applicare guarnizione o silicone
 
 ## Caricamento Firmware
 
