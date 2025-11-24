@@ -19,35 +19,50 @@ If you find this project useful, consider supporting its development:
 
 -----
 
-# List of Components
+## List of Components
 
 ![datalogger](datalogger_lcd.png)
 
 
 1. Sensor
-2. micro SD
-3. usb/power port
+2. Micro SD
+3. USB/power port
 4. Backlight button
 5. Display
 
+**Wiring Diagrams**:
 
-# How to Start Recording
+- [MQ-2 sensor connections](../doc/wiring/connections_MQ2_NASO.png)
+- [LCD I2C display connections](../doc/wiring/connections_lcd.png) or [LCD I2C alternative](../doc/wiring/connections_LCD_LCM1602_I2C_version.png)
+
+## Display
+
+- The display shows ADC values (raw sensor value) and PPM (gas quantity calculated based on the zerogas reference ADC value). The number of consecutive positive detections is also displayed.
+- Press the button next to the display for more than one second to turn on the backlight
+
+## Power Supply and Consumption
+
+FluxyLogger can be powered via USB cable, you can use smartphone powerbanks. Power consumption is approximately 275 mA per hour.
+
+## How to Start Recording
 
 - Connect the device via the USB port to a powerbank.
 - The firmware version appears on the display for a few seconds, then the sensor pre-heating phase starts for about 30 seconds. On the display, compare the time and current data with the words "Preheating".
 - After that, the acquisition will start.
 - The default acquisition time is 15 seconds.
 - Data will be saved in files on the SD card. The file name corresponds to the date and time of the start of acquisition.
+- In case of SD card read/write error, the message "failed" will appear for a few seconds
+- During acquisition, ADC and PPM values are shown in real-time
 - The number of consecutive positive gas detections appears on the top right of the display. The counting takes place after having detected a value greater than 10 ppm for at least 20 consecutive times.
 
-# Tracer
+## Tracer
 
 As a tracer, any spray deodorant based on propane or butane can be used.
 The detector is also sensitive to alcohol, methane, smoke.
 The amount of tracer required may vary depending on the air volumes.
 For distances over a kilometer, it is advisable to use at least 2 cans of 300ml tracer each.
 
-# Preventing Environmental Impact During Tracing
+## Preventing Environmental Impact During Tracing
 
 This sensor is specifically designed to identify propellant gases such as butane and propane, common in spray cans. Compressed gas propellants are economically advantageous, inert, and characterized by low toxicity by inhalation, reducing environmental impact.
 
@@ -55,21 +70,18 @@ To further minimize environmental damage, the use of eco-friendly products is su
 
 It is also advisable to apply the contents of the cans on suitable surfaces, such as paper or fabric, rather than directly on rock or ground, to avoid leaving harmful residues in the environment.
 
- 
-# How to Change the Date and Time
+## How to Change the Date and Time
 
-### Connection from smartphone:
-you can set the date and time with any terminal program that connects to the
-USB port of the PC or by connecting it via adapter to the Smartphone using an app, for
-example, "Serial USB Terminal" for Android devices.
+### Connection from smartphone
 
+You can set the date and time with any terminal program that connects to the USB port of the PC or by connecting it via adapter to the Smartphone using an app, for example, "Serial USB Terminal" for Android devices.
 
-### Connection from PC:
-The Arduino IDE program has a built-in terminal accessible from the menu
-Tools->Serial Monitor.
-Set the USB port and the serial speed to 19200 baud
+### Connection from PC
 
-### Example of serial output:
+The Arduino IDE program has a built-in terminal accessible from the menu Tools->Serial Monitor.
+Set the USB port and the serial speed to 19200 baud.
+
+### Example of serial output
 
 ```
 D initialization:ok
@@ -94,10 +106,38 @@ Log to:2023-11-17_17.16.02.txt
 ```
 
 
-sending the command "help" is possible to have the list of possible commands.
+sending the command **help** is possible to have the list of possible commands.
 
+### Example of file generated on microSD card
 
-### Setting the date and time:
+```
+date Y-m-d m:s;gas adc;LPG PPM
+2022-07-31 00:02:43;35;0
+2022-07-31 00:02:53;35;0
+2022-07-31 00:03:03;35;0
+2022-07-31 00:03:13;34;0
+2022-07-31 00:03:23;34;0
+2022-07-31 00:03:33;34;0
+2022-07-31 00:03:43;34;0
+2022-07-31 00:03:53;33;0
+2022-07-31 00:04:03;33;0
+2022-07-31 00:04:13;33;0
+2022-07-31 00:04:23;33;0
+2022-07-31 00:04:33;33;0
+2022-07-31 00:04:43;33;0
+```
+
+Files are created on the microSD card with the **start date** of the recording, for example **2023-09-18_22.13.00.txt** and contain a CSV table with recorded values.
+
+#### Table fields:
+
+- date Y-m-d m:s - timestamp
+- gas adc - raw sensor value from 1 to 1024
+- LPG PPM - parts per million of gas assuming tracer is propane or butane, calculated with the zerogas value set on the datalogger. If the zerogas value is incorrect, this field can also be calculated afterwards using the MQ-2 sensor datasheet
+- Always keep in mind that the "LPG PPM" column may not be accurate because it is calculated from the zerogas value set on the datalogger. Always consider the "gas adc" column, noting that in the initial phase there is a curve due to sensor heating
+
+### Setting the date and time
+
 Turn on the sensor by connecting it to the USB port and send the command **settime**
 
 At this point it will sequentially ask for Year, Month, Day, Hour, Minutes.

@@ -35,6 +35,11 @@ Se ritieni utile questo progetto, considera di supportarne lo sviluppo:
 4. Pulsante retroilluminazione
 5. Display
 
+**Schemi Elettrici**:
+
+- [Collegamento sensore MQ-2](../doc/wiring/connections_MQ2_NASO.png)
+- [Collegamento display LCD I2C](../doc/wiring/connections_lcd.png) o [LCD I2C alternativo](../doc/wiring/connections_LCD_LCM1602_I2C_version.png)
+
 # Display
 
 - Il display mostra i valori di ADC (valore del sensore) e PPM (quantità di gas calcolata in base al valore zerogas di riferimento ADC. Sono visualizzate inoltre il numero di acquisizioni positive consecutive.

@@ -27,6 +27,7 @@ Se ritieni utile questo progetto, considera di supportarne lo sviluppo:
 
 ![datalogger](datalogger.png)
 
+**Schema Elettrico**: Vedi [schema collegamenti](../doc/wiring/connections_MQ2_NASO.png) per i dettagli delle connessioni del sensore MQ-2.
 
 # Come avviare la registrazione
 

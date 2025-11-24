@@ -22,6 +22,7 @@ If you find this project useful, consider supporting its development:
 
 ![datalogger](datalogger.png)
 
+**Wiring Diagram**: See [connection schematic](../doc/wiring/connections_MQ2_NASO.png) for detailed MQ-2 sensor pin connections.
 
 # How to Start Recording
 
