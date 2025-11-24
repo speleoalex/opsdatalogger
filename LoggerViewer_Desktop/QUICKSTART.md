@@ -170,7 +170,7 @@ LoggerViewer_Desktop/
 ## Supporto
 
 Per problemi o domande:
-- GitHub: https://github.com/speleoalex/opsdatalogger
+- GitHub: https://github.com/speleoalex/fluxylogger
 - Donazioni: https://www.paypal.com/donate/?business=TKQWLKGENEP7L
 
 ## Note Importanti

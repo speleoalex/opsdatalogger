@@ -227,7 +227,7 @@ Install via **Tools → Manage Libraries:**
 
 ### Sketch Upload
 
-1. Download firmware: [FluxyLogger.ino](https://github.com/speleoalex/opsdatalogger/blob/main/FluxyLogger/FluxyLogger.ino)
+1. Download firmware: [FluxyLogger.ino](https://github.com/speleoalex/fluxylogger/blob/main/FluxyLogger/FluxyLogger.ino)
 2. Open `.ino` file with Arduino IDE
 3. **For NASO+LCD:** verify that `#define LCD_ENABLED` is enabled in code
 4. Click: **Sketch → Verify/Compile**
@@ -341,7 +341,7 @@ Expected output: `OK writing to SD`
 ## Support
 
 - **Telegram:** [https://t.me/+u5CoELQNjC1iODZk](https://t.me/+u5CoELQNjC1iODZk)
-- **GitHub:** [https://github.com/speleoalex/opsdatalogger/issues](https://github.com/speleoalex/opsdatalogger/issues)
+- **GitHub:** [https://github.com/speleoalex/fluxylogger/issues](https://github.com/speleoalex/fluxylogger/issues)
 - **Email:** speleoalex@gmail.com
 
 ---

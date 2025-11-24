@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Desktop application for FluxyLogger data viewing and management",
   "main": "main.js",
-  "homepage": "https://github.com/speleoalex/opsdatalogger",
+  "homepage": "https://github.com/speleoalex/fluxylogger",
   "author": {
     "name": "FluxyLogger NASO",
     "email": "info@fluxylogger.com"

@@ -307,7 +307,7 @@ La trasformazione è stata completata con successo. L'applicazione:
 ## Supporto
 
 Per problemi, domande o contributi:
-- Repository: https://github.com/speleoalex/opsdatalogger
+- Repository: https://github.com/speleoalex/fluxylogger
 - Donations: PayPal FluxyLogger NASO
 
 ---

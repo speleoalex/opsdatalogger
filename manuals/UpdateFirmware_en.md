@@ -23,7 +23,7 @@ Required libraries:
 
 ## 4. Upload the "FluxyLogger.ino" Program
 
-- Get the Source Code: <https://github.com/speleoalex/opsdatalogger/blob/main/FluxyLogger/FluxyLogger.ino>
+- Get the Source Code: <https://github.com/speleoalex/fluxylogger/blob/main/FluxyLogger/FluxyLogger.ino>
 - Open the File in IDE: In the Arduino IDE, go to "File" > "Open" and select the "FluxyLogger.ino" file.
 - Configure Sensors: Before uploading, edit the `#define` directives at the beginning of the file to match your hardware configuration (see [Platform Overview](../FluxyLogger-Platform-Overview-en.md)).
 - Verify and Upload the Program: Click the "Verify" button to compile the code. If there are no errors, click "Upload" to transfer the program to your Arduino UNO board.

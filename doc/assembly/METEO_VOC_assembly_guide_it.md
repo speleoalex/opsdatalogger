@@ -497,7 +497,7 @@ Le configurazioni METEO e VOC sono in fase di sviluppo. Contributi benvenuti:
 - [ ] Esempi di utilizzo sul campo
 
 **Contribuisci:**
-- GitHub: [https://github.com/speleoalex/opsdatalogger](https://github.com/speleoalex/opsdatalogger)
+- GitHub: [https://github.com/speleoalex/fluxylogger](https://github.com/speleoalex/fluxylogger)
 - Telegram: [https://t.me/+u5CoELQNjC1iODZk](https://t.me/+u5CoELQNjC1iODZk)
 
 ---
@@ -524,7 +524,7 @@ Le configurazioni METEO e VOC sono in fase di sviluppo. Contributi benvenuti:
 ## Supporto
 
 - **Telegram:** [https://t.me/+u5CoELQNjC1iODZk](https://t.me/+u5CoELQNjC1iODZk)
-- **GitHub:** [https://github.com/speleoalex/opsdatalogger/issues](https://github.com/speleoalex/opsdatalogger/issues)
+- **GitHub:** [https://github.com/speleoalex/fluxylogger/issues](https://github.com/speleoalex/fluxylogger/issues)
 - **Email:** speleoalex@gmail.com
 
 ---

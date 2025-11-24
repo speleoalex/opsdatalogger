@@ -101,7 +101,7 @@ Measurement interval configurable via CONFIG.INI or USB connection.
 ## 🌍 Community & Support
 
 - **Telegram Group**: [https://t.me/+u5CoELQNjC1iODZk](https://t.me/+u5CoELQNjC1iODZk)
-- **GitHub**: [https://github.com/speleoalex/opsdatalogger](https://github.com/speleoalex/opsdatalogger)
+- **GitHub**: [https://github.com/speleoalex/fluxylogger](https://github.com/speleoalex/fluxylogger)
 - **Issues**: Report bugs and request features on GitHub Issues
 
 ### Support the Project
@@ -114,7 +114,7 @@ If you find this project useful, consider supporting its development:
 
 - **License**: GNU General Public License
 - **Author**: Alessandro Vernassa (speleoalex@gmail.com)
-- **Website**: <https://techmakers.eu/>
+- **Website**: <https://techmakers.it/un-naso-per-gli-speleologi.html/>
 - **Firmware Version**: 2.45
 - **Started**: 2020
 

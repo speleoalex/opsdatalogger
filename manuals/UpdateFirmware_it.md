@@ -15,6 +15,6 @@
 - Cerca e Installa le Librerie: Cerca le librerie richieste dal tuo programma, come quelle per RTC (Real Time Clock) e scheda SD. Seleziona ciascuna libreria e clicca su "Installa".
 
 ## 4. Caricare il Programma "FluxyLogger.ino"
-- Ottieni il Codice Sorgente: https://github.com/speleoalex/opsdatalogger/blob/main/FluxyLogger/FluxyLogger.ino
+- Ottieni il Codice Sorgente: https://github.com/speleoalex/fluxylogger/blob/main/FluxyLogger/FluxyLogger.ino
 - Apri il File nel IDE: Nell'IDE di Arduino, vai su "File" > "Apri" e seleziona il file "FluxyLogger.ino".
 - Verifica e Carica il Programma: Clicca sul pulsante "Verifica" per compilare il codice. Se non ci sono errori,  clicca su "Carica" per trasferire il programma sulla tua scheda Arduino UNO.

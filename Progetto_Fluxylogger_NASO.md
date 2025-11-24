@@ -11,7 +11,7 @@ Con il NASO è possibile utilizzare come traccianti il butano o il propano conte
 
 - Nel 2020 è stato sperimentato per la prima volta durante il corso di tracciamenti a Bossea nella grotta Turbiglie, affiancandolo ad altri datalogger e sensori già sperimentati. La sperimentazione ha avuto esito positivo ed il progetto è stato portato avanti.
 
-- il 23 Agosto 2021 il progetto è stato pubbligato su githib all'indirizzo https://github.com/speleoalex/opsdatalogger
+- il 23 Agosto 2021 il progetto è stato pubblicato su GitHub all'indirizzo https://github.com/speleoalex/fluxylogger
 
 - Tra il 2021 e il 2022, i tracciamenti tramite NASO e l'immissione di deodorante per ambienti hanno portato alla scoperta di un collegamento di un buco aspirante "Terre di sotto" con la "Grotta Priamara". È stato inoltre accertato il collegamento tra la grotta Inghiottitoio di Pian della Noce e la Priamara stessa. Sono stati effettuati altri test nella grotta Pollera e Buranco di Bardineto.
 

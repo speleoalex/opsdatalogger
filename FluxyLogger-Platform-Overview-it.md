@@ -192,7 +192,7 @@ date Y-m-d m:s;gas adc;LPG PPM
 **Comunità**:
 
 - [Gruppo Telegram](https://t.me/+u5CoELQNjC1iODZk)
-- [GitHub](https://github.com/speleoalex/opsdatalogger)
+- [GitHub](https://github.com/speleoalex/fluxylogger)
 - [Assistente AI](https://www.sparkilla.com/application/NASO4CAVE)
 
 **Supporto**:
