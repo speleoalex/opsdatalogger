@@ -1,0 +1,35 @@
+28 giugno, ore 13:45
+Sono state utilizzate 4 bombolette di aria compressa. La temperatura esterna era di circa 30°C.
+
+Grotta del Rian - Interno
+(Distanza: 50 metri in linea d’aria dal punto di immissione)
+Dispositivi: NASO H1 e OPS_A con sensore MQ5
+Risultato: rilevamento positivo a partire dalle 14:30, con picco alle 18:33
+
+Grotta del Rian - Esterno
+(Distanza: 70 metri in linea d’aria dal punto di immissione)
+Dispositivo: NASO TM_Display
+Risultato: rilevamento positivo a partire dalle 14:50, con picco alle 21:00
+
+Garbu du Surdu
+(Distanza: 100 metri in linea d’aria dal punto di immissione)
+Dispositivo: NASO SY-ROSSO
+Risultato: rilevamento positivo a partire dalle 15:20, con picco alle 22:10
+
+Arma della Pozzanghera
+(Distanza: 200 metri in linea d’aria dal punto di immissione)
+Dispositivo: NASO SY-NERO
+Risultato: nessun rilevamento (negativo)
+
+Ingresso Pollera
+(Distanza: 50 metri in linea d’aria dal punto di immissione)
+Dispositivi: NASO H1 e TM_GRIGIO
+Risultato: nessun rilevamento (negativo)
+
+Conclusioni:
+
+L’aria proveniente dalla sala Issel arriva alla Grotta del Rian, raggiungendo quasi contemporaneamente ( leggermente dopo ?) il Garbu du Surdu.
+Non si osserva alcuna circolazione d’aria verso l’esterno della Pollera né in direzione dell’Arma della Pozzanghera.
+
+Rian arrivo alle 15:00, picco di circa 10 PPM alle 21:00
+Surdu arrivo alle 15:20  circa 30 PPM alle 22:00

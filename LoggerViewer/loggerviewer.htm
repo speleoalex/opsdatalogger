@@ -180,7 +180,6 @@
 
         #exportCsvButton {
             width: 100%;
-            margin-top: 0.5rem;
             background-color: var(--secondary-color);
             color: white;
         }
@@ -421,10 +420,11 @@
 
             <div class="sidebar-content">
                 <section class="control-section">
-                    <h3 data-i18n="auto">File</h3>
                     <input style="display:none" id="logfile" type="file" accept=".csv,.txt" onchange="handleFiles(this.files)" />
-                    <button class="button-primary" onclick="document.getElementById('logfile').click();" data-i18n="auto">Open CSV File</button>
-                    <button id="exportCsvButton" onclick="exportCSV();" disabled data-i18n="auto">Export CSV</button>
+                    <div style="display: flex; gap: 0.5rem; align-items: stretch;">
+                        <button class="button-primary" style="flex: 1;" onclick="document.getElementById('logfile').click();" data-i18n="auto">Open CSV File</button>
+                        <button id="exportCsvButton" style="flex: 1;" onclick="exportCSV();" disabled data-i18n="auto">Export CSV</button>
+                    </div>
                 </section>
 
                 <div id="controlsWrapper" class="hidden">
