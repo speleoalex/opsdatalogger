@@ -273,26 +273,44 @@ Expected output: `OK writing to SD`
 
 ## Firmware Notes
 
-### Current Status
+### Current Status (FluxyLogger v2.45)
 
-⚠️ **METEO and VOC firmware in development**
+✅ **Firmware includes complete METEO and VOC support**
 
-The base FluxyLogger firmware currently supports NASO configuration. METEO and VOC configurations require:
+The FluxyLogger firmware includes all necessary code for METEO and VOC, but sensors are disabled by default. To enable them:
 
-1. **Additional libraries to install:**
-   - **METEO:** `Adafruit_BMP280` for BMP280 sensor
-   - **VOC:** `Adafruit_SGP40` or `Adafruit_SGP30` for VOC sensors
-   - Both installable from Arduino Library Manager
+**File: `FluxyLogger/FluxyLogger.ino`**
 
-2. **Code modifications:**
-   - Pin definitions for new sensors
-   - Specific reading functions
-   - Adapted CSV data format
+1. **METEO Configuration - Modify lines:**
 
-3. **Calibration:**
-   - BMP280: automatic calibration
-   - SGP40: VOC baseline after 12h operation
-   - Anemometer: manual calibration (min/max speed)
+```cpp
+#define BMP280_PRESENT 1        // Line 24: 0 → 1
+#define WINDSENSOR_PRESENT 1    // Line 33: 0 → 1 (optional)
+```
+
+2. **VOC Configuration - Modify lines:**
+
+```cpp
+#define SGP40_PRESENT 1         // Line 40: 0 → 1
+// or
+#define SGP30_PRESENT 1         // Line 41: 0 → 1 (alternative)
+```
+
+3. **Required libraries:**
+   - **BMP280:** Already included (`farmerkeith_BMP280.h`)
+   - **SGP40:** Already included (`SparkFun_SGP40_Arduino_Library.h`)
+   - **SGP30:** `SGP30.h` from Arduino Library Manager
+
+**Already implemented features:**
+- ✅ Sensor initialization
+- ✅ Data reading (temperature, pressure, wind, VOC)
+- ✅ CSV saving with correct headers
+- ✅ Automatic calibration (BMP280, SGP40)
+
+**Calibration:**
+- BMP280: automatic at boot
+- SGP40: VOC baseline after ~12h continuous operation
+- Anemometer: no calibration required
 
 ### I2C Multi-device Configuration
 

@@ -186,26 +186,44 @@ Se si desidera visualizzazione real-time:
 
 ## Note su Firmware
 
-### Stato Attuale
+### Stato Attuale (FluxyLogger v2.45)
 
-⚠️ **Firmware in sviluppo per METEO e VOC**
+✅ **Il firmware include già il supporto completo per METEO e VOC**
 
-Il firmware base FluxyLogger supporta attualmente la configurazione NASO. Le configurazioni METEO e VOC richiedono:
+Il firmware FluxyLogger include tutto il codice necessario per METEO e VOC, ma i sensori sono disabilitati di default. Per attivarli:
 
-1. **Librerie aggiuntive da installare:**
-   - **METEO:** `Adafruit_BMP280` per sensore BMP280
-   - **VOC:** `Adafruit_SGP40` o `Adafruit_SGP30` per sensori VOC
-   - Entrambe installabili da Arduino Library Manager
+**File: `FluxyLogger/FluxyLogger.ino`**
 
-2. **Modifiche al codice:**
-   - Definizioni pin per nuovi sensori
-   - Funzioni di lettura specifiche
-   - Formato dati CSV adattato
+1. **Configurazione METEO - Modificare le linee:**
 
-3. **Calibrazione:**
-   - BMP280: calibrazione automatica
-   - SGP40: baseline VOC dopo 12h funzionamento
-   - Anemometro: calibrazione manuale (velocità minima/massima)
+```cpp
+#define BMP280_PRESENT 1        // Linea 24: 0 → 1
+#define WINDSENSOR_PRESENT 1    // Linea 33: 0 → 1 (opzionale)
+```
+
+2. **Configurazione VOC - Modificare le linee:**
+
+```cpp
+#define SGP40_PRESENT 1         // Linea 40: 0 → 1
+// oppure
+#define SGP30_PRESENT 1         // Linea 41: 0 → 1 (alternativo)
+```
+
+3. **Librerie necessarie:**
+   - **BMP280:** Già inclusa (`farmerkeith_BMP280.h`)
+   - **SGP40:** Già inclusa (`SparkFun_SGP40_Arduino_Library.h`)
+   - **SGP30:** `SGP30.h` da Arduino Library Manager
+
+**Funzionalità già implementate:**
+- ✅ Inizializzazione sensori
+- ✅ Lettura dati (temperatura, pressione, vento, VOC)
+- ✅ Salvataggio CSV con header corretti
+- ✅ Calibrazione automatica (BMP280, SGP40)
+
+**Calibrazione:**
+- BMP280: automatica al boot
+- SGP40: baseline VOC dopo ~12h funzionamento continuo
+- Anemometro: nessuna calibrazione richiesta
 
 ### Configurazione I2C Multi-dispositivo
 
