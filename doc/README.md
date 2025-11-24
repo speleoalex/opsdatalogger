@@ -21,10 +21,17 @@ Schemi di collegamento elettrico:
 
 ### 📁 [assembly/](assembly/)
 
-Guide di assemblaggio e test:
+Assembly and testing guides:
 
-- `NASO_assembly_complete_guide_it.md` - Guida completa assemblaggio e test NASO e NASO+LCD (Italiano)
-- `METEO_VOC_assembly_guide_it.md` - Guida assemblaggio e test METEO e VOC (Italiano)
+**Italian (IT):**
+
+- [NASO_assembly_complete_guide_it.md](assembly/NASO_assembly_complete_guide_it.md) - Complete NASO and NASO+LCD assembly and testing guide
+- [METEO_VOC_assembly_guide_it.md](assembly/METEO_VOC_assembly_guide_it.md) - METEO and VOC assembly and testing guide
+
+**English (EN):**
+
+- [NASO_assembly_complete_guide_en.md](assembly/NASO_assembly_complete_guide_en.md) - Complete NASO and NASO+LCD assembly and testing guide
+- [METEO_VOC_assembly_guide_en.md](assembly/METEO_VOC_assembly_guide_en.md) - METEO and VOC assembly and testing guide
 
 ### 📁 [presentations/](presentations/)
 Materiale di presentazione del progetto

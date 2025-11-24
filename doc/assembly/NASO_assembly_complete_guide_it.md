@@ -320,12 +320,27 @@ Output atteso: `OK writing to SD`
 
 ## Documentazione Correlata
 
+**Guide di Assemblaggio:**
+
+- [Guida Assemblaggio NASO (IT)](NASO_assembly_complete_guide_it.md) - Questo documento
+- [NASO Assembly Guide (EN)](NASO_assembly_complete_guide_en.md)
+- [Guida Assemblaggio METEO/VOC (IT)](METEO_VOC_assembly_guide_it.md)
+- [METEO/VOC Assembly Guide (EN)](METEO_VOC_assembly_guide_en.md)
+
+**Manuali Utente:**
+
 - [Manuale Utente NASO (IT)](../../manuals/FluxyLogger-NASO-it.md)
-- [Manuale Utente NASO (EN)](../../manuals/FluxyLogger-NASO-en.md)
+- [NASO User Manual (EN)](../../manuals/FluxyLogger-NASO-en.md)
 - [Manuale Utente NASO+LCD (IT)](../../manuals/FluxyLogger-NASO_lcd-it.md)
-- [Manuale Utente NASO+LCD (EN)](../../manuals/FluxyLogger-NASO_lcd-en.md)
-- [Aggiornamento Firmware](../../manuals/UpdateFirmware_it.md)
+- [NASO+LCD User Manual (EN)](../../manuals/FluxyLogger-NASO_lcd-en.md)
+
+**Altro:**
+
+- [Aggiornamento Firmware (IT)](../../manuals/UpdateFirmware_it.md)
+- [Firmware Update (EN)](../../manuals/UpdateFirmware_en.md)
 - [Lista Componenti](../components.md)
+- [Platform Overview (IT)](../../FluxyLogger-Platform-Overview-it.md)
+- [Platform Overview (EN)](../../FluxyLogger-Platform-Overview-en.md)
 
 ---
 

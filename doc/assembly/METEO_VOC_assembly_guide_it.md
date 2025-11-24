@@ -486,11 +486,20 @@ Le configurazioni METEO e VOC sono in fase di sviluppo. Contributi benvenuti:
 
 ## Documentazione Correlata
 
-- [Guida Assemblaggio NASO](NASO_assembly_complete_guide_it.md)
+**Guide di Assemblaggio:**
+
+- [Guida Assemblaggio NASO (IT)](NASO_assembly_complete_guide_it.md)
+- [NASO Assembly Guide (EN)](NASO_assembly_complete_guide_en.md)
+- [Guida Assemblaggio METEO/VOC (IT)](METEO_VOC_assembly_guide_it.md) - Questo documento
+- [METEO/VOC Assembly Guide (EN)](METEO_VOC_assembly_guide_en.md)
+
+**Altro:**
+
 - [Lista Componenti](../components.md)
 - [Datasheet BMP280](../datasheets/)
 - [Datasheet SGP40](../datasheets/sgp40.pdf)
-- [Platform Overview](../../FluxyLogger-Platform-Overview-it.md)
+- [Platform Overview (IT)](../../FluxyLogger-Platform-Overview-it.md)
+- [Platform Overview (EN)](../../FluxyLogger-Platform-Overview-en.md)
 
 ---
 
