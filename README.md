@@ -15,12 +15,14 @@
 
 FluxyLogger can be configured for different applications:
 
-| Configuration | Sensors | Use Case | Documentation |
-|---------------|---------|----------|---------------|
-| 🌬️ **NASO** | MQ-2 | Air tracing in caves | [IT](manuals/FluxyLogger-NASO-it.md) \| [EN](manuals/FluxyLogger-NASO-en.md) |
-| 📱 **NASO + LCD** | MQ-2 + Display | Air tracing with real-time display | [IT](manuals/FluxyLogger-NASO_lcd-it.md) \| [EN](manuals/FluxyLogger-NASO_lcd-en.md) |
-| 🌤️ **METEO** | BMP280 + Wind | Weather station | *In preparation* |
-| 🏭 **VOC** | SGP40/SGP30 | Air quality monitoring | *In preparation* |
+| Configuration | Sensors | Use Case | Status | Documentation |
+|---------------|---------|----------|--------|---------------|
+| 🌬️ **NASO** | MQ-2 | Air tracing in caves | ✅ Ready | [IT](manuals/FluxyLogger-NASO-it.md) \| [EN](manuals/FluxyLogger-NASO-en.md) |
+| 📱 **NASO + LCD** | MQ-2 + Display | Air tracing with real-time display | ✅ Ready | [IT](manuals/FluxyLogger-NASO_lcd-it.md) \| [EN](manuals/FluxyLogger-NASO_lcd-en.md) |
+| 🌤️ **METEO** | BMP280 + Anemometer | Weather station (pressure, temp, wind) | ✅ Firmware ready | [IT](doc/assembly/METEO_VOC_assembly_guide_it.md) \| [EN](doc/assembly/METEO_VOC_assembly_guide_en.md) |
+| 🏭 **VOC** | SGP40/SGP30 | Air quality monitoring (VOC index) | ✅ Firmware ready | [IT](doc/assembly/METEO_VOC_assembly_guide_it.md) \| [EN](doc/assembly/METEO_VOC_assembly_guide_en.md) |
+
+**Note**: METEO and VOC firmware support is complete (v2.45) but requires enabling sensors in code - see assembly guides for details.
 
 **Purchase**: Assembled NASO units available at [TechMakers](https://techmakers.eu/products/new-cave-monitoring-n-a-s-o-datalogger-for-atmospheric-tracer-tracking-assembled)
 
@@ -48,11 +50,19 @@ All configurations share:
 - [Update Firmware IT](manuals/UpdateFirmware_it.md) - Aggiornamento firmware
 - [Project History IT](Progetto_Fluxylogger_NASO.md) - Storia del progetto
 
+### Assembly Guides
+
+- [NASO Assembly IT](doc/assembly/NASO_assembly_complete_guide_it.md) - Guida assemblaggio NASO e NASO+LCD
+- [NASO Assembly EN](doc/assembly/NASO_assembly_complete_guide_en.md) - NASO and NASO+LCD assembly guide
+- [METEO/VOC Assembly IT](doc/assembly/METEO_VOC_assembly_guide_it.md) - Guida assemblaggio METEO e VOC
+- [METEO/VOC Assembly EN](doc/assembly/METEO_VOC_assembly_guide_en.md) - METEO and VOC assembly guide
+
 ### Technical Documentation
 
-- [Wiring Diagrams](doc/) - Connection schematics for all sensors
-- [Source Code](FluxyLogger/FluxyLogger.ino) - Arduino firmware
+- [Wiring Diagrams](doc/wiring/) - Connection schematics for all sensors
+- [Source Code](FluxyLogger/FluxyLogger.ino) - Arduino firmware (v2.45)
 - [CAD Files](drawings/) - 3D models and enclosure drawings
+- [Technical Docs](doc/) - Datasheets, presentations, and technical resources
 
 ### Software Tools
 
@@ -64,10 +74,26 @@ All configurations share:
 
 All configurations save data to microSD as CSV files with timestamps:
 
+**NASO (Gas Detection):**
+
 ```csv
-date Y-m-d m:s;gas adc;LPG PPM
+date Y-m-d H:M:S;gas adc;LPG PPM
 2023-11-17 17:16:02;80;0
 2023-11-17 17:17:02;125;45
+```
+
+**METEO (Weather Station):**
+
+```csv
+date Y-m-d H:M:S;temperature_C;pressure_hPa;altitude_m;wind_speed_ms
+2025-01-24 12:30:00;15.2;1013.5;450;2.3
+```
+
+**VOC (Air Quality):**
+
+```csv
+date Y-m-d H:M:S;voc_index;tvoc_ppb;temperature_C;humidity_RH
+2025-01-24 12:30:00;125;450;22.5;55
 ```
 
 Measurement interval configurable via CONFIG.INI or USB connection.
