@@ -61,16 +61,8 @@ Guida per l'assemblaggio delle configurazioni NASO e NASO+LCD del FluxyLogger pe
 - **GND sensore → GND shield** (cavo nero)
 - **AOUT sensore → A0 shield** (cavo giallo/verde)
 
-#### 4. Verifica Collegamenti
 
-Prima di alimentare verificare:
-
-- [ ] Nessun cortocircuito tra VCC e GND
-- [ ] AOUT collegato ad A0
-- [ ] MicroSD inserita
-- [ ] Batteria RTC installata
-
-#### 5. Posizionamento nel Box
+#### 4. Posizionamento nel Box
 
 1. **Arduino+Shield:** fissare nel box con spugna/gommapiuma
 2. **Sensore MQ-2:** deve rimanere esposto all'aria esterna, farlo uscire dal box
@@ -89,8 +81,7 @@ Oltre ai componenti base NASO:
 
 1. Display LCD 16x2 I2C (con modulo I2C integrato)
 2. Pulsante momentaneo (opzionale, per controllo retroilluminazione)
-3. Resistenza 10kΩ (opzionale, pull-down per pulsante)
-4. Box contenitore trasparente
+3. Box contenitore trasparente
 
 ### Schemi Collegamenti NASO+LCD
 
@@ -127,23 +118,14 @@ Oltre ai componenti base NASO:
 
 **Pulsante Retroilluminazione (opzionale):**
 
-| Componente  | Collegamento               |
-|-------------|----------------------------|
-| Pin 1       | Digital Pin 8 (D8)         |
-| Pin 2       | GND (tramite resistenza)   |
-| Resistenza  | 10kΩ tra Pin 2 e GND       |
+| Componente  | Collegamento      |
+|-------------|-------------------|
+| Pin 1       | +5V               |
+| Pin 2       | Digital Pin 8 (D8)|
 
-**Schema pulsante:**
+**Nota:** Il firmware attiva il pull-up interno su D8, non serve resistenza esterna.
 
-```
-D8 ----[Pulsante]---- GND
-                 |
-              [10kΩ]
-                 |
-                GND
-```
 
-**Nota:** Senza pulsante, la retroilluminazione rimane sempre accesa.
 
 ### Assemblaggio NASO+LCD
 
@@ -170,8 +152,16 @@ Come per NASO base (punto 3)
 
 Se si desidera controllo manuale della retroilluminazione:
 
-- Un terminale → D8
-- Altro terminale → GND tramite resistenza 10kΩ
+- Un terminale → +5V
+- Altro terminale → D8
+
+**Schema:**
+
+```text
++5V ----[Pulsante]---- D8
+```
+
+**Nota tecnica:** Il firmware attiva il pull-up interno su D8, quindi non serve resistenza esterna.
 
 **Funzionamento:** Pressione > 1 sec accende/spegne retroilluminazione
 
@@ -182,7 +172,7 @@ Se si desidera controllo manuale della retroilluminazione:
 - [ ] Nessun cortocircuito VCC/GND
 - [ ] Sensore: AOUT su A0
 - [ ] LCD: SDA su A4, SCL su A5
-- [ ] Pulsante su D8 con resistenza (se installato)
+- [ ] Pulsante: +5V su un terminale, D8 sull'altro (se installato)
 - [ ] MicroSD e batteria RTC installati
 
 #### 7. Posizionamento nel Box
@@ -285,100 +275,7 @@ Eseguire test completo seguendo la procedura:
 
 ---
 
-## Risoluzione Problemi
 
-### Problemi Comuni (NASO Base e LCD)
-
-**Shield non si inserisce:**
-- Verificare pin non piegati
-- Non forzare inserimento
-
-**Sensore non rileva variazioni:**
-- Verificare AOUT → A0
-- Controllare VCC e GND
-- Attendere preriscaldamento (30-60 sec)
-- Verificare che sensore sia esposto all'aria
-
-**MicroSD non rilevata:**
-- Verificare formattazione FAT32
-- Provare microSD diversa (max 32GB)
-- Pulire contatti
-
-**RTC non mantiene orario:**
-- Sostituire batteria CR1220
-- Verificare polarità (+ verso l'alto)
-
-### Problemi Specifici LCD
-
-**Display non si accende:**
-- Verificare VCC e GND
-- Regolare contrasto (trimmer blu)
-- Testare indirizzo I2C (0x27 o 0x3F)
-
-**Caratteri strani:**
-- Regolare contrasto
-- Verificare libreria LiquidCrystal_I2C installata
-
-**Pulsante non funziona (se installato):**
-- Verificare collegamento D8
-- Controllare resistenza 10kΩ
-- Tenere premuto > 1 secondo
-- Nota: senza pulsante, retroilluminazione sempre accesa
-
-**Display si blocca:**
-- Verificare alimentazione stabile
-- Cavi I2C non troppo lunghi (max 30cm)
-- Evitare interferenze
-
----
-
-## Manutenzione
-
-### Prima di ogni utilizzo
-
-- Verificare carica PowerBank
-- Controllare collegamenti
-- Pulire sensore con aria compressa (delicatamente)
-- **LCD:** verificare leggibilità display
-
-### Annuale
-
-- Sostituire batteria RTC
-- Verificare impermeabilizzazione
-- Controllare usura cavetti
-- Aggiornare firmware se disponibile
-
----
-
-## Specifiche Tecniche
-
-### NASO Base
-
-- **Alimentazione:** 5V USB
-- **Consumo:** ~210 mA
-- **Autonomia:** 48-72h (PowerBank 10000mAh)
-- **Intervallo acquisizione:** Configurabile (default 15s)
-- **Temperatura operativa:** 0°C ~ 50°C
-
-### NASO+LCD
-
-- **Consumo totale:** ~275 mA (LCD retroilluminato)
-- **Consumo LCD:** 20-30 mA (senza retro), 60-80 mA (con retro)
-- **Autonomia:** 36-48h (PowerBank 10000mAh)
-- **Display:** LCD 16x2, retroilluminato
-- **Protocollo:** I2C (0x27 o 0x3F)
-
----
-
-## Vantaggi Configurazione LCD
-
-✅ Visualizzazione real-time senza PC
-✅ Monitoraggio sul campo durante tracciamenti
-✅ Verifica immediata dei rilevamenti
-✅ Controllo stato acquisizione
-✅ Feedback visivo per calibrazione
-
----
 
 ## Documentazione Correlata
 
@@ -391,18 +288,7 @@ Eseguire test completo seguendo la procedura:
 
 ---
 
-## Sicurezza
 
-⚠️ **ATTENZIONI:**
-
-- Non alimentare durante il montaggio
-- Verificare polarità collegamenti
-- Il sensore MQ-2 si scalda durante funzionamento (normale)
-- Non utilizzare in ambienti esplosivi durante test
-- **LCD:** sensibile a scariche elettrostatiche
-- Utilizzare PowerBank con protezioni
-
----
 
 ## Supporto
 
