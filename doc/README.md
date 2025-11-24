@@ -23,6 +23,13 @@ Schemi di collegamento elettrico:
 
 Procedure di assemblaggio e test:
 
+**Guide di Assemblaggio:**
+
+- `NASO_assembly_guide_it.md` - Guida assemblaggio NASO (Italiano)
+- `NASO_LCD_assembly_guide_it.md` - Guida assemblaggio NASO+LCD (Italiano)
+
+**Procedure di Test:**
+
 - `NASO_testing_procedure_it.md` - Procedura test NASO (Italiano)
 - `NASO_testing_procedure_en.md` - NASO Testing Procedure (English)
 
