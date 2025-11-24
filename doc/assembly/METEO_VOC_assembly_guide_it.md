@@ -348,6 +348,92 @@ void loop() {
 
 ---
 
+## Test Funzionale
+
+### Test Iniziale
+
+1. **Collegamento Seriale:**
+   - USB → PC
+   - Seriale: 19200 baud
+   - Monitor: Arduino IDE o webapp [https://applications.techmakers.it/datalogger/terminal.htm](https://applications.techmakers.it/datalogger/terminal.htm)
+
+2. **Verifica Inizializzazione:**
+   - LED lampeggiano durante preriscaldamento (~30 sec)
+   - Valori ADC si stabilizzano (10-150 per NASO)
+   - Nessun errore SD card/RTC
+
+3. **Configurazione Data/Ora:**
+
+```text
+settime 2025-01-24 14:30:00
+```
+
+4. **Calibrazione NASO:**
+
+```text
+autocalib
+```
+
+Attendere 30 secondi, poi:
+
+```text
+setcalib
+```
+
+### Test Sensori
+
+**NASO (MQ-2):**
+
+- Spray deodorante vicino sensore
+- Valori ADC/PPM aumentano significativamente
+- Display LCD (se presente) aggiorna valori in tempo reale
+
+**METEO (BMP280):**
+
+- Soffiare sul sensore → temperatura aumenta
+- Valori pressione stabili (~1013 hPa al livello del mare)
+
+**VOC (SGP40):**
+
+- Attendere 30 sec preriscaldamento
+- VOC index baseline ~100
+- Avvicinare alcool/deodorante → VOC index aumenta
+
+**Anemometro:**
+
+- Anemometro fermo = valore minimo
+- Ruotare manualmente = valori crescenti
+
+### Verifica MicroSD
+
+**Durante acquisizione:**
+
+```text
+test
+```
+
+Output atteso: `OK writing to SD`
+
+**Test da spento:**
+
+- Rimuovere microSD
+- Inserire in lettore PC
+- Verificare file CSV con data corrente
+- Aprire con editor testo/Excel
+- Colonne e timestamp corretti
+
+### Verifica Display LCD (NASO+LCD / VOC+LCD)
+
+- [ ] Display mostra versione firmware all'avvio
+- [ ] Valori ADC/PPM/VOC si aggiornano in tempo reale
+- [ ] Ora corretta
+- [ ] Pulsante retroilluminazione funziona (pressione > 1 sec)
+- [ ] Contrasto leggibile
+
+**Se caratteri illeggibili:** ruotare trimmer blu sul modulo I2C
+
+---
+
 ## Risoluzione Problemi
 
 ### BMP280 non rilevato

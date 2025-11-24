@@ -244,34 +244,75 @@ Installare via **Tools → Manage Libraries:**
 2. Baud rate: **19200**
 3. Seguire istruzioni per configurazione iniziale
 
-Per dettagli: [Procedura Test NASO](NASO_testing_procedure_it.md)
-
 ---
 
 ## Test Funzionale
 
-Eseguire test completo seguendo la procedura:
+### Test Iniziale
 
-**[→ Procedura di Test NASO (IT)](NASO_testing_procedure_it.md)**
+**Collegamento Seriale:**
 
-**[→ NASO Testing Procedure (EN)](NASO_testing_procedure_en.md)**
+- USB → PC
+- Seriale: 19200 baud
+- Monitor: Arduino IDE o webapp [https://applications.techmakers.it/datalogger/terminal.htm](https://applications.techmakers.it/datalogger/terminal.htm)
 
-### Verifiche Principali
+**Verifica Inizializzazione:**
 
-1. **Inizializzazione:** LED lampeggiano durante preriscaldamento (~30 sec)
-2. **Sensore:** valori ADC si stabilizzano (10-150)
-3. **Configurazione:** impostare data/ora con comando `settime`
-4. **Calibrazione:** eseguire `autocalib`
-5. **Test sensore:** spray deodorante → valori ADC/PPM aumentano
-6. **Scrittura SD:** verificare salvataggio dati, no errori "failed"
+- LED lampeggiano durante preriscaldamento (~30 sec)
+- Valori ADC si stabilizzano (10-150)
+- Nessun errore SD card/RTC
 
-### Verifiche Aggiuntive NASO+LCD
+**Configurazione Data/Ora:**
+
+```text
+settime 2025-01-24 14:30:00
+```
+
+**Calibrazione NASO:**
+
+```text
+autocalib
+```
+
+Attendere 30 secondi, poi:
+
+```text
+setcalib
+```
+
+### Test Sensore MQ-2
+
+- Spray deodorante vicino sensore
+- Valori ADC/PPM aumentano significativamente
+- Display LCD (se presente) aggiorna valori in tempo reale
+
+### Verifica MicroSD
+
+**Durante acquisizione:**
+
+```text
+test
+```
+
+Output atteso: `OK writing to SD`
+
+**Test da spento:**
+
+- Rimuovere microSD
+- Inserire in lettore PC
+- Verificare file CSV con data corrente
+- Aprire con editor testo/Excel
+- Colonne e timestamp corretti
+
+### Verifiche Display LCD (NASO+LCD)
 
 - [ ] Display mostra versione firmware all'avvio
-- [ ] Valori ADC/PPM si aggiornano
-- [ ] Ora visualizzata corretta
-- [ ] Pulsante retroilluminazione funziona
-- [ ] Contrasto ottimale
+- [ ] Valori ADC/PPM si aggiornano in tempo reale
+- [ ] Ora corretta
+- [ ] Pulsante retroilluminazione funziona (pressione > 1 sec)
+- [ ] Contrasto leggibile
+
+**Se caratteri illeggibili:** ruotare trimmer blu sul modulo I2C
 
 ---
 
