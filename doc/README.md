@@ -25,8 +25,7 @@ Procedure di assemblaggio e test:
 
 **Guide di Assemblaggio:**
 
-- `NASO_assembly_guide_it.md` - Guida assemblaggio NASO (Italiano)
-- `NASO_LCD_assembly_guide_it.md` - Guida assemblaggio NASO+LCD (Italiano)
+- `NASO_assembly_complete_guide_it.md` - Guida completa assemblaggio NASO e NASO+LCD (Italiano)
 
 **Procedure di Test:**
 
