@@ -118,7 +118,7 @@ Rileva Composti Organici Volatili (inquinanti, solventi).
 | Meteo | ❌ | ❌ | ✅ | ❌ |
 | Qualità aria | ❌ | ❌ | ❌ | ✅ |
 | Display | ❌ | ✅ | Opz. | Opz. |
-| Consumo | 275mA¹ | 210mA | 50mA | 50mA |
+| Consumo | 150mA¹ | 155mA* | 50mA | 50mA |
 | Autonomia² | 36h | 48h | 200h | 200h |
 | Documentazione | ✅ | ✅ | 📝 | 📝 |
 | Kit disponibile | ✅ | ✅ | ❌ | ❌ |
@@ -133,7 +133,7 @@ Rileva Composti Organici Volatili (inquinanti, solventi).
 | Arduino UNO | ~45 mA | Consumo base |
 | Data Logger Shield + RTC | ~2 mA | DS1307 + componenti passivi |
 | Scheda MicroSD | ~0.5 mA | Media (scrittura ogni 30s, duty cycle 0.67%) |
-| **Sensore MQ-2** | **~160 mA** | Elemento riscaldante (consumatore principale) |
+| **Sensore MQ-2** | **~100 mA** | Elemento riscaldante (consumatore principale) |
 | LCD 16x2 I2C | ~3 mA | Senza retroilluminazione (attivabile con pulsante) |
 | BMP280 | ~1 mA | Modalità normale |
 | Wind Sensor | ~1 mA | Uscita analogica |

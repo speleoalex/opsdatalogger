@@ -118,7 +118,7 @@ Detects Volatile Organic Compounds (pollutants, solvents).
 | Weather | ❌ | ❌ | ✅ | ❌ |
 | Air quality | ❌ | ❌ | ❌ | ✅ |
 | Display | ❌ | ✅ | Opt. | Opt. |
-| Consumption | 275mA¹ | 210mA | 50mA | 50mA |
+| Consumption | 150mA¹ | 155mA* | 50mA | 50mA |
 | Battery life² | 36h | 48h | 200h | 200h |
 | Documentation | ✅ | ✅ | 📝 | 📝 |
 | Kit available | ✅ | ✅ | ❌ | ❌ |
@@ -133,7 +133,7 @@ Detects Volatile Organic Compounds (pollutants, solvents).
 | Arduino UNO | ~45 mA | Base consumption |
 | Data Logger Shield + RTC | ~2 mA | DS1307 + passive components |
 | MicroSD Card | ~0.5 mA | Average (write every 30s, duty cycle 0.67%) |
-| **MQ-2 Gas Sensor** | **~160 mA** | Heating element (main consumer) |
+| **MQ-2 Gas Sensor** | **~100 mA** | Heating element (main consumer) |
 | LCD 16x2 I2C | ~3 mA | Without backlight (button activated) |
 | BMP280 | ~1 mA | Normal mode |
 | Wind Sensor | ~1 mA | Analog output |
